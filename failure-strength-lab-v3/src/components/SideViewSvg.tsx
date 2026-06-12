@@ -9,17 +9,22 @@ function loadLabel(load: number) {
   return 'high demand';
 }
 
+function ArrowPath({ d, color = '#55b8ff', width = 6.2 }: { d: string; color?: string; width?: number }) {
+  const marker = color === '#ff9e3a' ? 'url(#arrowOrange)' : color === '#ff4b64' ? 'url(#arrowRed)' : 'url(#arrow)';
+  return <path d={d} stroke={color} strokeWidth={width} fill="none" strokeLinecap="round" markerEnd={marker} />;
+}
+
 function DemandArrows({ demand }: { demand: 'tension' | 'compression' }) {
   if (demand === 'tension') {
     return <>
-      <path className="arrow" d="M122 74 L54 74" markerStart="none" strokeWidth="6.2" />
-      <path className="arrow" d="M338 74 L406 74" markerStart="none" strokeWidth="6.2" />
+      <ArrowPath d="M122 74 L54 74" />
+      <ArrowPath d="M338 74 L406 74" />
       <text x="230" y="58" textAnchor="middle" fill="#d8edff" fontSize="12" fontWeight="950">tensile demand: outward pull</text>
     </>;
   }
   return <>
-    <path className="arrow arrowOrange" d="M54 74 L122 74" markerStart="none" strokeWidth="6.2" />
-    <path className="arrow arrowOrange" d="M406 74 L338 74" markerStart="none" strokeWidth="6.2" />
+    <ArrowPath d="M54 74 L122 74" color="#ff9e3a" />
+    <ArrowPath d="M406 74 L338 74" color="#ff9e3a" />
     <text x="230" y="58" textAnchor="middle" fill="#ff9e3a" fontSize="12" fontWeight="950">compressive demand: inward push</text>
   </>;
 }
@@ -120,10 +125,10 @@ function FatigueSideView({ state, status }: { state: LabState; status: Status })
     <circle cx="248" cy="154" r={8 + sev * 10} fill="rgba(255,75,100,.16)" stroke="#ff4b64" />
     {state.notchEnabled && <path className="crack glow" d={`M248 154 C${250 + crackLen * .35} ${166 + crackLen * .25}, ${241 - crackLen * .1} ${176 + crackLen * .55}, ${248 + crackLen * .22} ${185 + crackLen}`} />}
 
-    <path className="arrow" d="M188 74 C206 58 232 58 250 74" markerStart="none" strokeWidth="3.4" />
-    <path className="arrow" d="M276 235 C252 252 221 252 198 235" markerStart="none" strokeWidth="3.4" />
-    <path className="arrow" d="M168 181 C150 166 150 143 168 128" markerStart="none" strokeWidth="3.4" />
-    <path className="arrow" d="M332 128 C350 143 350 166 332 181" markerStart="none" strokeWidth="3.4" />
+    <ArrowPath d="M188 74 C206 58 232 58 250 74" width={3.4} />
+    <ArrowPath d="M276 235 C252 252 221 252 198 235" width={3.4} />
+    <ArrowPath d="M168 181 C150 166 150 143 168 128" width={3.4} />
+    <ArrowPath d="M332 128 C350 143 350 166 332 181" width={3.4} />
     <text x="230" y="57" textAnchor="middle" fill="#d8edff" fontSize="12" fontWeight="950">cyclic stress range Δσ around weld / notch</text>
 
     <path d="M255 148 L334 96" stroke="rgba(216,237,255,.42)" strokeDasharray="5 6" />
