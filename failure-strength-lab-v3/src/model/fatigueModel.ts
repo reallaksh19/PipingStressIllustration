@@ -10,7 +10,8 @@ export function cycleLabel(slider: number): string {
 
 export function allowableStressRangePercent(logN: number): number {
   // Conceptual decreasing S-N boundary only, not a design curve.
-  return 92 - 11.5 * (logN - 2);
+  // Clamp so the curve never goes below 12 (floor) or above 92 (ceiling).
+  return Math.max(12, Math.min(92, 92 - 11.5 * (logN - 2)));
 }
 
 export function fatigueSeverity(s: LabState): number {
