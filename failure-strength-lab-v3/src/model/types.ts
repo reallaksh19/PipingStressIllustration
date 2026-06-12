@@ -20,6 +20,7 @@ export type LabState = {
   showSignConvention: boolean;
   showPairedShear: boolean;
   showTensor: boolean;
+  showPipeEffect: boolean;
 };
 
 export type Status = {
