@@ -17,21 +17,20 @@ function pct(value: number) {
 function mid(a: Point, b: Point): Point { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 
 function LabelBox({ x, y, w, text, fill, anchor = 'middle' }: { x: number; y: number; w: number; text: string; fill: string; anchor?: 'start' | 'middle' }) {
-  const tx = anchor === 'start' ? x + 10 : x + w / 2;
+  const h = 32;
+  const tx = anchor === 'start' ? x + 22 : x + w / 2;
+  const fontSize = text.length > 28 ? 10.5 : text.length > 20 ? 11 : 12;
   return <g>
-    <rect x={x} y={y} width={w} height="27" rx="9" fill="rgba(6,16,29,.88)" stroke="rgba(216,237,255,.30)" />
+    <rect x={x} y={y} width={w} height={h} rx="10" fill="#071525" stroke="rgba(216,237,255,.42)" strokeWidth="1.2" />
+    <rect x={x + 8} y={y + 8} width="4" height={h - 16} rx="2" fill={fill} opacity=".95" />
     <text
       x={tx}
-      y={y + 13.5}
+      y={y + 20}
       textAnchor={anchor}
-      dominantBaseline="middle"
-      fill={fill}
-      fontSize="12"
-      fontWeight="950"
-      paintOrder="stroke"
-      stroke="rgba(6,16,29,.92)"
-      strokeWidth="2.4"
-      strokeLinejoin="round"
+      fill="#eef7ff"
+      fontSize={fontSize}
+      fontWeight="900"
+      fontFamily="Arial, Helvetica, sans-serif"
     >{text}</text>
   </g>;
 }
@@ -78,7 +77,7 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
     {showShear && <ShearStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
 
     <text x="230" y="35" textAnchor="middle" className="label" fill={status.color}>Stress components at a point</text>
-    <LabelBox x="122" y="287" w="216" text={cue} fill="#d8edff" />
+    <LabelBox x="122" y="284" w="216" text={cue} fill="#52f0df" />
     <text x="230" y="328" textAnchor="middle" className="muted">shape is exaggerated for teaching; it is not a strain or failure calculation</text>
   </svg>;
 }
@@ -96,13 +95,13 @@ function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poi
   return <g>
     <path d={`M${leftMid.x - 10} ${leftMid.y - 21} L${leftMid.x - 10} ${leftMid.y + 21} M${rightMid.x + 10} ${rightMid.y - 21} L${rightMid.x + 10} ${rightMid.y + 21}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" />
     <path d={`M${leftMid.x - 34} ${leftMid.y} L${leftMid.x - 18} ${leftMid.y} M${rightMid.x + 18} ${rightMid.y} L${rightMid.x + 34} ${rightMid.y}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <LabelBox x="36" y="137" w="88" text={sxLabel} fill={xStroke} />
-    <LabelBox x="336" y="137" w="88" text="x-face" fill={xStroke} />
+    <LabelBox x="36" y="134" w="88" text={sxLabel} fill={xStroke} />
+    <LabelBox x="336" y="134" w="88" text="x-face" fill={xStroke} />
 
     <path d={`M${topMid.x - 26} ${topMid.y - 10} L${topMid.x + 26} ${topMid.y - 10} M${bottomMid.x - 26} ${bottomMid.y + 10} L${bottomMid.x + 26} ${bottomMid.y + 10}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" />
     <path d={`M${topMid.x} ${topMid.y - 32} L${topMid.x} ${topMid.y - 18} M${bottomMid.x} ${bottomMid.y + 18} L${bottomMid.x} ${bottomMid.y + 32}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <LabelBox x="184" y="48" w="92" text={syLabel} fill={yStroke} />
-    <LabelBox x="184" y="249" w="92" text="y-face" fill={yStroke} />
+    <LabelBox x="184" y="45" w="92" text={syLabel} fill={yStroke} />
+    <LabelBox x="184" y="248" w="92" text="y-face" fill={yStroke} />
   </g>;
 }
 
@@ -118,12 +117,12 @@ function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poin
   return <g>
     <path d={`M${topMid.x - len} ${topMid.y - 17} L${topMid.x + len} ${topMid.y - 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
     <path d={`M${bottomMid.x + len} ${bottomMid.y + 17} L${bottomMid.x - len} ${bottomMid.y + 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <LabelBox x="171" y="48" w="118" text={`τxy ${pct(state.tauXY)}`} fill={stroke} />
+    <LabelBox x="171" y="45" w="118" text={`τxy ${pct(state.tauXY)}`} fill={stroke} />
 
     {showPairs && <>
       <path d={`M${rightMid.x + 18} ${rightMid.y - len * .65} L${rightMid.x + 18} ${rightMid.y + len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
       <path d={`M${leftMid.x - 18} ${leftMid.y + len * .65} L${leftMid.x - 18} ${leftMid.y - len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <LabelBox x="336" y="211" w="88" text="τyx pair" fill={stroke} />
+      <LabelBox x="336" y="208" w="88" text="τyx pair" fill={stroke} />
     </>}
   </g>;
 }
