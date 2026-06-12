@@ -16,22 +16,54 @@ function pct(value: number) {
 
 function mid(a: Point, b: Point): Point { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 
-function LabelBox({ x, y, w, text, fill, anchor = 'middle' }: { x: number; y: number; w: number; text: string; fill: string; anchor?: 'start' | 'middle' }) {
-  const h = 32;
-  const tx = anchor === 'start' ? x + 22 : x + w / 2;
-  const fontSize = text.length > 28 ? 10.5 : text.length > 20 ? 11 : 12;
+function SvgLabel({
+  x,
+  y,
+  text,
+  fill = '#eef7ff',
+  anchor = 'middle',
+  size = 12,
+}: {
+  x: number;
+  y: number;
+  text: string;
+  fill?: string;
+  anchor?: 'start' | 'middle' | 'end';
+  size?: number;
+}) {
+  return <text
+    x={x}
+    y={y}
+    textAnchor={anchor}
+    fill={fill}
+    stroke="none"
+    fontSize={size}
+    fontWeight="900"
+    fontFamily="Arial, Helvetica, sans-serif"
+    opacity="1"
+  >{text}</text>;
+}
+
+function StressLegend({ state }: { state: LabState }) {
+  const showNormal = state.stressView === 'normal' || state.stressView === 'combined';
+  const showShear = state.stressView === 'shear' || state.stressView === 'combined';
+  const y = 288;
+
+  if (showNormal && !showShear) {
+    return <g>
+      <SvgLabel x={126} y={y} text={`Normal stress σx ${pct(state.sigmaX)}`} fill={state.sigmaX >= 67 ? COLORS.orange : COLORS.blue} />
+      <SvgLabel x={334} y={y} text={`Normal stress σy ${pct(state.sigmaY)}`} fill={state.sigmaY >= 67 ? COLORS.orange : COLORS.blue} />
+    </g>;
+  }
+
+  if (showShear && !showNormal) {
+    return <SvgLabel x={230} y={y} text={`Shear stress τxy ${pct(state.tauXY)}`} fill={state.tauXY >= 67 ? COLORS.purple : COLORS.cyan} />;
+  }
+
   return <g>
-    <rect x={x} y={y} width={w} height={h} rx="10" fill="#071525" stroke="rgba(216,237,255,.42)" strokeWidth="1.2" />
-    <rect x={x + 8} y={y + 8} width="4" height={h - 16} rx="2" fill={fill} opacity=".95" />
-    <text
-      x={tx}
-      y={y + 20}
-      textAnchor={anchor}
-      fill="#eef7ff"
-      fontSize={fontSize}
-      fontWeight="900"
-      fontFamily="Arial, Helvetica, sans-serif"
-    >{text}</text>
+    <SvgLabel x={105} y={y} text={`σx ${pct(state.sigmaX)}`} fill={state.sigmaX >= 67 ? COLORS.orange : COLORS.blue} />
+    <SvgLabel x={230} y={y} text={`σy ${pct(state.sigmaY)}`} fill={state.sigmaY >= 67 ? COLORS.orange : COLORS.blue} />
+    <SvgLabel x={355} y={y} text={`τxy ${pct(state.tauXY)}`} fill={state.tauXY >= 67 ? COLORS.purple : COLORS.cyan} />
   </g>;
 }
 
@@ -54,11 +86,6 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
   const p3 = { x: right + bottomShift, y: bottom };
   const p4 = { x: left + bottomShift, y: bottom };
   const points = `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`;
-  const cue = state.stressView === 'normal'
-    ? `σx width cue ${pct(state.sigmaX)} · σy height cue ${pct(state.sigmaY)}`
-    : state.stressView === 'shear'
-      ? `τxy skew cue ${pct(state.tauXY)}`
-      : `σx ${pct(state.sigmaX)} · σy ${pct(state.sigmaY)} · τxy ${pct(state.tauXY)}`;
 
   return <svg viewBox="0 0 460 340" role="img" aria-label="Stress components at a point with conceptual exaggerated shape response">
     <SvgDefs />
@@ -66,27 +93,25 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
     <path d="M55 78H405 M55 240H405 M115 48V270 M230 48V270 M345 48V270" stroke="rgba(216,237,255,.07)" />
 
     <rect x="161" y="107" width="138" height="106" rx="10" fill="none" stroke="rgba(216,237,255,.18)" strokeDasharray="7 7" />
-    <text x="230" y="100" textAnchor="middle" className="muted">undeformed reference</text>
+    <SvgLabel x="230" y="100" text="undeformed reference" fill="rgba(216,237,255,.62)" size={11} />
 
     <polygon points={points} fill="rgba(85,184,255,.16)" stroke="rgba(220,245,255,.92)" strokeWidth="4" filter="drop-shadow(0 16px 22px rgba(0,0,0,.35))" />
     <polygon points={points} fill="none" stroke="rgba(82,240,223,.34)" strokeWidth="10" opacity=".35" />
     <circle cx={cx} cy={cy} r="5" fill={status.color} />
-    <text x={cx} y={cy + 5} textAnchor="middle" fill="rgba(6,16,29,.85)" fontSize="11" fontWeight="950">pt</text>
+    <SvgLabel x={cx} y={cy + 5} text="pt" fill="rgba(6,16,29,.92)" size={11} />
 
     {showNormal && <NormalStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
     {showShear && <ShearStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
 
-    <text x="230" y="35" textAnchor="middle" className="label" fill={status.color}>Stress components at a point</text>
-    <LabelBox x="122" y="284" w="216" text={cue} fill="#52f0df" />
-    <text x="230" y="328" textAnchor="middle" className="muted">shape is exaggerated for teaching; it is not a strain or failure calculation</text>
+    <SvgLabel x="230" y="35" text="Stress components at a point" fill={status.color} size={14} />
+    <StressLegend state={state} />
+    <SvgLabel x="230" y="328" text="shape is exaggerated for teaching; it is not a strain or failure calculation" fill="rgba(216,237,255,.72)" size={11} />
   </svg>;
 }
 
 function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Point; p2: Point; p3: Point; p4: Point }) {
   const xStroke = state.sigmaX >= 67 ? COLORS.orange : COLORS.blue;
   const yStroke = state.sigmaY >= 67 ? COLORS.orange : COLORS.blue;
-  const sxLabel = `σx ${pct(state.sigmaX)}`;
-  const syLabel = `σy ${pct(state.sigmaY)}`;
   const leftMid = mid(p1, p4);
   const rightMid = mid(p2, p3);
   const topMid = mid(p1, p2);
@@ -95,13 +120,13 @@ function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poi
   return <g>
     <path d={`M${leftMid.x - 10} ${leftMid.y - 21} L${leftMid.x - 10} ${leftMid.y + 21} M${rightMid.x + 10} ${rightMid.y - 21} L${rightMid.x + 10} ${rightMid.y + 21}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" />
     <path d={`M${leftMid.x - 34} ${leftMid.y} L${leftMid.x - 18} ${leftMid.y} M${rightMid.x + 18} ${rightMid.y} L${rightMid.x + 34} ${rightMid.y}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <LabelBox x="36" y="134" w="88" text={sxLabel} fill={xStroke} />
-    <LabelBox x="336" y="134" w="88" text="x-face" fill={xStroke} />
+    <SvgLabel x={42} y={128} text="Normal stress σx" fill={xStroke} anchor="start" />
+    <SvgLabel x={418} y={128} text="x-face" fill={xStroke} anchor="end" />
 
     <path d={`M${topMid.x - 26} ${topMid.y - 10} L${topMid.x + 26} ${topMid.y - 10} M${bottomMid.x - 26} ${bottomMid.y + 10} L${bottomMid.x + 26} ${bottomMid.y + 10}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" />
     <path d={`M${topMid.x} ${topMid.y - 32} L${topMid.x} ${topMid.y - 18} M${bottomMid.x} ${bottomMid.y + 18} L${bottomMid.x} ${bottomMid.y + 32}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <LabelBox x="184" y="45" w="92" text={syLabel} fill={yStroke} />
-    <LabelBox x="184" y="248" w="92" text="y-face" fill={yStroke} />
+    <SvgLabel x={230} y={57} text="Normal stress σy" fill={yStroke} />
+    <SvgLabel x={230} y={264} text="y-face" fill={yStroke} />
   </g>;
 }
 
@@ -117,12 +142,12 @@ function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poin
   return <g>
     <path d={`M${topMid.x - len} ${topMid.y - 17} L${topMid.x + len} ${topMid.y - 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
     <path d={`M${bottomMid.x + len} ${bottomMid.y + 17} L${bottomMid.x - len} ${bottomMid.y + 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <LabelBox x="171" y="45" w="118" text={`τxy ${pct(state.tauXY)}`} fill={stroke} />
+    <SvgLabel x={230} y={57} text="Shear stress τxy" fill={stroke} />
 
     {showPairs && <>
       <path d={`M${rightMid.x + 18} ${rightMid.y - len * .65} L${rightMid.x + 18} ${rightMid.y + len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
       <path d={`M${leftMid.x - 18} ${leftMid.y + len * .65} L${leftMid.x - 18} ${leftMid.y - len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <LabelBox x="336" y="208" w="88" text="τyx pair" fill={stroke} />
+      <SvgLabel x={392} y={229} text="τyx pair" fill={stroke} anchor="end" />
     </>}
   </g>;
 }
