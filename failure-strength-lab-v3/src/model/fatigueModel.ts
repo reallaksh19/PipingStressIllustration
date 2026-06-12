@@ -17,13 +17,12 @@ export function fatigueSeverity(s: LabState): number {
   const allow = allowableStressRangePercent(logCycles(s.fatigueCyclesSlider));
   const over = (s.fatigueStressRange - allow) / 35;
   const notch = s.notchEnabled ? 0.13 : 0;
-  const brittle = s.material === 'brittle' ? 0.1 : 0;
-  return Math.max(0, Math.min(1, 0.28 + over + notch + brittle));
+  return Math.max(0, Math.min(1, 0.28 + over + notch));
 }
 
 export function fatigueStatus(s: LabState): Status {
   const sev = fatigueSeverity(s);
-  if (sev > 0.68) return { badge: 'Fatigue crack growth', color: COLORS.red, title: 'High cyclic damage tendency', copy: s.material === 'ductile' ? 'Ductile fatigue is shown as crack initiation/growth at a local hotspot after repeated cycles.' : 'Brittle/crack-sensitive fatigue emphasizes crack propagation with little visible plastic warning.' };
-  if (sev > 0.42) return { badge: 'Fatigue-sensitive', color: COLORS.orange, title: 'Crack growth is becoming important', copy: 'Repeated Δσ and cycles N make local notch/weld details important.' };
+  if (sev > 0.68) return { badge: 'Fatigue crack growth', color: COLORS.red, title: 'High cyclic damage tendency', copy: 'This fatigue view is limited to ductile metallic piping: cyclic Δσ can initiate and grow a crack at a weld/notch hotspot.' };
+  if (sev > 0.42) return { badge: 'Fatigue-sensitive', color: COLORS.orange, title: 'Crack growth is becoming important', copy: 'Repeated Δσ and cycles N make local notch/weld details important in metallic fatigue.' };
   return { badge: 'Low cyclic demand', color: COLORS.green, title: 'Small fatigue demonstration demand', copy: 'The operating point is below the conceptual S-N boundary. This is a teaching visual, not fatigue assessment.' };
 }
