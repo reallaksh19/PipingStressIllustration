@@ -129,55 +129,56 @@ function FatigueSideView({ state, status }: SideProps) {
   const allow = allowableStressRangePercent(logN);
   const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
   const cycleRatio = state.fatigueCyclesSlider / 100;
-  const notchFactor = state.notchEnabled ? 1 : 0.22;
+  const notchFactor = state.notchEnabled ? 1 : 0.28;
   const materialFactor = state.material === 'brittle' ? 1.12 : 1;
-  const severity = clamp((0.52 * rangeRatio + 0.48 * cycleRatio) * notchFactor * materialFactor);
-  const crack = state.notchEnabled ? 6 + severity * 30 : 0;
-  const halo = 22 + severity * 46;
-  const amp = 8 + Math.min(18, state.fatigueStressRange * 0.12);
-  const modeText = rangeRatio > 1 ? 'above S-N boundary: crack growth emphasized' : rangeRatio > 0.82 ? 'near S-N boundary: initiation risk visible' : 'below S-N boundary: hotspot shown as low severity';
+  const severity = clamp((0.58 * rangeRatio + 0.42 * cycleRatio) * notchFactor * materialFactor);
+  const halo = state.notchEnabled ? 18 + severity * 40 : 14 + severity * 18;
+  const amp = 6 + Math.min(18, state.fatigueStressRange * 0.11);
+  const pipeTop = `M82 ${196 - amp * 0.25} C172 ${184 - amp}, 245 ${184 - amp}, 320 ${198 - amp * 0.25} C412 ${212 + amp}, 502 ${212 + amp}, 570 ${200 + amp * 0.2}`;
+  const pipeBottom = `M82 ${244 + amp * 0.2} C172 ${256 + amp}, 245 ${256 + amp}, 320 ${242 + amp * 0.25} C412 ${228 - amp}, 502 ${228 - amp}, 570 ${240 - amp * 0.2}`;
+  const centreLine = `M82 220 C172 ${208 - amp}, 245 ${208 - amp}, 320 220 C412 ${232 + amp}, 502 ${232 + amp}, 570 220`;
+  const ghostUp = `M82 ${214 - amp} C172 ${202 - amp}, 245 ${202 - amp}, 320 ${214 - amp} C412 ${226}, 502 ${226}, 570 ${216}`;
+  const ghostDown = `M82 ${226 + amp} C172 ${238}, 245 ${238}, 320 ${226 + amp} C412 ${214 + amp}, 502 ${214 + amp}, 570 ${224 + amp}`;
+  const modeText = rangeRatio > 1 ? 'high Δσ: welded attachment toe is fatigue-critical' : rangeRatio > 0.82 ? 'near S-N boundary: hotspot must be watched' : 'low Δσ: hotspot shown, crack mechanism stays in local view';
+  const hotspotLabel = state.notchEnabled ? 'weld toe / notch hotspot' : 'smooth pipe: lower concentration';
 
-  return <SvgFrame label="Fatigue side view: cyclic demand and weld-toe crack origin">
-    <text x="320" y="50" textAnchor="middle" className="muted">side view shows location: cyclic Δσ acts on pipe; crack starts at weld toe / notch</text>
+  return <SvgFrame label="Fatigue side view: cyclic pipe motion and welded attachment hotspot">
+    <text x="320" y="50" textAnchor="middle" className="muted">side view should locate the fatigue detail: cyclic pipe motion creates Δσ at a welded attachment toe</text>
 
-    <path d="M80 104 C134 82 188 82 242 104 C296 126 348 126 402 104 C456 82 514 82 568 104" className="fatigueWave" />
-    <text x="128" y="80" className="muted">load history: repeated stress range Δσ</text>
+    <path d="M72 104 C122 78 178 78 228 104 C278 130 338 130 388 104 C438 78 510 78 568 104" className="fatigueWave" />
+    <text x="320" y="82" textAnchor="middle" className="muted">load history: repeated stress range, not a one-time static pull</text>
 
-    <path d="M78 220 H568" className="pipeShadow fatPulse" />
-    <path d="M78 220 H568" className="pipeOuter fatPulse" />
-    <path d="M78 220 H568" className="pipeInner fatPulse" />
+    <path d={ghostUp} fill="none" stroke="rgba(85,184,255,.22)" strokeWidth="5" strokeLinecap="round" strokeDasharray="9 8" />
+    <path d={ghostDown} fill="none" stroke="rgba(255,158,58,.18)" strokeWidth="5" strokeLinecap="round" strokeDasharray="9 8" />
+    <path d={pipeTop} className="pipeOuter fatPulse" fill="none" />
+    <path d={pipeBottom} className="pipeOuter fatPulse" fill="none" />
+    <path d={centreLine} className="pipeInner fatPulse" fill="none" />
 
-    <path d="M118 172 H168 M118 268 H168 M478 172 H528 M478 268 H528" stroke="rgba(216,237,255,.28)" strokeWidth="4" strokeLinecap="round" />
-    <CyclicArrow x1={92} y1={156} x2={145} y2={156} color="blue" />
-    <CyclicArrow x1={548} y1={156} x2={495} y2={156} color="blue" />
-    <CyclicArrow x1={145} y1={286} x2={92} y2={286} color="blue" />
-    <CyclicArrow x1={495} y1={286} x2={548} y2={286} color="blue" />
-    <text x="320" y="151" textAnchor="middle" className="muted">alternate tension/compression range, not one static force</text>
+    <path d="M76 174 V266 M570 174 V266" stroke="rgba(216,237,255,.18)" strokeWidth="5" strokeLinecap="round" />
+    <path d="M96 186 C110 200 110 240 96 254 M550 186 C536 200 536 240 550 254" stroke="rgba(216,237,255,.18)" strokeWidth="3" fill="none" />
 
-    <rect x="310" y="174" width="28" height="92" rx="10" className="weldBand" />
-    <path d="M310 177 C284 156 250 150 208 158 M338 177 C366 156 400 150 442 158" className="weldProfile" />
-    <path d="M324 170 V270" className="weldCentre" />
-    <path d="M250 204 C282 190 304 190 324 220 C344 190 368 190 400 204" fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="9 8" />
-    <path d="M248 236 C282 250 304 250 324 220 C344 250 368 250 400 236" fill="none" stroke="rgba(255,215,91,.25)" strokeWidth="3" strokeDasharray="9 8" />
+    <path d="M292 166 H392 V205 C362 214 326 214 292 205 Z" fill="rgba(216,237,255,.10)" stroke="rgba(216,237,255,.40)" strokeWidth="2" />
+    <path d="M294 204 C316 194 340 194 363 204" className="weldProfile" />
+    <path d="M364 204 C376 198 386 198 396 204" className="weldProfile" />
+    <path d="M298 206 C308 220 380 220 392 206" stroke="rgba(255,215,91,.38)" strokeWidth="5" strokeLinecap="round" fill="none" />
+    <text x="342" y="156" textAnchor="middle" className="muted">welded lug / branch detail</text>
 
-    <circle cx="338" cy="184" r={state.notchEnabled ? halo : 24} className={state.notchEnabled ? 'hotspotHalo' : 'hotspotHalo mutedHalo'} />
-    <circle cx="338" cy="184" r="6" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
-    {state.notchEnabled && <path d={`M338 184 C${335 - crack * .12} ${202 + crack * .15}, ${354 + crack * .18} ${213 + crack * .30}, ${337 - crack * .06} ${224 + crack * .45}`} className="microCrack glow" />}
-    {!state.notchEnabled && <path d="M338 184 l-7 10" className="microCrackGhost" />}
-    <text x="382" y="188" className="muted">hotspot / crack origin</text>
+    <circle cx="298" cy="206" r={halo} className={state.notchEnabled ? 'hotspotHalo' : 'hotspotHalo mutedHalo'} />
+    <circle cx="298" cy="206" r="6" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
+    <circle cx="392" cy="206" r={state.notchEnabled ? Math.max(16, halo * 0.72) : 12} className="hotspotHalo mutedHalo" />
+    <circle cx="392" cy="206" r="4" fill="#ffd75b" stroke="#06101d" strokeWidth="2" />
+    {state.notchEnabled && severity > 0.45 && <path d="M298 206 l-10 16" className="microCrack glow" />}
+    <text x="438" y="208" className="muted">{hotspotLabel}</text>
 
-    <path d="M338 184 C394 150 446 126 492 104" className="calloutLine" />
-    <circle cx="506" cy="96" r="58" className="magnifier" />
-    <path d="M462 108 H548" stroke="rgba(216,231,242,.80)" strokeWidth="19" strokeLinecap="round" />
-    <path d="M484 108 C494 76 526 76 538 108" className="weldToe" />
-    <path d="M501 107 l-10 16" stroke="#ffd75b" strokeWidth="4" strokeLinecap="round" />
-    {state.notchEnabled && <path d={`M501 108 C${493 - crack * .12} ${121 + crack * .08}, ${520 + crack * .16} ${135 + crack * .20}, ${500 - crack * .10} ${150 + crack * .30}`} className="microCrack glow" />}
-    <text x="506" y="168" textAnchor="middle" className="muted">origin only — mechanism is in cross-section</text>
+    <CyclicArrow x1={170} y1={150} x2={220} y2={128} color="blue" />
+    <CyclicArrow x1={470} y1={292} x2={420} y2={314} color="orange" />
+    <text x="184" y="123" className="muted">cycle A</text>
+    <text x="426" y="330" className="muted">cycle B</text>
 
-    <g transform="translate(72 314)">
-      <circle cx="0" cy="0" r="6" fill="#52f0df" /><text x="14" y="4" className="muted">1 Δσ cycles</text>
-      <circle cx="150" cy="0" r="6" fill="#ffd75b" /><text x="164" y="4" className="muted">2 weld toe stress raiser</text>
-      <circle cx="364" cy="0" r="6" fill="#ff4b64" /><text x="378" y="4" className="muted">3 crack origin</text>
+    <path d="M298 206 C250 276 204 302 158 318" className="calloutLine" />
+    <g transform="translate(78 306)">
+      <circle cx="0" cy="0" r="6" fill="#52f0df" /><text x="14" y="4" className="muted">1 cyclic displacement / vibration</text>
+      <circle cx="230" cy="0" r="6" fill="#ffd75b" /><text x="244" y="4" className="muted">2 stress raiser at weld toe</text>
     </g>
     <text x="320" y="342" textAnchor="middle" className="caseLabel" fill={status.color}>{modeText}</text>
   </SvgFrame>;
