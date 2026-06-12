@@ -93,7 +93,7 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
     <path d="M55 78H405 M55 240H405 M115 48V270 M230 48V270 M345 48V270" stroke="rgba(216,237,255,.07)" />
 
     <rect x="161" y="107" width="138" height="106" rx="10" fill="none" stroke="rgba(216,237,255,.18)" strokeDasharray="7 7" />
-    <SvgLabel x="230" y="100" text="undeformed reference" fill="rgba(216,237,255,.62)" size={11} />
+    <SvgLabel x={230} y={100} text="undeformed reference" fill="rgba(216,237,255,.62)" size={11} />
 
     <polygon points={points} fill="rgba(85,184,255,.16)" stroke="rgba(220,245,255,.92)" strokeWidth="4" filter="drop-shadow(0 16px 22px rgba(0,0,0,.35))" />
     <polygon points={points} fill="none" stroke="rgba(82,240,223,.34)" strokeWidth="10" opacity=".35" />
@@ -103,9 +103,9 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
     {showNormal && <NormalStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
     {showShear && <ShearStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
 
-    <SvgLabel x="230" y="35" text="Stress components at a point" fill={status.color} size={14} />
+    <SvgLabel x={230} y={35} text="Stress components at a point" fill={status.color} size={14} />
     <StressLegend state={state} />
-    <SvgLabel x="230" y="328" text="shape is exaggerated for teaching; it is not a strain or failure calculation" fill="rgba(216,237,255,.72)" size={11} />
+    <SvgLabel x={230} y={328} text="shape is exaggerated for teaching; it is not a strain or failure calculation" fill="rgba(216,237,255,.72)" size={11} />
   </svg>;
 }
 
