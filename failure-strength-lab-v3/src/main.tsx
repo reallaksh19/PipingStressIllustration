@@ -9,7 +9,7 @@ import { LocalViewSvg } from './components/LocalViewSvg';
 import { StressStrainCurve } from './components/StressStrainCurve';
 import { SNCurve } from './components/SNCurve';
 import { Interpretation } from './components/Interpretation';
-import { StressComponentExplanation, StressComponentsSvg, StressEngineeringNote, StressTensorCard } from './components/StressComponentsSvg';
+import { PipeEffectPreview, StressComponentExplanation, StressComponentsSvg, StressEngineeringNote, StressTensorCard } from './components/StressComponentsSvg';
 
 const initialState: LabState = {
   mode: 'static',
@@ -28,6 +28,7 @@ const initialState: LabState = {
   showSignConvention: true,
   showPairedShear: true,
   showTensor: true,
+  showPipeEffect: false,
 };
 
 const presentationOverride = `
@@ -111,13 +112,14 @@ function App() {
             <label className="toggle"><input type="checkbox" checked={state.showSignConvention} onChange={e => update({ showSignConvention: e.target.checked })}/> Show sign convention</label>
             {showShearControls && <label className="toggle"><input type="checkbox" checked={state.showPairedShear} onChange={e => update({ showPairedShear: e.target.checked })}/> Show paired shear τxy / τyx</label>}
             <label className="toggle"><input type="checkbox" checked={state.showTensor} onChange={e => update({ showTensor: e.target.checked })}/> Show tensor matrix</label>
+            <label className="toggle"><input type="checkbox" checked={state.showPipeEffect} onChange={e => update({ showPipeEffect: e.target.checked })}/> Show pipe effect preview</label>
           </ControlBlock>
         </>}
       </aside>
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move the visible component sliders only: normal view resizes, shear view skews, combined view does both. Shape response is exaggerated for teaching.' : 'Review mode.'}</p></div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move the visible component sliders only: normal view resizes, shear view skews, combined view does both. Pipe preview is optional and concept-only.' : 'Review mode.'}</p></div>
           <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · stress state only' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
@@ -130,7 +132,7 @@ function App() {
 
         {state.mode === 'stress' && <section className="grid stress-grid">
           <Panel title="Panel 1 · stress element" tag="resizes from visible sliders"><StressComponentsSvg state={state} status={status}/></Panel>
-          <Panel title="Panel 2 · component meaning" tag={state.stressView}><StressComponentExplanation state={state}/></Panel>
+          <Panel title={state.showPipeEffect ? 'Panel 2 · pipe effect preview' : 'Panel 2 · component meaning'} tag={state.showPipeEffect ? 'concept bridge' : state.stressView}>{state.showPipeEffect ? <PipeEffectPreview state={state}/> : <StressComponentExplanation state={state}/>}</Panel>
           <Panel title="Panel 3 · tensor card" tag={state.showTensor ? 'visible' : 'hidden'}><StressTensorCard state={state}/></Panel>
           <Panel title="Panel 4 · engineering note" tag="not failure yet"><StressEngineeringNote state={state}/></Panel>
         </section>}
@@ -154,7 +156,7 @@ function App() {
             <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Only the relevant sliders are shown for the selected component view.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Pipe preview=${state.showPipeEffect ? 'on' : 'off'} and is concept-only.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
       </main>
     </div>
   </div>;
