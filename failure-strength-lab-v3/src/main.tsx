@@ -24,6 +24,7 @@ const initialState: LabState = {
 
 const presentationOverride = `
   .forceArrow { display: none !important; }
+  marker[id^="tickArrow"] path { display: none !important; }
   .analysis-grid {
     grid-template-columns: minmax(560px, 1.18fr) minmax(410px, .92fr) !important;
     grid-template-areas: "side curve" "local interp" !important;
