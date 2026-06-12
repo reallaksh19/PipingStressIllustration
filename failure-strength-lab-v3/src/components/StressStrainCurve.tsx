@@ -5,13 +5,15 @@ export function StressStrainCurve({ state, status }: { state: LabState; status: 
   const p = state.staticLoad / 100;
   let x: number, y: number;
 
+  // Ductile: elastic (0–0.44) → yield plateau (0.44–0.76) → necking/rupture (0.76–1.0)
   if (duct) {
     if (p < 0.44) { x = 64 + p * 180; y = 235 - p * 300; }
     else if (p < 0.76) { x = 143 + (p - 0.44) * 430; y = 104 - (p - 0.44) * 50; }
     else { x = 281 + (p - 0.76) * 330; y = 89 + (p - 0.76) * 230; }
   } else {
-    x = 64 + p * 124;
-    y = 235 - p * 185;
+    // Brittle: linear up to fracture at x=188. Cap x so dot never overshoots the fracture line.
+    x = 64 + Math.min(p, 1) * 124;
+    y = 235 - Math.min(p, 1) * 185;
   }
   x = Math.max(64, Math.min(420, x));
   y = Math.max(40, Math.min(238, y));
