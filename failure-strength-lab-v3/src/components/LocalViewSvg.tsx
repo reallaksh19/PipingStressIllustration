@@ -23,16 +23,17 @@ function PipeSectionDuctileTension({ state, status }: LocalProps) {
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
   return <LocalFrame label="Ductile tension pipe wall cross-section">
-    <text x="210" y="48" textAnchor="middle" className="muted">pipe wall cross-section · axial tensile demand through wall</text>
+    <text x="210" y="44" textAnchor="middle" className="muted">pipe wall cross-section · axial tensile demand through wall</text>
     <PipeRing />
     <StressTicks color="#55b8ff" mode="tension" />
-    {med && <path d={annularArc(210, 182, 96, 52, -30, 210)} fill="rgba(255,158,58,.28)" stroke="#ff9e3a" strokeWidth="2" />}
+    {/* yield band: use a sensible arc range that scales with load */}
+    {med && <path d={annularArc(210, 182, 96, 52, -60, 240)} fill="rgba(255,158,58,.28)" stroke="#ff9e3a" strokeWidth="2" />}
     {high && <>
-      <ellipse cx="210" cy="182" rx={82 + 10 * p} ry={88 - 10 * p} fill="none" stroke="rgba(255,158,58,.75)" strokeWidth="4" strokeDasharray="10 7" />
+      <ellipse cx="210" cy="182" rx={Math.min(94, 82 + 8 * p)} ry={Math.max(68, 88 - 8 * p)} fill="none" stroke="rgba(255,158,58,.75)" strokeWidth="4" strokeDasharray="10 7" />
       <path d="M134 154 C160 176 160 188 134 210 M286 154 C260 176 260 188 286 210" className="neckLine" />
     </>}
-    <Legend y="277" color={status.color} text={high ? 'ductile wall yields and thins locally before rupture' : med ? 'yield band spreads in the pipe wall' : 'uniform axial tensile stress in pipe wall'} />
-    <text x="210" y="303" textAnchor="middle" className="muted">σ = F/A · axial stress acts through annular pipe-wall area</text>
+    <Legend y="273" color={status.color} text={high ? 'ductile wall yields and thins locally before rupture' : med ? 'yield band spreads in the pipe wall' : 'uniform axial tensile stress in pipe wall'} />
+    <text x="210" y="298" textAnchor="middle" className="muted">σ = F/A · axial stress acts through annular pipe-wall area</text>
   </LocalFrame>;
 }
 
@@ -98,9 +99,10 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
   const cycleRatio = state.fatigueCyclesSlider / 100;
   const notchFactor = state.notchEnabled ? 1.0 : 0.24;
   const severity = clamp((0.50 * rangeRatio + 0.50 * cycleRatio) * notchFactor, 0, 1);
-  const crackDepth = state.notchEnabled ? 16 + severity * 116 : 0;
+  // When notch is off, keep crackDepth at 0 so ghost path doesn't move.
+  const crackDepth = state.notchEnabled ? 16 + severity * 100 : 0;
   const crackTipY = 95 + crackDepth;
-  const crackTipX = 196 + severity * 36;
+  const crackTipX = state.notchEnabled ? 196 + severity * 30 : 196;
   const halo = 24 + severity * 66;
   const point = rangeRatio > 1 ? 'above conceptual S-N boundary' : rangeRatio > 0.82 ? 'near conceptual S-N boundary' : 'below conceptual S-N boundary';
   const beachMarks = state.notchEnabled ? Array.from({ length: 5 }, (_, i) => 28 + i * 18 + severity * i * 5) : [];
@@ -133,18 +135,18 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
     </>}
     {!state.notchEnabled && <>
       <path d="M197 98 l-9 14" className="microCrackGhost" />
-      <text x="210" y="156" textAnchor="middle" className="muted">smooth detail: no visible crack in this teaching view</text>
+      <text x="210" y="168" textAnchor="middle" className="muted">smooth detail: no visible crack in this teaching view</text>
     </>}
 
     <g transform="translate(58 285)">
-      <circle cx="0" cy="0" r="5" fill="#52f0df" /><text x="10" y="4" className="muted">initiation</text>
-      <circle cx="92" cy="0" r="5" fill="#ffd75b" /><text x="102" y="4" className="muted">stable growth</text>
-      <circle cx="212" cy="0" r="5" fill="#ffd75b" /><text x="222" y="4" className="muted">beach marks</text>
-      <circle cx="318" cy="0" r="5" fill="#ff4b64" /><text x="328" y="4" className="muted">final fracture</text>
+      <circle cx="0" cy="0" r="5" fill="#52f0df" /><text x="10" y="4" className="muted" fontSize="11">initiation</text>
+      <circle cx="82" cy="0" r="5" fill="#ffd75b" /><text x="92" y="4" className="muted" fontSize="11">stable growth</text>
+      <circle cx="186" cy="0" r="5" fill="#ffd75b" /><text x="196" y="4" className="muted" fontSize="11">beach marks</text>
+      <circle cx="296" cy="0" r="5" fill="#ff4b64" /><text x="306" y="4" className="muted" fontSize="11">final fracture</text>
     </g>
 
-    <text x="210" y="306" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `ductile metal crack grows with Δσ and N: ${point}` : 'fatigue source reduced: no weld/notch hotspot selected'}</text>
-    <text x="210" y="322" textAnchor="middle" className="muted">brittle behavior stays concept-only: flaw size, ΔK, environment, KIC</text>
+    <text x="210" y="305" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `ductile metal crack grows with Δσ and N: ${point}` : 'fatigue source reduced: no weld/notch hotspot selected'}</text>
+    <text x="210" y="320" textAnchor="middle" className="muted">brittle behavior stays concept-only: flaw size, ΔK, environment, KIC</text>
   </LocalFrame>;
 }
 
