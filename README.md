@@ -2,6 +2,16 @@
 
 Interactive static/web demos for piping stress concepts.
 
+## Live demo
+
+GitHub Pages URL:
+
+```text
+https://reallaksh19.github.io/PipingStressIllustration/
+```
+
+Current deployed module: **Failure & Strength Lab v3**.
+
 ## Current module
 
 ### Failure & Strength Lab v3
@@ -27,6 +37,16 @@ Build:
 ```bash
 npm run build
 ```
+
+## GitHub Pages deployment
+
+Deployment is handled by GitHub Actions:
+
+```bash
+.github/workflows/pages.yml
+```
+
+The workflow builds `failure-strength-lab-v3` and publishes its `dist` folder to GitHub Pages.
 
 ## Technical model
 
