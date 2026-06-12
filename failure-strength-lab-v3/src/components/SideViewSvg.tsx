@@ -130,8 +130,7 @@ function FatigueSideView({ state, status }: SideProps) {
   const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
   const cycleRatio = state.fatigueCyclesSlider / 100;
   const notchFactor = state.notchEnabled ? 1 : 0.28;
-  const materialFactor = state.material === 'brittle' ? 1.12 : 1;
-  const severity = clamp((0.58 * rangeRatio + 0.42 * cycleRatio) * notchFactor * materialFactor);
+  const severity = clamp((0.58 * rangeRatio + 0.42 * cycleRatio) * notchFactor);
   const halo = state.notchEnabled ? 18 + severity * 40 : 14 + severity * 18;
   const amp = 6 + Math.min(18, state.fatigueStressRange * 0.11);
   const pipeTop = `M82 ${196 - amp * 0.25} C172 ${184 - amp}, 245 ${184 - amp}, 320 ${198 - amp * 0.25} C412 ${212 + amp}, 502 ${212 + amp}, 570 ${200 + amp * 0.2}`;
@@ -142,11 +141,11 @@ function FatigueSideView({ state, status }: SideProps) {
   const modeText = rangeRatio > 1 ? 'high Δσ: welded attachment toe is fatigue-critical' : rangeRatio > 0.82 ? 'near S-N boundary: hotspot must be watched' : 'low Δσ: hotspot shown, crack mechanism stays in local view';
   const hotspotLabel = state.notchEnabled ? 'weld toe / notch hotspot' : 'smooth pipe: lower concentration';
 
-  return <SvgFrame label="Fatigue side view: cyclic pipe motion and welded attachment hotspot">
-    <text x="320" y="50" textAnchor="middle" className="muted">side view should locate the fatigue detail: cyclic pipe motion creates Δσ at a welded attachment toe</text>
+  return <SvgFrame label="Fatigue side view: ductile metallic pipe cyclic motion and welded attachment hotspot">
+    <text x="320" y="50" textAnchor="middle" className="muted">ductile metallic pipe fatigue only: cyclic pipe motion creates Δσ at a welded attachment toe</text>
 
     <path d="M72 104 C122 78 178 78 228 104 C278 130 338 130 388 104 C438 78 510 78 568 104" className="fatigueWave" />
-    <text x="320" y="82" textAnchor="middle" className="muted">load history: repeated stress range, not a one-time static pull</text>
+    <text x="320" y="82" textAnchor="middle" className="muted">brittle behavior is concept text only; no brittle S-N graphics are shown</text>
 
     <path d={ghostUp} fill="none" stroke="rgba(85,184,255,.22)" strokeWidth="5" strokeLinecap="round" strokeDasharray="9 8" />
     <path d={ghostDown} fill="none" stroke="rgba(255,158,58,.18)" strokeWidth="5" strokeLinecap="round" strokeDasharray="9 8" />
