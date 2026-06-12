@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
 import { LabState, Status } from '../model/types';
+import { allowableStressRangePercent, logCycles } from '../model/fatigueModel';
 
 type SideProps = { state: LabState; status: Status };
+
+function clamp(n: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, n));
+}
 
 export function SideViewSvg({ state, status }: SideProps) {
   if (state.mode === 'fatigue') return <FatigueSideView state={state} status={status} />;
@@ -21,7 +26,7 @@ function DuctileTensionView({ state, status }: SideProps) {
   const neck = high ? 26 : med ? 12 : 0;
   const leftGrip = 52 - elong;
   const rightGrip = 588 + elong;
-  const specimenPath = `M126 ${170} C188 ${166} 220 ${178 + neck * 0.35} 270 ${184 + neck} C306 ${190 + neck * 0.5} 334 ${190 + neck * 0.5} 370 ${184 + neck} C420 ${178 + neck * 0.35} 452 166 514 170 L514 250 C452 254 420 ${242 - neck * 0.35} 370 ${236 - neck} C334 ${230 - neck * 0.5} 306 ${230 - neck * 0.5} 270 ${236 - neck} C220 ${242 - neck * 0.35} 188 254 126 250 Z`;
+  const specimenPath = `M126 170 C188 166 220 ${178 + neck * 0.35} 270 ${184 + neck} C306 ${190 + neck * 0.5} 334 ${190 + neck * 0.5} 370 ${184 + neck} C420 ${178 + neck * 0.35} 452 166 514 170 L514 250 C452 254 420 ${242 - neck * 0.35} 370 ${236 - neck} C334 ${230 - neck * 0.5} 306 ${230 - neck * 0.5} 270 ${236 - neck} C220 ${242 - neck * 0.35} 188 254 126 250 Z`;
 
   return <SvgFrame label="Ductile tension side view">
     <ForceArrow x1="142" y1="76" x2="64" y2="76" color="blue" start />
@@ -120,29 +125,50 @@ function BrittleCompressionView({ state, status }: SideProps) {
 }
 
 function FatigueSideView({ state, status }: SideProps) {
-  const range = state.fatigueStressRange / 100;
-  const cycles = state.fatigueCyclesSlider / 100;
-  const severity = Math.min(1, range * 0.65 + cycles * 0.45 + (state.notchEnabled ? 0.1 : 0));
-  const amp = 12 + state.fatigueStressRange * 0.18;
-  const crack = 8 + severity * 34;
+  const logN = logCycles(state.fatigueCyclesSlider);
+  const allow = allowableStressRangePercent(logN);
+  const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
+  const cycleRatio = state.fatigueCyclesSlider / 100;
+  const notchFactor = state.notchEnabled ? 1 : 0.25;
+  const materialFactor = state.material === 'brittle' ? 1.15 : 1;
+  const severity = clamp((0.45 * rangeRatio + 0.55 * cycleRatio) * notchFactor * materialFactor);
+  const amp = 6 + state.fatigueStressRange * 0.22;
+  const crack = state.notchEnabled ? 10 + severity * 58 : 0;
+  const halo = 24 + severity * 52;
+  const modeText = rangeRatio > 1 ? 'operating point is above the conceptual S-N boundary' : rangeRatio > 0.82 ? 'operating point is near the S-N boundary' : 'operating point is below the S-N boundary';
 
-  return <SvgFrame label="Fatigue side view">
-    <path d="M70 122 C130 88 192 88 250 122 C308 156 370 156 570 122" className="fatigueWave" />
-    <text x="320" y="62" textAnchor="middle" className="muted">repeated stress range Δσ: pipe pulses, damage accumulates at local detail</text>
-    <path d={`M88 214 C175 ${214 - amp}, 254 ${214 + amp}, 552 214`} className="pipeShadow fatPulse" />
-    <path d={`M88 214 C175 ${214 - amp}, 254 ${214 + amp}, 552 214`} className="pipeOuter fatPulse" />
-    <path d={`M88 214 C175 ${214 - amp}, 254 ${214 + amp}, 552 214`} className="pipeInner fatPulse" />
-    <rect x="312" y="176" width="22" height="78" rx="9" className="weldBand" />
+  return <SvgFrame label="Fatigue side view with weld hotspot and crack growth">
+    <text x="320" y="58" textAnchor="middle" className="muted">fatigue is cyclic stress range Δσ plus cycles N at a local detail</text>
+
+    <path d="M70 120 C128 94 184 94 242 120 C300 146 356 146 414 120 C472 94 526 94 580 120" className="fatigueWave" />
+    <text x="112" y="92" className="muted">cyclic demand</text>
+
+    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeShadow fatPulse" />
+    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeOuter fatPulse" />
+    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeInner fatPulse" />
+
+    <rect x="312" y="178" width="24" height="82" rx="10" className="weldBand" />
+    <path d="M314 178 C292 154 258 148 218 156 M336 178 C360 154 394 148 434 156" className="weldProfile" />
     {state.notchEnabled && <>
-      <circle cx="326" cy="214" r={32 + severity * 34} className="hotspotHalo" />
-      <path d={`M326 214 C${318 - crack * 0.45} ${228 + crack * 0.35}, ${346 + crack * 0.25} ${244 + crack}, ${314 - crack * 0.25} ${262 + crack * 0.45}`} className="crack glow" />
+      <circle cx="326" cy="218" r={halo} className="hotspotHalo" />
+      <path d={`M326 218 C${314 - crack * .20} ${236 + crack * .12}, ${346 + crack * .16} ${248 + crack * .42}, ${314 - crack * .12} ${264 + crack * .52}`} className="crack glow" />
+      <circle cx="326" cy="218" r="7" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
     </>}
-    <path d="M326 214 C365 170 424 138 470 116" className="calloutLine" />
-    <circle cx="484" cy="104" r="54" className="magnifier" />
-    <path d="M458 112 C476 78 500 77 514 112" className="weldToe" />
-    <path d={`M484 112 C${478 - crack * 0.2} ${128 + crack * 0.1}, ${497 + crack * 0.15} ${138 + crack * 0.25}, ${476 - crack * 0.1} ${150 + crack * 0.25}`} className={state.notchEnabled ? 'microCrack glow' : 'microCrackGhost'} />
-    <text x="484" y="176" textAnchor="middle" className="muted">zoom: weld toe / notch</text>
-    <text x="320" y="318" textAnchor="middle" className="caseLabel" fill={status.color}>cyclic hotspot: crack length responds to Δσ and N</text>
+    {!state.notchEnabled && <circle cx="326" cy="218" r="28" className="hotspotHalo mutedHalo" />}
+
+    <path d="M326 218 C365 174 424 136 474 110" className="calloutLine" />
+    <circle cx="492" cy="98" r="66" className="magnifier" />
+    <path d="M446 112 H538" stroke="rgba(216,231,242,.80)" strokeWidth="20" strokeLinecap="round" />
+    <path d="M470 112 C482 76 514 76 528 112" className="weldToe" />
+    <path d="M486 111 l-12 18" stroke="#ffd75b" strokeWidth="5" strokeLinecap="round" />
+    {state.notchEnabled && <>
+      <circle cx="486" cy="112" r={18 + severity * 34} className="hotspotHalo" />
+      <path d={`M486 112 C${474 - crack * .14} ${126 + crack * .12}, ${507 + crack * .12} ${140 + crack * .32}, ${477 - crack * .10} ${154 + crack * .36}`} className="microCrack glow" />
+    </>}
+    {!state.notchEnabled && <path d="M486 112 l-8 12" className="microCrackGhost" />}
+    <text x="492" y="180" textAnchor="middle" className="muted">zoom: weld toe / notch root</text>
+
+    <text x="320" y="318" textAnchor="middle" className="caseLabel" fill={status.color}>crack length is driven by Δσ/allowable and N: {modeText}</text>
   </SvgFrame>;
 }
 
@@ -166,7 +192,7 @@ function Grip({ x, label }: { x: number; label: string }) {
 function CompressionPlate({ x }: { x: number }) {
   return <g>
     <rect x={x} y="128" width="28" height="166" rx="8" className="plate" />
-    <path d={`M${x + 7} 146V276 M${x + 17} 146V276`} stroke="rgba(255,255,255,.17)" strokeWidth="3" />
+    <path d={`M${x + 8} 146H${x + 20} M${x + 8} 170H${x + 20} M${x + 8} 194H${x + 20} M${x + 8} 218H${x + 20} M${x + 8} 242H${x + 20} M${x + 8} 266H${x + 20}`} stroke="rgba(255,255,255,.18)" strokeWidth="3" />
   </g>;
 }
 
@@ -178,18 +204,10 @@ function ForceArrow({ x1, y1, x2, y2, color, start }: { x1: string; y1: string; 
 
 function Defs() {
   return <defs>
-    <linearGradient id="specimenDuctile" x1="0" x2="1">
-      <stop offset="0" stopColor="#7f96aa" />
-      <stop offset=".48" stopColor="#f2fbff" />
-      <stop offset="1" stopColor="#788fa4" />
-    </linearGradient>
-    <linearGradient id="specimenBrittle" x1="0" x2="1">
-      <stop offset="0" stopColor="#9aa7b4" />
-      <stop offset=".5" stopColor="#e5edf4" />
-      <stop offset="1" stopColor="#7b8793" />
-    </linearGradient>
-    <linearGradient id="pipeStroke" x1="0" x2="1"><stop offset="0" stopColor="#90a7ba"/><stop offset=".52" stopColor="#f3fbff"/><stop offset="1" stopColor="#8299ad"/></linearGradient>
-    <radialGradient id="hotspot" cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="rgba(255,75,100,.48)"/><stop offset=".7" stopColor="rgba(255,158,58,.16)"/><stop offset="1" stopColor="rgba(255,158,58,0)"/></radialGradient>
+    <linearGradient id="specimenDuctile" x1="0" x2="1"><stop offset="0" stopColor="#6f879f"/><stop offset=".48" stopColor="#eef7ff"/><stop offset="1" stopColor="#6d849a"/></linearGradient>
+    <linearGradient id="specimenBrittle" x1="0" x2="1"><stop offset="0" stopColor="#8b96a2"/><stop offset=".52" stopColor="#dfe8f2"/><stop offset="1" stopColor="#727b85"/></linearGradient>
+    <linearGradient id="pipeStroke" x1="0" x2="1"><stop offset="0" stopColor="#5d758e"/><stop offset=".5" stopColor="#e8f7ff"/><stop offset="1" stopColor="#607993"/></linearGradient>
+    <radialGradient id="hotspot" cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="rgba(255,75,100,.52)"/><stop offset=".72" stopColor="rgba(255,158,58,.18)"/><stop offset="1" stopColor="rgba(255,158,58,0)"/></radialGradient>
     <marker id="arrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 Z" fill="#55b8ff"/></marker>
     <marker id="arrowStart" markerWidth="12" markerHeight="10" refX="2" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M12,0 L0,5 L12,10 Z" fill="#55b8ff"/></marker>
     <marker id="arrowRed" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 Z" fill="#ff4b64"/></marker>
