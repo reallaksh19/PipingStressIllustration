@@ -9,7 +9,8 @@ import { LocalViewSvg } from './components/LocalViewSvg';
 import { StressStrainCurve } from './components/StressStrainCurve';
 import { SNCurve } from './components/SNCurve';
 import { Interpretation } from './components/Interpretation';
-import { PipeEffectPreview, StressComponentExplanation, StressComponentsSvg, StressEngineeringNote, StressTensorCard } from './components/StressComponentsSvg';
+import { StressComponentExplanation, StressComponentsSvg, StressEngineeringNote, StressTensorCard } from './components/StressComponentsSvg';
+import { PipeStressNote, PipeStressReadout, PipeStressSectionSvg, PipeStressSideSvg } from './components/PipeStressSvg';
 
 const initialState: LabState = {
   mode: 'static',
@@ -28,14 +29,18 @@ const initialState: LabState = {
   showSignConvention: true,
   showPairedShear: true,
   showTensor: true,
-  showPipeEffect: false,
+  pipeStressView: 'combined',
+  pipeHoop: 48,
+  pipeAxial: 32,
+  pipeBending: 46,
+  pipeTorsion: 38,
 };
 
 const presentationOverride = `
   .forceArrow { display: none !important; }
   marker[id^="tickArrow"] path { display: none !important; }
 
-  /* Stress-components labels: remove the failed callout boxes and keep direct SVG text labels. */
+  /* Stress-components labels: keep the generic 5A SVG as direct text only. */
   .stress-grid svg rect[fill="#071525"] { display: none !important; }
   .stress-grid svg rect[width="4"][rx="2"] { display: none !important; }
   .stress-grid svg text[fill="#eef7ff"] {
@@ -59,8 +64,22 @@ const presentationOverride = `
   .analysis-grid .panel:nth-child(2) .pb { min-height: 300px !important; display: flex; align-items: center; justify-content: center; }
   .analysis-grid .panel:nth-child(1) svg { min-height: 310px !important; }
   .analysis-grid .panel:nth-child(2) svg { max-height: 350px; }
+
+  .pipe-grid {
+    grid-template-columns: minmax(520px, 1fr) minmax(440px, 1fr) !important;
+    grid-template-areas: "side section" "map note" !important;
+    grid-auto-rows: minmax(315px, auto) !important;
+  }
+  .pipe-grid .panel:nth-child(1) { grid-area: side !important; grid-row: auto !important; grid-column: auto !important; min-height: 335px !important; }
+  .pipe-grid .panel:nth-child(2) { grid-area: section !important; grid-row: auto !important; grid-column: auto !important; min-height: 335px !important; }
+  .pipe-grid .panel:nth-child(3) { grid-area: map !important; grid-row: auto !important; grid-column: auto !important; }
+  .pipe-grid .panel:nth-child(4) { grid-area: note !important; grid-row: auto !important; grid-column: auto !important; }
+  .pipe-grid .panel:nth-child(1) .pb,
+  .pipe-grid .panel:nth-child(2) .pb { min-height: 315px !important; display: flex; align-items: center; justify-content: center; }
+
   @media (max-width: 860px) {
     .analysis-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "local" "curve" "interp" !important; }
+    .pipe-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "section" "map" "note" !important; }
   }
 `;
 
@@ -72,11 +91,16 @@ function App() {
       ? staticStatus(state)
       : state.mode === 'stress'
         ? { badge: 'Stress state only', color: COLORS.blue, title: 'Stress components', copy: 'Component definition before failure theory.' }
-        : { badge: 'Review mode', color: COLORS.cyan, title: 'Review', copy: 'Classify scenarios.' }, [state]);
+        : state.mode === 'pipe'
+          ? { badge: 'Pipe stress 5B', color: COLORS.cyan, title: 'Pipe stress components', copy: 'Pipe-specific cylindrical notation.' }
+          : { badge: 'Review mode', color: COLORS.cyan, title: 'Review', copy: 'Classify scenarios.' }, [state]);
 
   const update = (patch: Partial<LabState>) => setState(s => ({ ...s, ...patch }));
   const showNormalControls = state.stressView === 'normal' || state.stressView === 'combined';
   const showShearControls = state.stressView === 'shear' || state.stressView === 'combined';
+  const showPipePressureControls = state.pipeStressView === 'pressure' || state.pipeStressView === 'combined';
+  const showPipeBendingControls = state.pipeStressView === 'bending' || state.pipeStressView === 'combined';
+  const showPipeTorsionControls = state.pipeStressView === 'torsion' || state.pipeStressView === 'combined';
 
   return <div className="app">
     <style>{presentationOverride}</style>
@@ -86,13 +110,13 @@ function App() {
           <button className="tab active" type="button">Failure & Strength Lab</button>
         </div>
         <h1>Failure & Strength Lab</h1>
-        <p className="subtitle">Visual demonstration of stress demand, material response, stress components, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p>
+        <p className="subtitle">Visual demonstration of stress demand, material response, generic stress components, pipe stress components, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p>
       </div>
       <div className="pill" style={{ color: status.color }}>{status.badge}</div>
     </header>
 
     <nav className="tabs" aria-label="Lesson mode">
-      {(['static', 'fatigue', 'stress', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue Loading · metallic S–N' : mode === 'stress' ? 'Stress Components · σx σy τxy' : 'Quick Challenge'}</button>)}
+      {(['static', 'fatigue', 'stress', 'pipe', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue Loading · metallic S–N' : mode === 'stress' ? 'Stress Components · σx σy τxy' : mode === 'pipe' ? 'Pipe Stress · σθ σL τ' : 'Quick Challenge'}</button>)}
     </nav>
 
     <div className="content">
@@ -113,7 +137,7 @@ function App() {
           <ControlBlock title="Brittle concept only" tag="text"><p className="copy">Brittle materials are treated as flaw/fracture-toughness controlled: existing crack size, stress intensity range ΔK, environment, and KIC govern risk. This is concept-only here; no brittle S-N graphics.</p></ControlBlock>
         </>}
         {state.mode === 'stress' && <>
-          <ControlBlock title="Subtopic" tag="5A"><p className="copy">Stress components at a point. This tab defines σ and τ before pipe stress, Mohr circle, or failure theory.</p></ControlBlock>
+          <ControlBlock title="Subtopic" tag="5A"><p className="copy">Generic stress components at a point. This tab defines Cartesian σx, σy, and τxy before pipe stress, Mohr circle, or failure theory.</p></ControlBlock>
           <ControlBlock title="Component view" tag={state.stressView}><Segment active={state.stressView} options={['normal', 'shear', 'combined']} onPick={v => update({ stressView: v as any })}/></ControlBlock>
           {showNormalControls && <>
             <ControlBlock title="Normal stress σx" tag={`${state.sigmaX}%`}><Range value={state.sigmaX} min={0} max={100} onChange={v => update({ sigmaX: v })} left="low" mid="width cue" right="high" /></ControlBlock>
@@ -124,15 +148,25 @@ function App() {
             <label className="toggle"><input type="checkbox" checked={state.showSignConvention} onChange={e => update({ showSignConvention: e.target.checked })}/> Show sign convention</label>
             {showShearControls && <label className="toggle"><input type="checkbox" checked={state.showPairedShear} onChange={e => update({ showPairedShear: e.target.checked })}/> Show paired shear τxy / τyx</label>}
             <label className="toggle"><input type="checkbox" checked={state.showTensor} onChange={e => update({ showTensor: e.target.checked })}/> Show tensor matrix</label>
-            <label className="toggle"><input type="checkbox" checked={state.showPipeEffect} onChange={e => update({ showPipeEffect: e.target.checked })}/> Show pipe effect preview</label>
           </ControlBlock>
+        </>}
+        {state.mode === 'pipe' && <>
+          <ControlBlock title="Subtopic" tag="5B"><p className="copy">Pipe stress components use cylindrical notation. This tab is separate from generic σx/σy/τxy so hoop stress is not confused with Cartesian normal stress.</p></ControlBlock>
+          <ControlBlock title="Pipe component view" tag={state.pipeStressView}><Segment active={state.pipeStressView} options={['pressure', 'bending', 'torsion', 'combined']} onPick={v => update({ pipeStressView: v as any })}/></ControlBlock>
+          {showPipePressureControls && <>
+            <ControlBlock title="Hoop stress σθ" tag={`${state.pipeHoop}%`}><Range value={state.pipeHoop} min={0} max={100} onChange={v => update({ pipeHoop: v })} left="low" mid="pressure cue" right="rupture cue" /></ControlBlock>
+            <ControlBlock title="Axial membrane σL" tag={`${state.pipeAxial}%`}><Range value={state.pipeAxial} min={0} max={100} onChange={v => update({ pipeAxial: v })} left="low" mid="length cue" right="high" /></ControlBlock>
+          </>}
+          {showPipeBendingControls && <ControlBlock title="Bending effect M" tag={`${state.pipeBending}%`}><Range value={state.pipeBending} min={0} max={100} onChange={v => update({ pipeBending: v })} left="straight" mid="ovalisation" right="collapse cue" /></ControlBlock>}
+          {showPipeTorsionControls && <ControlBlock title="Torsional shear τt" tag={`${state.pipeTorsion}%`}><Range value={state.pipeTorsion} min={0} max={100} onChange={v => update({ pipeTorsion: v })} left="low" mid="shear bands" right="high" /></ControlBlock>}
+          <ControlBlock title="Notation rule" tag="separate"><p className="copy">Do not read σx or σy as hoop. In this tab: σθ is hoop, σL is axial/longitudinal, σr is radial concept text, and τt is torsion shear.</p></ControlBlock>
         </>}
       </aside>
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move the visible component sliders only: normal view resizes, shear view skews, combined view does both. Pipe preview is optional and concept-only.' : 'Review mode.'}</p></div>
-          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · stress state only' : 'σ = F/A · ε = σ/E'}</div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : state.mode === 'pipe' ? 'Pipe Stress Components' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move only the visible generic stress sliders: normal view resizes, shear view skews, combined view does both. Pipe stress has been moved to its own tab.' : state.mode === 'pipe' ? 'Use pipe-specific sliders for σθ hoop, σL axial membrane, bending ovalisation, and τt torsion shear. This is still concept-level, not a code check.' : 'Review mode.'}</p></div>
+          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · generic stress point' : state.mode === 'pipe' ? 'σθ · σL · M · τt · pipe notation' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
         {(state.mode === 'static' || state.mode === 'fatigue') && <section className="grid analysis-grid">
@@ -143,10 +177,17 @@ function App() {
         </section>}
 
         {state.mode === 'stress' && <section className="grid stress-grid">
-          <Panel title="Panel 1 · stress element" tag="resizes from visible sliders"><StressComponentsSvg state={state} status={status}/></Panel>
-          <Panel title={state.showPipeEffect ? 'Panel 2 · pipe effect preview' : 'Panel 2 · component meaning'} tag={state.showPipeEffect ? 'concept bridge' : state.stressView}>{state.showPipeEffect ? <PipeEffectPreview state={state}/> : <StressComponentExplanation state={state}/>}</Panel>
+          <Panel title="Panel 1 · stress element" tag="generic Cartesian"><StressComponentsSvg state={state} status={status}/></Panel>
+          <Panel title="Panel 2 · component meaning" tag={state.stressView}><StressComponentExplanation state={state}/></Panel>
           <Panel title="Panel 3 · tensor card" tag={state.showTensor ? 'visible' : 'hidden'}><StressTensorCard state={state}/></Panel>
           <Panel title="Panel 4 · engineering note" tag="not failure yet"><StressEngineeringNote state={state}/></Panel>
+        </section>}
+
+        {state.mode === 'pipe' && <section className="grid pipe-grid">
+          <Panel title="Panel 1 · pipe side view" tag={state.pipeStressView}><PipeStressSideSvg state={state}/></Panel>
+          <Panel title="Panel 2 · pipe cross-section" tag="σθ / ovalisation / rupture"><PipeStressSectionSvg state={state}/></Panel>
+          <Panel title="Panel 3 · component map" tag="pipe notation"><PipeStressReadout state={state}/></Panel>
+          <Panel title="Panel 4 · concept boundaries" tag="before failure theory"><PipeStressNote state={state}/></Panel>
         </section>}
 
         {state.mode === 'challenge' && <section className="challenge">
@@ -156,19 +197,21 @@ function App() {
             <div className="card correct"><strong>Ductile tension</strong><span>Elongation → yielding → necking at high demand.</span></div>
             <div className="card correct"><strong>Brittle tension</strong><span>Little deformation → crack opens, especially if a flaw exists.</span></div>
             <div className="card correct"><strong>Metal fatigue</strong><span>Repeated Δσ + cycles N can initiate and grow cracks at weld/notch hotspots.</span></div>
-            <div className="card correct"><strong>Stress components</strong><span>σx and σy are normal stresses; τxy is shear stress on a cut face.</span></div>
+            <div className="card correct"><strong>Generic stress components</strong><span>σx and σy are normal stresses; τxy is shear stress on a cut face.</span></div>
+            <div className="card correct"><strong>Pipe stress components</strong><span>σθ is hoop, σL is axial/longitudinal, σr is radial, and τt is torsional shear.</span></div>
             <div className="card wrong"><strong>Brittle S-N graphics</strong><span>Do not show as normal pipe fatigue here; keep as fracture-mechanics concept text.</span></div>
           </div>
           <div className="zone">
             <h3 className="result-title">Review buckets</h3>
             <div className="bucket"><b>Static strength response</b><br/><span className="copy">σ = F/A, ε = σ/E, Sy and Su belong here.</span></div>
-            <div className="bucket"><b>Stress components</b><br/><span className="copy">σx, σy, τxy, τyx describe the stress state at a point before failure theory.</span></div>
+            <div className="bucket"><b>Generic stress state</b><br/><span className="copy">σx, σy, τxy, τyx describe stress at a point before pipe-specific notation.</span></div>
+            <div className="bucket"><b>Pipe stress components</b><br/><span className="copy">Pressure → σθ and σL; bending → longitudinal tension/compression and ovalisation; torsion → τt.</span></div>
             <div className="bucket"><b>Metal fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here for ductile metallic piping.</span></div>
             <div className="bucket"><b>Brittle concept</b><br/><span className="copy">Brittle risk is flaw/fracture-toughness controlled: ΔK, crack size, environment, KIC.</span></div>
-            <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
+            <p className="fb">Challenge principle: choose the right coordinate system first. Generic σx/σy is not automatically pipe hoop/axial notation.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Pipe preview=${state.showPipeEffect ? 'on' : 'off'} and is concept-only.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: generic point stress view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Pipe stress has been moved to Tab 5B.` : state.mode === 'pipe' ? `Pipe stress 5B: view=${state.pipeStressView}, σθ=${state.pipeHoop}%, σL=${state.pipeAxial}%, bending=${state.pipeBending}%, τt=${state.pipeTorsion}%. Concept-level only; no failure-theory or code-check calculation.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
       </main>
     </div>
   </div>;
