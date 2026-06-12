@@ -30,12 +30,12 @@ function App() {
 
   return <div className="app">
     <header>
-      <div><h1>Failure & Strength Lab</h1><p className="subtitle">Visual demonstration of stress demand, material response, and failure interpretation. Static uses σ–ε; fatigue uses S–N.</p></div>
+      <div><h1>Failure & Strength Lab</h1><p className="subtitle">Visual demonstration of stress demand, material response, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p></div>
       <div className="pill" style={{ color: status.color }}>{status.badge}</div>
     </header>
 
     <nav className="tabs">
-      {(['static', 'fatigue', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue Loading · S–N' : 'Quick Challenge'}</button>)}
+      {(['static', 'fatigue', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue Loading · metallic S–N' : 'Quick Challenge'}</button>)}
     </nav>
 
     <div className="content">
@@ -48,23 +48,24 @@ function App() {
           {state.material === 'brittle' && state.staticDemand === 'tension' && <ControlBlock title="Flaw"><label className="toggle"><input type="checkbox" checked={state.flawEnabled} onChange={e => update({ flawEnabled: e.target.checked })}/> Show notch / crack flaw</label></ControlBlock>}
         </>}
         {state.mode === 'fatigue' && <>
-          <ControlBlock title="Material response" tag="fatigue"><Segment active={state.material} options={['ductile', 'brittle']} onPick={v => update({ material: v as any })}/></ControlBlock>
+          <ControlBlock title="Scope" tag="metallic"><p className="copy">Fatigue graphics and S-N slider are shown only for ductile metallic piping. No brittle-material fatigue slider or brittle graphics are used.</p></ControlBlock>
           <ControlBlock title="Stress range Δσ" tag={`${state.fatigueStressRange}%`}><Range value={state.fatigueStressRange} min={10} max={95} onChange={v => update({ fatigueStressRange: v })} left="low" right="high" /></ControlBlock>
           <ControlBlock title="Cycles N" tag={cycleLabel(state.fatigueCyclesSlider)}><Range value={state.fatigueCyclesSlider} min={0} max={100} onChange={v => update({ fatigueCyclesSlider: v })} left="10²" mid="log scale" right="10⁷" /></ControlBlock>
           <ControlBlock title="Hotspot"><label className="toggle"><input type="checkbox" checked={state.notchEnabled} onChange={e => update({ notchEnabled: e.target.checked })}/> Show weld/notch hotspot</label></ControlBlock>
+          <ControlBlock title="Brittle concept only" tag="text"><p className="copy">Brittle materials are treated as flaw/fracture-toughness controlled: existing crack size, stress intensity range ΔK, environment, and KIC govern risk. This is concept-only here; no brittle S-N graphics.</p></ControlBlock>
         </>}
       </aside>
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view, local/cross-section, and stress–strain curve update together.' : state.mode === 'fatigue' ? `S-N curve uses log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}.` : 'Review mode.'}</p></div>
-          <div className="chip">{state.mode === 'fatigue' ? 'Δσ + N · S-N curve' : 'σ = F/A · ε = σ/E'}</div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view, local/cross-section, and stress–strain curve update together.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}.` : 'Review mode.'}</p></div>
+          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
         {state.mode !== 'challenge' && <section className="grid">
-          <Panel title="Side view" tag={state.mode === 'static' ? state.staticDemand : 'cyclic Δσ'}><SideViewSvg state={state} status={status}/></Panel>
-          <Panel title="Local / cross-section" tag={state.mode === 'fatigue' ? 'hotspot' : state.staticDemand === 'tension' ? 'axial pull' : 'inward compression'}><LocalViewSvg state={state} status={status}/></Panel>
-          <Panel title={state.mode === 'fatigue' ? 'S-N curve' : 'Stress–strain curve'} tag={state.material}>{state.mode === 'fatigue' ? <SNCurve state={state} status={status}/> : <StressStrainCurve state={state} status={status}/>}</Panel>
+          <Panel title="Side view" tag={state.mode === 'static' ? state.staticDemand : 'ductile metal fatigue'}><SideViewSvg state={state} status={status}/></Panel>
+          <Panel title="Local / cross-section" tag={state.mode === 'fatigue' ? 'weld toe crack' : state.staticDemand === 'tension' ? 'axial pull' : 'inward compression'}><LocalViewSvg state={state} status={status}/></Panel>
+          <Panel title={state.mode === 'fatigue' ? 'S-N curve' : 'Stress–strain curve'} tag={state.mode === 'fatigue' ? 'ductile metal' : state.material}>{state.mode === 'fatigue' ? <SNCurve state={state} status={status}/> : <StressStrainCurve state={state} status={status}/>}</Panel>
           <Panel title="Failure interpretation" tag="conceptual"><Interpretation state={state} status={status}/></Panel>
         </section>}
 
@@ -74,18 +75,18 @@ function App() {
             <p className="copy">This is a fixed review mode. It does not inherit the static demand selection.</p>
             <div className="card correct"><strong>Ductile tension</strong><span>Elongation → yielding → necking at high demand.</span></div>
             <div className="card correct"><strong>Brittle tension</strong><span>Little deformation → crack opens, especially if a flaw exists.</span></div>
-            <div className="card correct"><strong>Fatigue</strong><span>Repeated Δσ + cycles N can initiate and grow cracks.</span></div>
-            <div className="card wrong"><strong>Static loading</strong><span>Should show σ–ε behavior, not an S-N curve.</span></div>
+            <div className="card correct"><strong>Metal fatigue</strong><span>Repeated Δσ + cycles N can initiate and grow cracks at weld/notch hotspots.</span></div>
+            <div className="card wrong"><strong>Brittle S-N graphics</strong><span>Do not show as normal pipe fatigue here; keep as fracture-mechanics concept text.</span></div>
           </div>
           <div className="zone">
             <h3 className="result-title">Review buckets</h3>
             <div className="bucket"><b>Static strength response</b><br/><span className="copy">σ = F/A, ε = σ/E, Sy and Su belong here.</span></div>
-            <div className="bucket"><b>Fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here.</span></div>
-            <div className="bucket"><b>Material behavior</b><br/><span className="copy">Ductile changes by yielding; brittle changes by crack/fracture sensitivity.</span></div>
+            <div className="bucket"><b>Metal fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here for ductile metallic piping.</span></div>
+            <div className="bucket"><b>Brittle concept</b><br/><span className="copy">Brittle risk is flaw/fracture-toughness controlled: ΔK, crack size, environment, KIC.</span></div>
             <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Fatigue: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. S-N uses log-cycle mapping.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; Su is maximum engineering stress before final rupture zone.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; Su is maximum engineering stress before final rupture zone.'}</div></section>
       </main>
     </div>
   </div>;
