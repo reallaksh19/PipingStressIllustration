@@ -20,22 +20,22 @@ export function SvgDefs() {
       <stop offset="0.58" stopColor="rgba(255,75,100,.16)"/>
       <stop offset="1" stopColor="rgba(255,75,100,0)"/>
     </radialGradient>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M0 0L10 5L0 10Z" fill="#55b8ff"/>
     </marker>
-    <marker id="arrowStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrowStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M10 0L0 5L10 10Z" fill="#55b8ff"/>
     </marker>
-    <marker id="arrowRed" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M0 0L10 5L0 10Z" fill="#ff4b64"/>
     </marker>
-    <marker id="arrowRedStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrowRedStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M10 0L0 5L10 10Z" fill="#ff4b64"/>
     </marker>
-    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M0 0L10 5L0 10Z" fill="#ff9e3a"/>
     </marker>
-    <marker id="arrowOrangeStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <marker id="arrowOrangeStart" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse">
       <path d="M10 0L0 5L10 10Z" fill="#ff9e3a"/>
     </marker>
   </defs>;
