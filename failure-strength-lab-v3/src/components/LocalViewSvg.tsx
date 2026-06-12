@@ -96,9 +96,8 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
   const allow = allowableStressRangePercent(logN);
   const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
   const cycleRatio = state.fatigueCyclesSlider / 100;
-  const materialFactor = state.material === 'brittle' ? 1.18 : 1.0;
   const notchFactor = state.notchEnabled ? 1.0 : 0.24;
-  const severity = clamp((0.50 * rangeRatio + 0.50 * cycleRatio) * notchFactor * materialFactor, 0, 1);
+  const severity = clamp((0.50 * rangeRatio + 0.50 * cycleRatio) * notchFactor, 0, 1);
   const crackDepth = state.notchEnabled ? 16 + severity * 116 : 0;
   const crackTipY = 95 + crackDepth;
   const crackTipX = 196 + severity * 36;
@@ -106,8 +105,8 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
   const point = rangeRatio > 1 ? 'above conceptual S-N boundary' : rangeRatio > 0.82 ? 'near conceptual S-N boundary' : 'below conceptual S-N boundary';
   const beachMarks = state.notchEnabled ? Array.from({ length: 5 }, (_, i) => 28 + i * 18 + severity * i * 5) : [];
 
-  return <LocalFrame label="Fatigue pipe-wall cross-section at weld toe / notch">
-    <text x="210" y="38" textAnchor="middle" className="muted">cross-section through pipe wall: OD weld toe → crack growth through thickness</text>
+  return <LocalFrame label="Ductile metallic fatigue pipe-wall cross-section at weld toe / notch">
+    <text x="210" y="38" textAnchor="middle" className="muted">ductile metallic fatigue section: OD weld toe → crack growth through thickness</text>
 
     <text x="72" y="80" className="muted">OD surface</text>
     <text x="72" y="260" className="muted">ID / bore side</text>
@@ -144,8 +143,8 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
       <circle cx="318" cy="0" r="5" fill="#ff4b64" /><text x="328" y="4" className="muted">final fracture</text>
     </g>
 
-    <text x="210" y="306" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `crack grows with Δσ and N: ${point}` : 'fatigue source reduced: no weld/notch hotspot selected'}</text>
-    <text x="210" y="322" textAnchor="middle" className="muted">not code design output — mechanism view: stress raiser → initiation → propagation</text>
+    <text x="210" y="306" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `ductile metal crack grows with Δσ and N: ${point}` : 'fatigue source reduced: no weld/notch hotspot selected'}</text>
+    <text x="210" y="322" textAnchor="middle" className="muted">brittle behavior stays concept-only: flaw size, ΔK, environment, KIC</text>
   </LocalFrame>;
 }
 
