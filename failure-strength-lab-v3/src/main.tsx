@@ -34,6 +34,18 @@ const initialState: LabState = {
 const presentationOverride = `
   .forceArrow { display: none !important; }
   marker[id^="tickArrow"] path { display: none !important; }
+
+  /* Stress-components labels: remove the failed callout boxes and keep direct SVG text labels. */
+  .stress-grid svg rect[fill="#071525"] { display: none !important; }
+  .stress-grid svg rect[width="4"][rx="2"] { display: none !important; }
+  .stress-grid svg text[fill="#eef7ff"] {
+    fill: var(--text) !important;
+    paint-order: normal !important;
+    font-size: 12px !important;
+    font-weight: 950 !important;
+    filter: drop-shadow(0 1px 5px rgba(0,0,0,.92));
+  }
+
   .analysis-grid {
     grid-template-columns: minmax(560px, 1.18fr) minmax(410px, .92fr) !important;
     grid-template-areas: "side curve" "local interp" !important;
