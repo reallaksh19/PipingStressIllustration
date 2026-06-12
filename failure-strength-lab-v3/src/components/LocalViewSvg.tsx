@@ -1,113 +1,184 @@
 import type { ReactNode } from 'react';
 import { LabState, Status } from '../model/types';
+import { allowableStressRangePercent, logCycles } from '../model/fatigueModel';
 
 type LocalProps = { state: LabState; status: Status };
+
+function clamp(n: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, n));
+}
 
 export function LocalViewSvg({ state, status }: LocalProps) {
   if (state.mode === 'fatigue') return <FatigueHotspotZoom state={state} status={status} />;
 
   const key = `${state.material}-${state.staticDemand}`;
-  if (key === 'ductile-tension') return <DuctileTensionLocal state={state} status={status} />;
-  if (key === 'ductile-compression') return <DuctileCompressionLocal state={state} status={status} />;
-  if (key === 'brittle-tension') return <BrittleTensionLocal state={state} status={status} />;
-  return <BrittleCompressionLocal state={state} status={status} />;
+  if (key === 'ductile-tension') return <PipeSectionDuctileTension state={state} status={status} />;
+  if (key === 'ductile-compression') return <PipeSectionDuctileCompression state={state} status={status} />;
+  if (key === 'brittle-tension') return <PipeSectionBrittleTension state={state} status={status} />;
+  return <PipeSectionBrittleCompression state={state} status={status} />;
 }
 
-function DuctileTensionLocal({ state, status }: LocalProps) {
+function PipeSectionDuctileTension({ state, status }: LocalProps) {
+  const p = state.staticLoad / 100;
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
-  return <LocalFrame label="Ductile tension local view">
-    <ForceArrow x1="122" y1="84" x2="42" y2="84" color="blue" start />
-    <ForceArrow x1="298" y1="84" x2="378" y2="84" color="blue" />
-    <path d={high ? 'M126 142 C158 116 262 116 294 142 L294 222 C262 248 158 248 126 222 Z' : 'M116 132 C155 122 265 122 304 132 L304 232 C265 242 155 242 116 232 Z'} className="localMetal ductile" />
-    <path d="M144 152H276 M144 202H276" className="grain" />
-    {med && <ellipse cx="210" cy="182" rx={high ? 62 : 48} ry={high ? 36 : 46} className="yield" />}
-    {high && <path d="M186 126 C196 154 196 210 186 238 M234 126 C224 154 224 210 234 238" className="neckLine" />}
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{high ? 'local necking after plastic strain' : med ? 'yielding spreads across section' : 'uniform tensile stress field'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">cross-section/local material response</text>
-  </LocalFrame>;
-}
-
-function DuctileCompressionLocal({ state, status }: LocalProps) {
-  const med = state.staticLoad >= 45;
-  const high = state.staticLoad >= 72;
-  return <LocalFrame label="Ductile compression local view">
-    <ForceArrow x1="36" y1="84" x2="132" y2="84" color="orange" />
-    <ForceArrow x1="384" y1="84" x2="288" y2="84" color="orange" start />
-    <path d={high ? 'M110 140 C144 111 276 111 310 140 L310 224 C276 253 144 253 110 224 Z' : 'M124 138 C160 126 260 126 296 138 L296 226 C260 238 160 238 124 226 Z'} className="localMetal ductile" />
-    {med && <>
-      <ellipse cx="210" cy="182" rx={high ? 92 : 70} ry={high ? 54 : 42} className="yield" />
-      <path d="M146 148 C184 168 236 196 274 216 M274 148 C236 168 184 196 146 216" className="wrinkle" />
-      <path d="M168 132 C154 164 154 200 168 232 M252 132 C266 164 266 200 252 232" className="wrinkle soft" />
+  return <LocalFrame label="Ductile tension pipe wall cross-section">
+    <text x="210" y="48" textAnchor="middle" className="muted">pipe wall cross-section · axial tensile demand through wall</text>
+    <PipeRing />
+    <StressTicks color="#55b8ff" mode="tension" />
+    <ForceArrow x1="126" y1="84" x2="50" y2="84" color="blue" start />
+    <ForceArrow x1="294" y1="84" x2="370" y2="84" color="blue" />
+    {med && <path d={annularArc(210, 182, 96, 52, -30, 210)} fill="rgba(255,158,58,.28)" stroke="#ff9e3a" strokeWidth="2" />}
+    {high && <>
+      <ellipse cx="210" cy="182" rx={82 + 10 * p} ry={88 - 10 * p} fill="none" stroke="rgba(255,158,58,.75)" strokeWidth="4" strokeDasharray="10 7" />
+      <path d="M134 154 C160 176 160 188 134 210 M286 154 C260 176 260 188 286 210" className="neckLine" />
     </>}
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{high ? 'local collapse / barreling zone' : med ? 'plastic squash and wrinkle lines' : 'inward compression arrows'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">compression failure may be yielding or instability</text>
+    <Legend y="277" color={status.color} text={high ? 'ductile wall yields and thins locally before rupture' : med ? 'yield band spreads in the pipe wall' : 'uniform axial tensile stress in pipe wall'} />
+    <text x="210" y="303" textAnchor="middle" className="muted">σ = F/A · axial stress acts through annular pipe-wall area</text>
   </LocalFrame>;
 }
 
-function BrittleTensionLocal({ state, status }: LocalProps) {
+function PipeSectionDuctileCompression({ state, status }: LocalProps) {
+  const med = state.staticLoad >= 45;
+  const high = state.staticLoad >= 72;
+  return <LocalFrame label="Ductile compression pipe wall cross-section">
+    <text x="210" y="48" textAnchor="middle" className="muted">pipe wall cross-section · axial compression response shown as local wall instability</text>
+    <g transform={high ? 'translate(210 182) scale(1.10 .84) translate(-210 -182)' : med ? 'translate(210 182) scale(1.06 .91) translate(-210 -182)' : undefined}>
+      <PipeRing />
+    </g>
+    <StressTicks color="#ff9e3a" mode="compression" />
+    <ForceArrow x1="48" y1="84" x2="126" y2="84" color="orange" />
+    <ForceArrow x1="372" y1="84" x2="294" y2="84" color="orange" start />
+    {med && <>
+      <ellipse cx="210" cy="182" rx={high ? 118 : 102} ry={high ? 62 : 76} className="yield" />
+      <path d="M132 142 C166 166 166 198 132 222 M210 110 C190 150 190 214 210 254 M288 142 C254 166 254 198 288 222" className="wrinkle" />
+    </>}
+    {high && <path d="M128 184 C164 126 256 240 296 180" className="collapseLine" />}
+    <Legend y="277" color={status.color} text={high ? 'ductile pipe wall shows ovalization / local collapse tendency' : med ? 'plastic squash and wrinkle lines in wall' : 'steady compressive demand through pipe wall'} />
+    <text x="210" y="303" textAnchor="middle" className="muted">compression may govern by yielding, ovalization, local buckling, or collapse</text>
+  </LocalFrame>;
+}
+
+function PipeSectionBrittleTension({ state, status }: LocalProps) {
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
   const showFlaw = state.flawEnabled || med;
-  return <LocalFrame label="Brittle tension local view">
-    <ForceArrow x1="122" y1="84" x2="42" y2="84" color="red" start />
-    <ForceArrow x1="298" y1="84" x2="378" y2="84" color="red" />
-    <path d="M112 134 H308 V230 H112 Z" className="localMetal brittle" />
+  return <LocalFrame label="Brittle tension pipe wall cross-section">
+    <text x="210" y="48" textAnchor="middle" className="muted">pipe wall cross-section · flaw opens normal to tensile stress</text>
+    <PipeRing brittle />
+    <StressTicks color="#ff4b64" mode="tension" />
+    <ForceArrow x1="126" y1="84" x2="50" y2="84" color="red" start />
+    <ForceArrow x1="294" y1="84" x2="370" y2="84" color="red" />
     {showFlaw && <>
-      <path d="M210 134 L198 164 L214 186 L202 230" className={high ? 'crack glow' : 'crack'} />
-      <path d="M210 134 L224 164 L208 186 L220 230" className={high ? 'crack glow faint' : 'crack faint'} />
-      <circle cx="210" cy="182" r={high ? 82 : 54} className="fractureFlash" />
+      <path d={high ? 'M210 88 L197 122 L216 154 L199 181 L218 214 L204 276' : 'M210 88 L202 122 L214 150 L204 182'} className={high ? 'crack glow' : 'crack'} />
+      <path d="M184 116 C200 132 218 132 236 116" fill="none" stroke="rgba(255,75,100,.48)" strokeWidth="4" />
+      <circle cx="210" cy="140" r={high ? 86 : 54} className="fractureFlash" />
     </>}
-    {!showFlaw && <path d="M210 134 V230" className="notchGhost" />}
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{high ? 'crack opens with little plastic strain' : showFlaw ? 'principal tensile stress opens flaw' : 'mostly elastic, flaw hidden'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">brittle tension is crack/flaw sensitive</text>
+    {!showFlaw && <path d="M210 88 L210 118" className="notchGhost" />}
+    <Legend y="277" color={status.color} text={high ? 'crack penetrates pipe wall with little plastic strain' : showFlaw ? 'principal tensile stress opens flaw/notch' : 'mostly elastic until a flaw becomes critical'} />
+    <text x="210" y="303" textAnchor="middle" className="muted">brittle tensile failure is flaw/crack sensitive, not a long yielding process</text>
   </LocalFrame>;
 }
 
-function BrittleCompressionLocal({ state, status }: LocalProps) {
+function PipeSectionBrittleCompression({ state, status }: LocalProps) {
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
-  return <LocalFrame label="Brittle compression local view">
-    <ForceArrow x1="36" y1="84" x2="132" y2="84" color="orange" />
-    <ForceArrow x1="384" y1="84" x2="288" y2="84" color="orange" start />
-    <rect x="112" y="136" width="196" height="92" rx="8" className="localMetal brittle" />
+  return <LocalFrame label="Brittle compression pipe wall cross-section">
+    <text x="210" y="48" textAnchor="middle" className="muted">pipe wall cross-section · crushing / diagonal splitting under compression</text>
+    <PipeRing brittle />
+    <StressTicks color="#ff9e3a" mode="compression" />
+    <ForceArrow x1="48" y1="84" x2="126" y2="84" color="orange" />
+    <ForceArrow x1="372" y1="84" x2="294" y2="84" color="orange" start />
     {med && <>
-      <ellipse cx="210" cy="182" rx={high ? 108 : 78} ry={high ? 58 : 42} className="crushHalo" />
-      <path d="M126 136 L212 228 M218 136 L300 228 M304 144 L226 228" className="crack" />
-      <path d="M148 228 L130 250 L166 240 M270 136 L302 112 L292 150" className="fragment" />
+      <ellipse cx="272" cy="182" rx={high ? 58 : 42} ry={high ? 84 : 62} className="crushHalo" />
+      <path d="M250 105 L286 258 M286 108 L246 252 M306 138 L270 270" className="crack" />
+      <path d="M286 116 L318 92 L310 132 M276 256 L302 284 L260 276" className="fragment" />
     </>}
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{high ? 'crush zone with diagonal split planes' : med ? 'splitting begins under compression' : 'compression without necking'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">correct local view: crushing/splitting, not tensile crack opening</text>
+    <Legend y="277" color={status.color} text={high ? 'crushed wall sector with diagonal split planes' : med ? 'splitting begins in compressed brittle wall' : 'compression response without tensile necking'} />
+    <text x="210" y="303" textAnchor="middle" className="muted">correct compression visual: crush/split/instability, not tensile crack opening</text>
   </LocalFrame>;
 }
 
 function FatigueHotspotZoom({ state, status }: LocalProps) {
-  const range = state.fatigueStressRange / 100;
-  const cycles = state.fatigueCyclesSlider / 100;
-  const materialFactor = state.material === 'brittle' ? 1.16 : 1.0;
-  const notchFactor = state.notchEnabled ? 1.25 : 0.65;
-  const severity = Math.min(1, (range * 0.58 + cycles * 0.42) * notchFactor * materialFactor);
-  const crack = state.notchEnabled ? 10 + severity * 68 : 0;
-  const halo = 34 + severity * 76;
+  const logN = logCycles(state.fatigueCyclesSlider);
+  const allow = allowableStressRangePercent(logN);
+  const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
+  const cycleRatio = state.fatigueCyclesSlider / 100;
+  const materialFactor = state.material === 'brittle' ? 1.18 : 1.0;
+  const notchFactor = state.notchEnabled ? 1.0 : 0.28;
+  const severity = clamp((0.48 * rangeRatio + 0.52 * cycleRatio) * notchFactor * materialFactor, 0, 1);
+  const crack = state.notchEnabled ? 8 + severity * 74 : 0;
+  const halo = 24 + severity * 88;
+  const point = rangeRatio > 1 ? 'above conceptual S-N boundary' : rangeRatio > 0.82 ? 'near conceptual S-N boundary' : 'below conceptual S-N boundary';
 
-  return <LocalFrame label="Fatigue hotspot zoom">
-    <text x="210" y="50" textAnchor="middle" className="muted">magnified weld toe / notch detail</text>
-    <path d="M82 214 C126 150 170 132 210 142 C250 132 294 150 338 214" className="pipeWall" />
-    <path d="M146 202 C166 162 190 154 210 162 C230 154 254 162 274 202" className="weldProfile" />
-    <path d="M210 160 V236" className="weldCentre" />
+  return <LocalFrame label="Fatigue hotspot zoom at weld toe / notch">
+    <text x="210" y="42" textAnchor="middle" className="muted">magnified pipe weld toe / notch · crack grows from local stress concentration</text>
+
+    <path d="M58 212 H360" stroke="rgba(216,231,242,.78)" strokeWidth="30" strokeLinecap="round" />
+    <path d="M58 212 H360" stroke="#06101d" strokeWidth="12" strokeLinecap="round" opacity=".82" strokeDasharray="14 12" />
+    <rect x="190" y="178" width="22" height="68" rx="8" className="weldBand" />
+    <path d="M192 180 C174 160 152 152 124 156 M210 180 C232 156 260 150 294 158" className="weldProfile" />
+
+    <path d="M204 180 C236 118 288 84 346 76" className="calloutLine" />
+    <circle cx="346" cy="76" r="58" className="magnifier" />
+    <path d="M302 88 H388" stroke="rgba(216,231,242,.78)" strokeWidth="18" strokeLinecap="round" />
+    <path d="M326 88 C337 59 364 58 374 88" className="weldToe" />
+    <path d="M341 87 l-10 16" stroke="#ffd75b" strokeWidth="4" strokeLinecap="round" />
+
     {state.notchEnabled && <>
-      <circle cx="210" cy="166" r={halo} className="hotspotHalo" />
-      <path d={`M210 166 C${198 - crack * 0.23} ${184 + crack * 0.08}, ${232 + crack * 0.16} ${202 + crack * 0.25}, ${202 - crack * 0.16} ${222 + crack * 0.32}`} className="crack glow" />
-      <circle cx="210" cy="166" r="7" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
+      <circle cx="341" cy="88" r={halo * 0.55} className="hotspotHalo" />
+      <path d={`M341 88 C${330 - crack * .12} ${102 + crack * .10}, ${360 + crack * .15} ${116 + crack * .22}, ${332 - crack * .10} ${134 + crack * .30}`} className="microCrack glow" />
+      <circle cx="341" cy="88" r="6" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
     </>}
     {!state.notchEnabled && <>
-      <circle cx="210" cy="166" r="28" className="hotspotHalo mutedHalo" />
-      <text x="210" y="248" textAnchor="middle" className="muted">hotspot disabled: no explicit notch/weld crack shown</text>
+      <circle cx="341" cy="88" r="22" className="hotspotHalo mutedHalo" />
+      <path d="M341 88 l-7 12" className="microCrackGhost" />
     </>}
-    <path d="M95 92 C138 72 174 72 210 92 C246 112 282 112 325 92" className="fatigueWave" />
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? 'crack length grows with Δσ and N' : 'stress range shown without explicit local flaw'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">fatigue = cyclic crack initiation/growth mechanism</text>
+
+    <path d="M66 112 C116 90 162 90 210 112 C258 134 304 134 354 112" className="fatigueWave" />
+    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `hotspot severity uses Δσ/allowable + cycles: ${point}` : 'hotspot hidden: only cyclic stress range is shown'}</text>
+    <text x="210" y="303" textAnchor="middle" className="muted">fatigue depends on Δσ, N, weld/notch detail and environment; not a brittle-only effect</text>
   </LocalFrame>;
+}
+
+function PipeRing({ brittle = false }: { brittle?: boolean }) {
+  return <g>
+    <path d="M210 182 m -100 0 a100 100 0 1 0 200 0 a100 100 0 1 0 -200 0 M210 182 m -54 0 a54 54 0 1 1 108 0 a54 54 0 1 1 -108 0" fill={brittle ? 'url(#localBrittle)' : 'url(#localDuctile)'} fillRule="evenodd" stroke="rgba(235,247,255,.78)" strokeWidth="3" />
+    <circle cx="210" cy="182" r="54" fill="rgba(6,16,29,.92)" stroke="rgba(190,220,255,.18)" strokeWidth="2" />
+    <circle cx="210" cy="182" r="100" fill="none" stroke="rgba(255,255,255,.20)" strokeWidth="2" />
+    <text x="210" y="187" textAnchor="middle" className="muted">bore</text>
+  </g>;
+}
+
+function StressTicks({ color, mode }: { color: string; mode: 'tension' | 'compression' }) {
+  const data = [
+    [210, 70, 210, 104], [210, 294, 210, 260], [98, 182, 132, 182], [322, 182, 288, 182],
+    [130, 102, 154, 126], [290, 102, 266, 126], [130, 262, 154, 238], [290, 262, 266, 238],
+  ];
+  return <g opacity=".88">
+    {data.map(([x1, y1, x2, y2], i) => {
+      const inward = mode === 'compression';
+      const a = inward ? [x1, y1, x2, y2] : [x2, y2, x1, y1];
+      return <path key={i} d={`M${a[0]} ${a[1]} L${a[2]} ${a[3]}`} stroke={color} strokeWidth="4" strokeLinecap="round" markerEnd={`url(#tickArrow${mode === 'compression' ? 'Orange' : color === '#ff4b64' ? 'Red' : 'Blue'})`} />;
+    })}
+  </g>;
+}
+
+function annularArc(cx: number, cy: number, ro: number, ri: number, a0: number, a1: number) {
+  const p = (r: number, a: number) => {
+    const rad = (a - 90) * Math.PI / 180;
+    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  };
+  const [x1, y1] = p(ro, a0);
+  const [x2, y2] = p(ro, a1);
+  const [x3, y3] = p(ri, a1);
+  const [x4, y4] = p(ri, a0);
+  const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return `M${x1} ${y1} A${ro} ${ro} 0 ${large} 1 ${x2} ${y2} L${x3} ${y3} A${ri} ${ri} 0 ${large} 0 ${x4} ${y4} Z`;
+}
+
+function Legend({ y, color, text }: { y: string; color: string; text: string }) {
+  return <text x="210" y={y} textAnchor="middle" className="caseLabel" fill={color}>{text}</text>;
 }
 
 function LocalFrame({ children, label }: { children: ReactNode; label: string }) {
@@ -127,14 +198,17 @@ function ForceArrow({ x1, y1, x2, y2, color, start }: { x1: string; y1: string; 
 
 function Defs() {
   return <defs>
-    <linearGradient id="localDuctile" x1="0" x2="1"><stop offset="0" stopColor="#7e95a8"/><stop offset=".5" stopColor="#eef7ff"/><stop offset="1" stopColor="#758ba0"/></linearGradient>
+    <linearGradient id="localDuctile" x1="0" x2="1"><stop offset="0" stopColor="#728ba2"/><stop offset=".5" stopColor="#eef7ff"/><stop offset="1" stopColor="#6d8399"/></linearGradient>
     <linearGradient id="localBrittle" x1="0" x2="1"><stop offset="0" stopColor="#8d98a4"/><stop offset=".5" stopColor="#dce7f2"/><stop offset="1" stopColor="#777f8a"/></linearGradient>
-    <radialGradient id="hotspot" cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="rgba(255,75,100,.48)"/><stop offset=".72" stopColor="rgba(255,158,58,.16)"/><stop offset="1" stopColor="rgba(255,158,58,0)"/></radialGradient>
+    <radialGradient id="hotspot" cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="rgba(255,75,100,.52)"/><stop offset=".72" stopColor="rgba(255,158,58,.18)"/><stop offset="1" stopColor="rgba(255,158,58,0)"/></radialGradient>
     <marker id="arrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 Z" fill="#55b8ff"/></marker>
     <marker id="arrowStart" markerWidth="12" markerHeight="10" refX="2" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M12,0 L0,5 L12,10 Z" fill="#55b8ff"/></marker>
     <marker id="arrowRed" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 Z" fill="#ff4b64"/></marker>
     <marker id="arrowRedStart" markerWidth="12" markerHeight="10" refX="2" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M12,0 L0,5 L12,10 Z" fill="#ff4b64"/></marker>
     <marker id="arrowOrange" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 Z" fill="#ff9e3a"/></marker>
     <marker id="arrowOrangeStart" markerWidth="12" markerHeight="10" refX="2" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M12,0 L0,5 L12,10 Z" fill="#ff9e3a"/></marker>
+    <marker id="tickArrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#55b8ff"/></marker>
+    <marker id="tickArrowRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff4b64"/></marker>
+    <marker id="tickArrowOrange" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff9e3a"/></marker>
   </defs>;
 }
