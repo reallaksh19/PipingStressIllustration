@@ -1,7 +1,8 @@
-export type Mode = 'static' | 'fatigue' | 'stress' | 'challenge';
+export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe' | 'challenge';
 export type Material = 'ductile' | 'brittle';
 export type StaticDemand = 'tension' | 'compression';
 export type StressComponentView = 'normal' | 'shear' | 'combined';
+export type PipeStressView = 'pressure' | 'bending' | 'torsion' | 'combined';
 
 export type LabState = {
   mode: Mode;
@@ -20,7 +21,11 @@ export type LabState = {
   showSignConvention: boolean;
   showPairedShear: boolean;
   showTensor: boolean;
-  showPipeEffect: boolean;
+  pipeStressView: PipeStressView;
+  pipeHoop: number;
+  pipeAxial: number;
+  pipeBending: number;
+  pipeTorsion: number;
 };
 
 export type Status = {
