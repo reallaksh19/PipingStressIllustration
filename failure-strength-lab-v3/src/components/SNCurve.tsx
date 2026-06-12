@@ -1,7 +1,7 @@
 import { LabState, Status } from '../model/types';
 import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
 
-function clamp(n: number, min: number, max: number) {
+function clamp(n: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
 }
 
@@ -13,8 +13,8 @@ export function SNCurve({ state, status }: { state: LabState; status: Status }) 
   const logN = logCycles(state.fatigueCyclesSlider);
   const stressRange = state.fatigueStressRange;
   const x = x0 + ((logN - 2) / 5) * w;
-  const y = y0 - (stressRange / 100) * h;
-  const allow = clamp(allowableStressRangePercent(logN), 12, 96);
+  const y = y0 - clamp(stressRange, 0, 100) / 100 * h;
+  const allow = clamp(allowableStressRangePercent(logN), 12, 92);
   const yAllow = y0 - (allow / 100) * h;
   const ratio = stressRange / Math.max(allow, 1);
   const pointLabel = ratio > 1 ? 'above boundary' : ratio > 0.82 ? 'near boundary' : 'below boundary';
@@ -57,12 +57,13 @@ export function SNCurve({ state, status }: { state: LabState; status: Status }) 
     <circle cx={x} cy={yAllow} r="5" fill="#52f0df" stroke="#06101d" strokeWidth="2"/>
     <path d={`M${x - 20} ${yAllow}H${x + 20}`} stroke="rgba(82,240,223,.46)" strokeWidth="2"/>
     <path d={`M${x} ${yAllow - 20}V${yAllow + 20}`} stroke="rgba(82,240,223,.46)" strokeWidth="2"/>
-    <text x={Math.min(x + 13, 345)} y={Math.max(yAllow - 12, 30)} className="muted">boundary at this N</text>
+    <text x={Math.min(x + 13, 345)} y={Math.max(yAllow - 14, 30)} className="muted">boundary at this N</text>
 
     <circle className="point" cx={x} cy={y} r="9" fill={status.color}/>
     <circle cx={x} cy={y} r="16" fill="none" stroke={status.color} strokeOpacity=".45" strokeWidth="3"/>
-    <text x={Math.min(x + 13, 372)} y={Math.max(y - 16, 30)} className="label">current</text>
-    <text x={Math.min(x + 13, 336)} y={Math.min(y + 24, 230)} className="muted">{pointLabel}</text>
+    {/* keep labels away from each other and away from the boundary label */}
+    <text x={Math.min(x + 13, 372)} y={Math.max(y - 18, 30)} className="label">current</text>
+    <text x={Math.min(x + 13, 336)} y={Math.min(Math.max(y + 22, yAllow + 30), 228)} className="muted">{pointLabel}</text>
 
     <text x="235" y="276" textAnchor="middle" className="muted">
       current: Δσ {stressRange}% at N ≈ {cycleLabel(state.fatigueCyclesSlider)}; boundary ≈ {allow.toFixed(0)}%
