@@ -25,14 +25,12 @@ const initialState: LabState = {
 function App() {
   const [state, setState] = useState<LabState>(initialState);
   const status = useMemo(() => state.mode === 'fatigue' ? fatigueStatus(state) : state.mode === 'static' ? staticStatus(state) : { badge: 'Review mode', color: COLORS.cyan, title: 'Review', copy: 'Classify scenarios.' }, [state]);
+
   const update = (patch: Partial<LabState>) => setState(s => ({ ...s, ...patch }));
 
   return <div className="app">
     <header>
-      <div>
-        <h1>Failure & Strength Lab v3</h1>
-        <p className="subtitle">React/Vite source. Static uses σ–ε; fatigue uses a log-scale S-N curve.</p>
-      </div>
+      <div><h1>Failure & Strength Lab</h1><p className="subtitle">Visual demonstration of stress demand, material response, and failure interpretation. Static uses σ–ε; fatigue uses S–N.</p></div>
       <div className="pill" style={{ color: status.color }}>{status.badge}</div>
     </header>
 
@@ -70,7 +68,23 @@ function App() {
           <Panel title="Failure interpretation" tag="conceptual"><Interpretation state={state} status={status}/></Panel>
         </section>}
 
-        {state.mode === 'challenge' && <section className="challenge"><p>Challenge cards can be added here.</p></section>}
+        {state.mode === 'challenge' && <section className="challenge">
+          <div className="zone">
+            <h3 className="result-title">Drag the idea to the correct bucket</h3>
+            <p className="copy">This is a fixed review mode. It does not inherit the static demand selection.</p>
+            <div className="card correct"><strong>Ductile tension</strong><span>Elongation → yielding → necking at high demand.</span></div>
+            <div className="card correct"><strong>Brittle tension</strong><span>Little deformation → crack opens, especially if a flaw exists.</span></div>
+            <div className="card correct"><strong>Fatigue</strong><span>Repeated Δσ + cycles N can initiate and grow cracks.</span></div>
+            <div className="card wrong"><strong>Static loading</strong><span>Should show σ–ε behavior, not an S-N curve.</span></div>
+          </div>
+          <div className="zone">
+            <h3 className="result-title">Review buckets</h3>
+            <div className="bucket"><b>Static strength response</b><br/><span className="copy">σ = F/A, ε = σ/E, Sy and Su belong here.</span></div>
+            <div className="bucket"><b>Fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here.</span></div>
+            <div className="bucket"><b>Material behavior</b><br/><span className="copy">Ductile changes by yielding; brittle changes by crack/fracture sensitivity.</span></div>
+            <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
+          </div>
+        </section>}
         <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Fatigue: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. S-N uses log-cycle mapping.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; Su is maximum engineering stress before final rupture zone.'}</div></section>
       </main>
     </div>
