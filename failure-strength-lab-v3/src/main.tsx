@@ -62,6 +62,8 @@ function App() {
         : { badge: 'Review mode', color: COLORS.cyan, title: 'Review', copy: 'Classify scenarios.' }, [state]);
 
   const update = (patch: Partial<LabState>) => setState(s => ({ ...s, ...patch }));
+  const showNormalControls = state.stressView === 'normal' || state.stressView === 'combined';
+  const showShearControls = state.stressView === 'shear' || state.stressView === 'combined';
 
   return <div className="app">
     <style>{presentationOverride}</style>
@@ -100,12 +102,14 @@ function App() {
         {state.mode === 'stress' && <>
           <ControlBlock title="Subtopic" tag="5A"><p className="copy">Stress components at a point. This tab defines σ and τ before pipe stress, Mohr circle, or failure theory.</p></ControlBlock>
           <ControlBlock title="Component view" tag={state.stressView}><Segment active={state.stressView} options={['normal', 'shear', 'combined']} onPick={v => update({ stressView: v as any })}/></ControlBlock>
-          <ControlBlock title="Normal stress σx" tag={`${state.sigmaX}%`}><Range value={state.sigmaX} min={0} max={100} onChange={v => update({ sigmaX: v })} left="low" mid="width cue" right="high" /></ControlBlock>
-          <ControlBlock title="Normal stress σy" tag={`${state.sigmaY}%`}><Range value={state.sigmaY} min={0} max={100} onChange={v => update({ sigmaY: v })} left="low" mid="height cue" right="high" /></ControlBlock>
-          <ControlBlock title="Shear stress τxy" tag={`${state.tauXY}%`}><Range value={state.tauXY} min={0} max={100} onChange={v => update({ tauXY: v })} left="low" mid="skew cue" right="high" /></ControlBlock>
+          {showNormalControls && <>
+            <ControlBlock title="Normal stress σx" tag={`${state.sigmaX}%`}><Range value={state.sigmaX} min={0} max={100} onChange={v => update({ sigmaX: v })} left="low" mid="width cue" right="high" /></ControlBlock>
+            <ControlBlock title="Normal stress σy" tag={`${state.sigmaY}%`}><Range value={state.sigmaY} min={0} max={100} onChange={v => update({ sigmaY: v })} left="low" mid="height cue" right="high" /></ControlBlock>
+          </>}
+          {showShearControls && <ControlBlock title="Shear stress τxy" tag={`${state.tauXY}%`}><Range value={state.tauXY} min={0} max={100} onChange={v => update({ tauXY: v })} left="low" mid="skew cue" right="high" /></ControlBlock>}
           <ControlBlock title="Display options">
             <label className="toggle"><input type="checkbox" checked={state.showSignConvention} onChange={e => update({ showSignConvention: e.target.checked })}/> Show sign convention</label>
-            <label className="toggle"><input type="checkbox" checked={state.showPairedShear} onChange={e => update({ showPairedShear: e.target.checked })}/> Show paired shear τxy / τyx</label>
+            {showShearControls && <label className="toggle"><input type="checkbox" checked={state.showPairedShear} onChange={e => update({ showPairedShear: e.target.checked })}/> Show paired shear τxy / τyx</label>}
             <label className="toggle"><input type="checkbox" checked={state.showTensor} onChange={e => update({ showTensor: e.target.checked })}/> Show tensor matrix</label>
           </ControlBlock>
         </>}
@@ -113,7 +117,7 @@ function App() {
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move σx, σy, and τxy to resize or skew the small element. The deformation is exaggerated for teaching.' : 'Review mode.'}</p></div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move the visible component sliders only: normal view resizes, shear view skews, combined view does both. Shape response is exaggerated for teaching.' : 'Review mode.'}</p></div>
           <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · stress state only' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
@@ -125,7 +129,7 @@ function App() {
         </section>}
 
         {state.mode === 'stress' && <section className="grid stress-grid">
-          <Panel title="Panel 1 · stress element" tag="resizes from sliders"><StressComponentsSvg state={state} status={status}/></Panel>
+          <Panel title="Panel 1 · stress element" tag="resizes from visible sliders"><StressComponentsSvg state={state} status={status}/></Panel>
           <Panel title="Panel 2 · component meaning" tag={state.stressView}><StressComponentExplanation state={state}/></Panel>
           <Panel title="Panel 3 · tensor card" tag={state.showTensor ? 'visible' : 'hidden'}><StressTensorCard state={state}/></Panel>
           <Panel title="Panel 4 · engineering note" tag="not failure yet"><StressEngineeringNote state={state}/></Panel>
@@ -150,7 +154,7 @@ function App() {
             <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Shape resize/skew is conceptual and exaggerated, not real strain or failure.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Only the relevant sliders are shown for the selected component view.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
       </main>
     </div>
   </div>;
