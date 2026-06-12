@@ -97,39 +97,55 @@ function FatigueHotspotZoom({ state, status }: LocalProps) {
   const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
   const cycleRatio = state.fatigueCyclesSlider / 100;
   const materialFactor = state.material === 'brittle' ? 1.18 : 1.0;
-  const notchFactor = state.notchEnabled ? 1.0 : 0.28;
-  const severity = clamp((0.48 * rangeRatio + 0.52 * cycleRatio) * notchFactor * materialFactor, 0, 1);
-  const crack = state.notchEnabled ? 8 + severity * 74 : 0;
-  const halo = 24 + severity * 88;
+  const notchFactor = state.notchEnabled ? 1.0 : 0.24;
+  const severity = clamp((0.50 * rangeRatio + 0.50 * cycleRatio) * notchFactor * materialFactor, 0, 1);
+  const crackDepth = state.notchEnabled ? 16 + severity * 116 : 0;
+  const crackTipY = 95 + crackDepth;
+  const crackTipX = 196 + severity * 36;
+  const halo = 24 + severity * 66;
   const point = rangeRatio > 1 ? 'above conceptual S-N boundary' : rangeRatio > 0.82 ? 'near conceptual S-N boundary' : 'below conceptual S-N boundary';
+  const beachMarks = state.notchEnabled ? Array.from({ length: 5 }, (_, i) => 28 + i * 18 + severity * i * 5) : [];
 
-  return <LocalFrame label="Fatigue hotspot zoom at weld toe / notch">
-    <text x="210" y="42" textAnchor="middle" className="muted">magnified pipe weld toe / notch · crack grows from local stress concentration</text>
+  return <LocalFrame label="Fatigue pipe-wall cross-section at weld toe / notch">
+    <text x="210" y="38" textAnchor="middle" className="muted">cross-section through pipe wall: OD weld toe → crack growth through thickness</text>
 
-    <path d="M58 212 H360" stroke="rgba(216,231,242,.78)" strokeWidth="30" strokeLinecap="round" />
-    <path d="M58 212 H360" stroke="#06101d" strokeWidth="12" strokeLinecap="round" opacity=".82" strokeDasharray="14 12" />
-    <rect x="190" y="178" width="22" height="68" rx="8" className="weldBand" />
-    <path d="M192 180 C174 160 152 152 124 156 M210 180 C232 156 260 150 294 158" className="weldProfile" />
+    <text x="72" y="80" className="muted">OD surface</text>
+    <text x="72" y="260" className="muted">ID / bore side</text>
+    <path d="M96 96 H328" stroke="rgba(216,231,242,.78)" strokeWidth="8" strokeLinecap="round" />
+    <path d="M96 250 H328" stroke="rgba(6,16,29,.90)" strokeWidth="16" strokeLinecap="round" />
+    <rect x="108" y="96" width="208" height="154" rx="18" fill="url(#localDuctile)" stroke="rgba(235,247,255,.72)" strokeWidth="3" />
+    <path d="M108 250 H316" stroke="rgba(6,16,29,.86)" strokeWidth="18" strokeLinecap="round" />
 
-    <path d="M204 180 C236 118 288 84 346 76" className="calloutLine" />
-    <circle cx="346" cy="76" r="58" className="magnifier" />
-    <path d="M302 88 H388" stroke="rgba(216,231,242,.78)" strokeWidth="18" strokeLinecap="round" />
-    <path d="M326 88 C337 59 364 58 374 88" className="weldToe" />
-    <path d="M341 87 l-10 16" stroke="#ffd75b" strokeWidth="4" strokeLinecap="round" />
+    <path d="M158 96 C166 56 196 55 206 96 C216 55 248 56 258 96" className="weldToe" />
+    <rect x="194" y="74" width="19" height="42" rx="7" className="weldBand" />
+    <path d="M197 96 l-12 18" stroke="#ffd75b" strokeWidth="5" strokeLinecap="round" />
+    <text x="266" y="76" className="muted">weld toe / notch root</text>
+
+    <path d="M128 130 H292 M128 166 H292 M128 202 H292 M128 238 H292" stroke="rgba(6,16,29,.18)" strokeWidth="2" strokeDasharray="8 9" />
+    <path d="M119 112 C152 122 178 125 200 112 C224 126 256 126 292 112" fill="none" stroke="rgba(255,215,91,.35)" strokeWidth="3" strokeDasharray="8 8" />
+    <circle cx="197" cy="98" r={state.notchEnabled ? halo : 24} className={state.notchEnabled ? 'hotspotHalo' : 'hotspotHalo mutedHalo'} />
 
     {state.notchEnabled && <>
-      <circle cx="341" cy="88" r={halo * 0.55} className="hotspotHalo" />
-      <path d={`M341 88 C${330 - crack * .12} ${102 + crack * .10}, ${360 + crack * .15} ${116 + crack * .22}, ${332 - crack * .10} ${134 + crack * .30}`} className="microCrack glow" />
-      <circle cx="341" cy="88" r="6" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
+      <path d={`M197 98 C${180 + severity * 8} ${126 + severity * 8}, ${222 + severity * 18} ${156 + severity * 18}, ${crackTipX} ${crackTipY}`} className="microCrack glow" />
+      {beachMarks.map((r, i) => <path key={i} d={`M${197 - r * .38} ${100 + r * .64} C${196 + r * .05} ${114 + r * .58}, ${208 + r * .44} ${126 + r * .66}, ${198 + r * .30} ${142 + r * .82}`} fill="none" stroke="rgba(255,215,91,.42)" strokeWidth="2" strokeDasharray="5 6" />)}
+      <circle cx={crackTipX} cy={crackTipY} r="6" fill="#ff4b64" stroke="#06101d" strokeWidth="3" />
+      <path d={`M${crackTipX + 14} ${crackTipY} H304`} stroke="rgba(255,75,100,.55)" strokeWidth="3" strokeDasharray="7 7" />
+      <text x="306" y={Math.min(238, crackTipY + 4)} className="muted">crack front</text>
     </>}
     {!state.notchEnabled && <>
-      <circle cx="341" cy="88" r="22" className="hotspotHalo mutedHalo" />
-      <path d="M341 88 l-7 12" className="microCrackGhost" />
+      <path d="M197 98 l-9 14" className="microCrackGhost" />
+      <text x="210" y="156" textAnchor="middle" className="muted">smooth detail: no visible crack in this teaching view</text>
     </>}
 
-    <path d="M66 112 C116 90 162 90 210 112 C258 134 304 134 354 112" className="fatigueWave" />
-    <text x="210" y="278" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `hotspot severity uses Δσ/allowable + cycles: ${point}` : 'hotspot hidden: only cyclic stress range is shown'}</text>
-    <text x="210" y="303" textAnchor="middle" className="muted">fatigue depends on Δσ, N, weld/notch detail and environment; not a brittle-only effect</text>
+    <g transform="translate(58 285)">
+      <circle cx="0" cy="0" r="5" fill="#52f0df" /><text x="10" y="4" className="muted">initiation</text>
+      <circle cx="92" cy="0" r="5" fill="#ffd75b" /><text x="102" y="4" className="muted">stable growth</text>
+      <circle cx="212" cy="0" r="5" fill="#ffd75b" /><text x="222" y="4" className="muted">beach marks</text>
+      <circle cx="318" cy="0" r="5" fill="#ff4b64" /><text x="328" y="4" className="muted">final fracture</text>
+    </g>
+
+    <text x="210" y="306" textAnchor="middle" className="caseLabel" fill={status.color}>{state.notchEnabled ? `crack grows with Δσ and N: ${point}` : 'fatigue source reduced: no weld/notch hotspot selected'}</text>
+    <text x="210" y="322" textAnchor="middle" className="muted">not code design output — mechanism view: stress raiser → initiation → propagation</text>
   </LocalFrame>;
 }
 
