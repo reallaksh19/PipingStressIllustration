@@ -2,6 +2,7 @@ import { COLORS, LabState, Status } from '../model/types';
 import { SvgDefs } from './SvgDefs';
 
 type StressPanelProps = { state: LabState; status: Status };
+type Point = { x: number; y: number };
 
 function intensity(value: number) {
   if (value < 34) return 'low';
@@ -13,11 +14,21 @@ function pct(value: number) {
   return `${Math.round(value)}%`;
 }
 
+function mid(a: Point, b: Point): Point { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+
+function LabelBox({ x, y, w, text, fill, anchor = 'middle' }: { x: number; y: number; w: number; text: string; fill: string; anchor?: 'start' | 'middle' }) {
+  const tx = anchor === 'start' ? x + 10 : x + w / 2;
+  return <g>
+    <rect x={x} y={y} width={w} height="25" rx="9" fill="rgba(6,16,29,.76)" stroke="rgba(216,237,255,.22)" />
+    <text x={tx} y={y + 17} textAnchor={anchor} className="stressLabel" fill={fill}>{text}</text>
+  </g>;
+}
+
 export function StressComponentsSvg({ state, status }: StressPanelProps) {
   const showNormal = state.stressView === 'normal' || state.stressView === 'combined';
   const showShear = state.stressView === 'shear' || state.stressView === 'combined';
   const cx = 230;
-  const cy = 154;
+  const cy = 160;
   const width = showNormal ? 112 + state.sigmaX * 0.72 : 122;
   const height = showNormal ? 92 + state.sigmaY * 0.62 : 106;
   const skew = showShear ? state.tauXY * 0.38 : 0;
@@ -32,14 +43,19 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
   const p3 = { x: right + bottomShift, y: bottom };
   const p4 = { x: left + bottomShift, y: bottom };
   const points = `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`;
+  const cue = state.stressView === 'normal'
+    ? `σx width cue ${pct(state.sigmaX)} · σy height cue ${pct(state.sigmaY)}`
+    : state.stressView === 'shear'
+      ? `τxy skew cue ${pct(state.tauXY)}`
+      : `σx ${pct(state.sigmaX)} · σy ${pct(state.sigmaY)} · τxy ${pct(state.tauXY)}`;
 
-  return <svg viewBox="0 0 460 320" role="img" aria-label="Stress components at a point with conceptual exaggerated shape response">
+  return <svg viewBox="0 0 460 340" role="img" aria-label="Stress components at a point with conceptual exaggerated shape response">
     <SvgDefs />
-    <rect x="14" y="18" width="432" height="274" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
-    <path d="M55 72H405 M55 236H405 M115 44V264 M230 44V264 M345 44V264" stroke="rgba(216,237,255,.07)" />
+    <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
+    <path d="M55 78H405 M55 240H405 M115 48V270 M230 48V270 M345 48V270" stroke="rgba(216,237,255,.07)" />
 
-    <rect x="161" y="101" width="138" height="106" rx="10" fill="none" stroke="rgba(216,237,255,.18)" strokeDasharray="7 7" />
-    <text x="230" y="88" textAnchor="middle" className="muted">undeformed reference element</text>
+    <rect x="161" y="107" width="138" height="106" rx="10" fill="none" stroke="rgba(216,237,255,.18)" strokeDasharray="7 7" />
+    <text x="230" y="100" textAnchor="middle" className="muted">undeformed reference</text>
 
     <polygon points={points} fill="rgba(85,184,255,.16)" stroke="rgba(220,245,255,.92)" strokeWidth="4" filter="drop-shadow(0 16px 22px rgba(0,0,0,.35))" />
     <polygon points={points} fill="none" stroke="rgba(82,240,223,.34)" strokeWidth="10" opacity=".35" />
@@ -49,38 +65,38 @@ export function StressComponentsSvg({ state, status }: StressPanelProps) {
     {showNormal && <NormalStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
     {showShear && <ShearStressTicks state={state} p1={p1} p2={p2} p3={p3} p4={p4} />}
 
-    <text x="230" y="34" textAnchor="middle" className="label" fill={status.color}>Stress components at a point</text>
-    <text x="230" y="278" textAnchor="middle" className="label">conceptual exaggerated shape response</text>
-    <text x="230" y="300" textAnchor="middle" className="muted">σx changes width · σy changes height · τxy skews the element</text>
+    <text x="230" y="35" textAnchor="middle" className="label" fill={status.color}>Stress components at a point</text>
+    <LabelBox x="122" y="287" w="216" text={cue} fill="#d8edff" />
+    <text x="230" y="328" textAnchor="middle" className="muted">shape is exaggerated for teaching; it is not a strain or failure calculation</text>
   </svg>;
 }
 
 function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Point; p2: Point; p3: Point; p4: Point }) {
   const xStroke = state.sigmaX >= 67 ? COLORS.orange : COLORS.blue;
   const yStroke = state.sigmaY >= 67 ? COLORS.orange : COLORS.blue;
-  const sxLabel = `σx ${pct(state.sigmaX)} (${intensity(state.sigmaX)})`;
-  const syLabel = `σy ${pct(state.sigmaY)} (${intensity(state.sigmaY)})`;
+  const sxLabel = `σx ${pct(state.sigmaX)}`;
+  const syLabel = `σy ${pct(state.sigmaY)}`;
   const leftMid = mid(p1, p4);
   const rightMid = mid(p2, p3);
   const topMid = mid(p1, p2);
   const bottomMid = mid(p4, p3);
 
   return <g>
-    <path d={`M${leftMid.x - 13} ${leftMid.y - 25} L${leftMid.x - 13} ${leftMid.y + 25} M${rightMid.x + 13} ${rightMid.y - 25} L${rightMid.x + 13} ${rightMid.y + 25}`} stroke={xStroke} strokeWidth="2.6" strokeLinecap="round" />
-    <path d={`M${leftMid.x - 36} ${leftMid.y} L${leftMid.x - 21} ${leftMid.y} M${rightMid.x + 21} ${rightMid.y} L${rightMid.x + 36} ${rightMid.y}`} stroke={xStroke} strokeWidth="2.6" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <text x="70" y="154" textAnchor="middle" className="stressLabel" fill={xStroke}>{sxLabel}</text>
-    <text x="390" y="154" textAnchor="middle" className="stressLabel" fill={xStroke}>normal to x-face</text>
+    <path d={`M${leftMid.x - 10} ${leftMid.y - 21} L${leftMid.x - 10} ${leftMid.y + 21} M${rightMid.x + 10} ${rightMid.y - 21} L${rightMid.x + 10} ${rightMid.y + 21}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" />
+    <path d={`M${leftMid.x - 34} ${leftMid.y} L${leftMid.x - 18} ${leftMid.y} M${rightMid.x + 18} ${rightMid.y} L${rightMid.x + 34} ${rightMid.y}`} stroke={xStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+    <LabelBox x="36" y="137" w="88" text={sxLabel} fill={xStroke} />
+    <LabelBox x="336" y="137" w="88" text="x-face" fill={xStroke} />
 
-    <path d={`M${topMid.x - 30} ${topMid.y - 13} L${topMid.x + 30} ${topMid.y - 13} M${bottomMid.x - 30} ${bottomMid.y + 13} L${bottomMid.x + 30} ${bottomMid.y + 13}`} stroke={yStroke} strokeWidth="2.6" strokeLinecap="round" />
-    <path d={`M${topMid.x} ${topMid.y - 38} L${topMid.x} ${topMid.y - 21} M${bottomMid.x} ${bottomMid.y + 21} L${bottomMid.x} ${bottomMid.y + 38}`} stroke={yStroke} strokeWidth="2.6" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-    <text x="230" y="64" textAnchor="middle" className="stressLabel" fill={yStroke}>{syLabel}</text>
-    <text x="230" y="254" textAnchor="middle" className="stressLabel" fill={yStroke}>normal to y-face</text>
+    <path d={`M${topMid.x - 26} ${topMid.y - 10} L${topMid.x + 26} ${topMid.y - 10} M${bottomMid.x - 26} ${bottomMid.y + 10} L${bottomMid.x + 26} ${bottomMid.y + 10}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" />
+    <path d={`M${topMid.x} ${topMid.y - 32} L${topMid.x} ${topMid.y - 18} M${bottomMid.x} ${bottomMid.y + 18} L${bottomMid.x} ${bottomMid.y + 32}`} stroke={yStroke} strokeWidth="2.2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+    <LabelBox x="184" y="48" w="92" text={syLabel} fill={yStroke} />
+    <LabelBox x="184" y="249" w="92" text="y-face" fill={yStroke} />
   </g>;
 }
 
 function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Point; p2: Point; p3: Point; p4: Point }) {
   const stroke = state.tauXY >= 67 ? COLORS.purple : COLORS.cyan;
-  const len = 14 + state.tauXY * 0.19;
+  const len = 12 + state.tauXY * 0.16;
   const topMid = mid(p1, p2);
   const bottomMid = mid(p4, p3);
   const leftMid = mid(p1, p4);
@@ -88,16 +104,81 @@ function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poin
   const showPairs = state.showPairedShear;
 
   return <g>
-    <path d={`M${topMid.x - len} ${topMid.y - 22} L${topMid.x + len} ${topMid.y - 22}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <path d={`M${bottomMid.x + len} ${bottomMid.y + 22} L${bottomMid.x - len} ${bottomMid.y + 22}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <text x={topMid.x} y={topMid.y - 34} textAnchor="middle" className="stressLabel" fill={stroke}>τxy {pct(state.tauXY)}</text>
+    <path d={`M${topMid.x - len} ${topMid.y - 17} L${topMid.x + len} ${topMid.y - 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
+    <path d={`M${bottomMid.x + len} ${bottomMid.y + 17} L${bottomMid.x - len} ${bottomMid.y + 17}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
+    <LabelBox x="171" y="48" w="118" text={`τxy ${pct(state.tauXY)}`} fill={stroke} />
 
     {showPairs && <>
-      <path d={`M${rightMid.x + 24} ${rightMid.y - len * .72} L${rightMid.x + 24} ${rightMid.y + len * .72}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <path d={`M${leftMid.x - 24} ${leftMid.y + len * .72} L${leftMid.x - 24} ${leftMid.y - len * .72}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <text x={rightMid.x + 36} y={rightMid.y} className="stressLabel" fill={stroke}>τyx pair</text>
+      <path d={`M${rightMid.x + 18} ${rightMid.y - len * .65} L${rightMid.x + 18} ${rightMid.y + len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
+      <path d={`M${leftMid.x - 18} ${leftMid.y + len * .65} L${leftMid.x - 18} ${leftMid.y - len * .65}`} stroke={stroke} strokeWidth="2.35" strokeLinecap="round" markerEnd="url(#arrow)" />
+      <LabelBox x="336" y="211" w="88" text="τyx pair" fill={stroke} />
     </>}
   </g>;
+}
+
+export function PipeEffectPreview({ state }: { state: LabState }) {
+  const normalVisible = state.stressView === 'normal' || state.stressView === 'combined';
+  const shearVisible = state.stressView === 'shear' || state.stressView === 'combined';
+  const hoop = normalVisible ? state.sigmaY : 0;
+  const axial = normalVisible ? state.sigmaX : 0;
+  const shear = shearVisible ? state.tauXY : 0;
+  const pressureExpansion = hoop * 0.13;
+  const bendingOvalisation = state.stressView === 'combined' ? Math.max(0, axial - 38) * 0.22 : 0;
+  const ruptureCue = hoop >= 72 && normalVisible;
+  const rx = 56 + pressureExpansion + bendingOvalisation;
+  const ry = Math.max(38, 56 + pressureExpansion * 0.35 - bendingOvalisation * 0.72);
+  const splitX = 116 + rx;
+  const shearSkew = shear * 0.22;
+  const caption = state.stressView === 'normal'
+    ? 'Normal-stress bridge: pressure/hoop expansion and axial membrane cue.'
+    : state.stressView === 'shear'
+      ? 'Shear bridge: torsion-like diagonal surface shear. No rupture claim.'
+      : 'Combined bridge: hoop expansion, bending ovalisation, and shear distortion cues.';
+
+  return <svg viewBox="0 0 460 340" role="img" aria-label="Pipe effect preview from stress components">
+    <SvgDefs />
+    <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
+    <text x="230" y="40" textAnchor="middle" className="label" fill={COLORS.cyan}>Pipe effect preview</text>
+    <text x="230" y="61" textAnchor="middle" className="muted">concept bridge only — not a failure-theory calculation</text>
+
+    <g transform={`translate(${shearSkew * .18},0)`}>
+      <path d="M206 128 H398" stroke="#020813" strokeWidth="48" strokeLinecap="round" opacity=".88" />
+      <path d="M206 128 H398" stroke="url(#pipeStroke)" strokeWidth="34" strokeLinecap="round" />
+      <path d="M206 128 H398" stroke="#06101d" strokeWidth="13" strokeLinecap="round" opacity=".76" strokeDasharray="18 12" />
+      {normalVisible && <>
+        <path d="M219 87 C270 70 338 70 389 87 M219 169 C270 186 338 186 389 169" stroke="rgba(85,184,255,.55)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
+        <text x="302" y="207" textAnchor="middle" className="muted">σL / axial membrane cue</text>
+      </>}
+      {shearVisible && <>
+        <path d="M224 159 L266 98 M268 159 L310 98 M312 159 L354 98 M356 159 L398 98" stroke={shear >= 67 ? COLORS.purple : COLORS.cyan} strokeWidth="3.2" strokeLinecap="round" opacity=".86" />
+        <text x="302" y="226" textAnchor="middle" className="muted">τ / diagonal shear bands</text>
+      </>}
+    </g>
+
+    <g>
+      <ellipse cx="116" cy="146" rx={rx} ry={ry} fill="rgba(85,184,255,.14)" stroke="rgba(220,245,255,.88)" strokeWidth="4" />
+      <ellipse cx="116" cy="146" rx={Math.max(20, rx - 30)} ry={Math.max(16, ry - 24)} fill="rgba(6,16,29,.88)" stroke="rgba(220,245,255,.42)" strokeWidth="2" />
+      {normalVisible && <>
+        <path d={`M${116 - rx - 15} 146 C${116 - rx - 4} ${126 - pressureExpansion * .25}, ${116 - rx - 4} ${166 + pressureExpansion * .25}, ${116 - rx - 15} 146 M${116 + rx + 15} 146 C${116 + rx + 4} ${126 - pressureExpansion * .25}, ${116 + rx + 4} ${166 + pressureExpansion * .25}, ${116 + rx + 15} 146`} stroke={COLORS.blue} strokeWidth="2.4" fill="none" markerEnd="url(#arrow)" markerStart="url(#arrowStart)" />
+        <text x="116" y="236" textAnchor="middle" className="muted">σθ / hoop expansion cue</text>
+      </>}
+      {bendingOvalisation > 0 && <>
+        <path d={`M${116 - rx + 8} ${146 - ry - 12} C${116 - rx * .35} ${146 - ry - 24}, ${116 + rx * .35} ${146 - ry - 24}, ${116 + rx - 8} ${146 - ry - 12}`} stroke={COLORS.orange} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d={`M${116 - rx + 8} ${146 + ry + 12} C${116 - rx * .35} ${146 + ry + 24}, ${116 + rx * .35} ${146 + ry + 24}, ${116 + rx - 8} ${146 + ry + 12}`} stroke={COLORS.orange} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <text x="116" y="265" textAnchor="middle" className="muted">ovalisation: bending/Brazier concept</text>
+      </>}
+      {ruptureCue && <>
+        <path className="crack glow" d={`M${splitX - 4} ${146 - ry + 5} C${splitX + 12} ${146 - ry * .35}, ${splitX - 10} ${146 + ry * .25}, ${splitX + 7} ${146 + ry - 6}`} />
+        <text x="116" y="286" textAnchor="middle" fill={COLORS.red} fontSize="12" fontWeight="900">rupture cue: hoop-dominant longitudinal split</text>
+      </>}
+    </g>
+
+    <g>
+      <rect x="200" y="247" width="224" height="49" rx="15" fill="rgba(255,255,255,.045)" stroke="rgba(216,237,255,.16)" />
+      <text x="212" y="267" className="stressLabel" fill="#d8edff">{caption}</text>
+      <text x="212" y="286" className="muted">Use Tab 5B later for real pipe components: σθ, σL, σr, and τ.</text>
+    </g>
+  </svg>;
 }
 
 export function StressComponentExplanation({ state }: { state: LabState }) {
@@ -157,15 +238,12 @@ export function StressEngineeringNote({ state }: { state: LabState }) {
   return <div className="interp stress-readout">
     <span className="badge" style={{ color: COLORS.yellow }}>boundary note</span>
     <h3 className="result-title">Do not jump to failure theory yet</h3>
-    <p className="copy">This tab only defines stress components at a point. It deliberately avoids von Mises, Tresca, Rankine, Mohr circle, allowable stress, and pipe hoop stress.</p>
+    <p className="copy">This tab only defines stress components at a point. The optional pipe preview is only a bridge to pipe stress effects; it is not a code check and not a failure-theory result.</p>
     <div style={{ display: 'grid', gap: 8 }}>
-      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">1</b><span><b>Normal stress</b><br/><span className="copy">Perpendicular to a face: σx and σy.</span></span></div>
-      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">2</b><span><b>Shear stress</b><br/><span className="copy">Parallel to a face: τxy and the companion shear pair.</span></span></div>
-      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">3</b><span><b>Shape response</b><br/><span className="copy">Width, height, and skew are controlled by sliders for visual intuition only.</span></span></div>
+      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">1</b><span><b>Normal stress</b><br/><span className="copy">Perpendicular to a face: σx and σy. Pipe preview maps this only as a concept bridge to axial/hoop effects.</span></span></div>
+      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">2</b><span><b>Shear stress</b><br/><span className="copy">Parallel to a face: τxy and the companion shear pair. Pipe preview shows torsion-like diagonal shear bands.</span></span></div>
+      <div className="card" style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}><b className="stepNo">3</b><span><b>Pipe effects</b><br/><span className="copy">Ovalisation is shown only as bending/Brazier concept. Rupture cue is shown only as hoop-dominant pressure concept.</span></span></div>
     </div>
     {state.showSignConvention && <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Graphic convention</b><span className="copy">Positive normal stress is drawn as tensile/separating. Positive τxy is drawn as the top face shearing to the right with a balancing shear pair.</span></div>}
   </div>;
 }
-
-type Point = { x: number; y: number };
-function mid(a: Point, b: Point): Point { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
