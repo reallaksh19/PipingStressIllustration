@@ -129,46 +129,57 @@ function FatigueSideView({ state, status }: SideProps) {
   const allow = allowableStressRangePercent(logN);
   const rangeRatio = state.fatigueStressRange / Math.max(allow, 1);
   const cycleRatio = state.fatigueCyclesSlider / 100;
-  const notchFactor = state.notchEnabled ? 1 : 0.25;
-  const materialFactor = state.material === 'brittle' ? 1.15 : 1;
-  const severity = clamp((0.45 * rangeRatio + 0.55 * cycleRatio) * notchFactor * materialFactor);
-  const amp = 6 + state.fatigueStressRange * 0.22;
-  const crack = state.notchEnabled ? 10 + severity * 58 : 0;
-  const halo = 24 + severity * 52;
-  const modeText = rangeRatio > 1 ? 'operating point is above the conceptual S-N boundary' : rangeRatio > 0.82 ? 'operating point is near the S-N boundary' : 'operating point is below the S-N boundary';
+  const notchFactor = state.notchEnabled ? 1 : 0.22;
+  const materialFactor = state.material === 'brittle' ? 1.12 : 1;
+  const severity = clamp((0.52 * rangeRatio + 0.48 * cycleRatio) * notchFactor * materialFactor);
+  const crack = state.notchEnabled ? 6 + severity * 30 : 0;
+  const halo = 22 + severity * 46;
+  const amp = 8 + Math.min(18, state.fatigueStressRange * 0.12);
+  const modeText = rangeRatio > 1 ? 'above S-N boundary: crack growth emphasized' : rangeRatio > 0.82 ? 'near S-N boundary: initiation risk visible' : 'below S-N boundary: hotspot shown as low severity';
 
-  return <SvgFrame label="Fatigue side view with weld hotspot and crack growth">
-    <text x="320" y="58" textAnchor="middle" className="muted">fatigue is cyclic stress range Δσ plus cycles N at a local detail</text>
+  return <SvgFrame label="Fatigue side view: cyclic demand and weld-toe crack origin">
+    <text x="320" y="50" textAnchor="middle" className="muted">side view shows location: cyclic Δσ acts on pipe; crack starts at weld toe / notch</text>
 
-    <path d="M70 120 C128 94 184 94 242 120 C300 146 356 146 414 120 C472 94 526 94 580 120" className="fatigueWave" />
-    <text x="112" y="92" className="muted">cyclic demand</text>
+    <path d="M80 104 C134 82 188 82 242 104 C296 126 348 126 402 104 C456 82 514 82 568 104" className="fatigueWave" />
+    <text x="128" y="80" className="muted">load history: repeated stress range Δσ</text>
 
-    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeShadow fatPulse" />
-    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeOuter fatPulse" />
-    <path d={`M82 218 C174 ${218 - amp}, 250 ${218 + amp}, 558 218`} className="pipeInner fatPulse" />
+    <path d="M78 220 H568" className="pipeShadow fatPulse" />
+    <path d="M78 220 H568" className="pipeOuter fatPulse" />
+    <path d="M78 220 H568" className="pipeInner fatPulse" />
 
-    <rect x="312" y="178" width="24" height="82" rx="10" className="weldBand" />
-    <path d="M314 178 C292 154 258 148 218 156 M336 178 C360 154 394 148 434 156" className="weldProfile" />
-    {state.notchEnabled && <>
-      <circle cx="326" cy="218" r={halo} className="hotspotHalo" />
-      <path d={`M326 218 C${314 - crack * .20} ${236 + crack * .12}, ${346 + crack * .16} ${248 + crack * .42}, ${314 - crack * .12} ${264 + crack * .52}`} className="crack glow" />
-      <circle cx="326" cy="218" r="7" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
-    </>}
-    {!state.notchEnabled && <circle cx="326" cy="218" r="28" className="hotspotHalo mutedHalo" />}
+    <path d="M118 172 H168 M118 268 H168 M478 172 H528 M478 268 H528" stroke="rgba(216,237,255,.28)" strokeWidth="4" strokeLinecap="round" />
+    <CyclicArrow x1={92} y1={156} x2={145} y2={156} color="blue" />
+    <CyclicArrow x1={548} y1={156} x2={495} y2={156} color="blue" />
+    <CyclicArrow x1={145} y1={286} x2={92} y2={286} color="blue" />
+    <CyclicArrow x1={495} y1={286} x2={548} y2={286} color="blue" />
+    <text x="320" y="151" textAnchor="middle" className="muted">alternate tension/compression range, not one static force</text>
 
-    <path d="M326 218 C365 174 424 136 474 110" className="calloutLine" />
-    <circle cx="492" cy="98" r="66" className="magnifier" />
-    <path d="M446 112 H538" stroke="rgba(216,231,242,.80)" strokeWidth="20" strokeLinecap="round" />
-    <path d="M470 112 C482 76 514 76 528 112" className="weldToe" />
-    <path d="M486 111 l-12 18" stroke="#ffd75b" strokeWidth="5" strokeLinecap="round" />
-    {state.notchEnabled && <>
-      <circle cx="486" cy="112" r={18 + severity * 34} className="hotspotHalo" />
-      <path d={`M486 112 C${474 - crack * .14} ${126 + crack * .12}, ${507 + crack * .12} ${140 + crack * .32}, ${477 - crack * .10} ${154 + crack * .36}`} className="microCrack glow" />
-    </>}
-    {!state.notchEnabled && <path d="M486 112 l-8 12" className="microCrackGhost" />}
-    <text x="492" y="180" textAnchor="middle" className="muted">zoom: weld toe / notch root</text>
+    <rect x="310" y="174" width="28" height="92" rx="10" className="weldBand" />
+    <path d="M310 177 C284 156 250 150 208 158 M338 177 C366 156 400 150 442 158" className="weldProfile" />
+    <path d="M324 170 V270" className="weldCentre" />
+    <path d="M250 204 C282 190 304 190 324 220 C344 190 368 190 400 204" fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="9 8" />
+    <path d="M248 236 C282 250 304 250 324 220 C344 250 368 250 400 236" fill="none" stroke="rgba(255,215,91,.25)" strokeWidth="3" strokeDasharray="9 8" />
 
-    <text x="320" y="318" textAnchor="middle" className="caseLabel" fill={status.color}>crack length is driven by Δσ/allowable and N: {modeText}</text>
+    <circle cx="338" cy="184" r={state.notchEnabled ? halo : 24} className={state.notchEnabled ? 'hotspotHalo' : 'hotspotHalo mutedHalo'} />
+    <circle cx="338" cy="184" r="6" fill="#ffd75b" stroke="#06101d" strokeWidth="3" />
+    {state.notchEnabled && <path d={`M338 184 C${335 - crack * .12} ${202 + crack * .15}, ${354 + crack * .18} ${213 + crack * .30}, ${337 - crack * .06} ${224 + crack * .45}`} className="microCrack glow" />}
+    {!state.notchEnabled && <path d="M338 184 l-7 10" className="microCrackGhost" />}
+    <text x="382" y="188" className="muted">hotspot / crack origin</text>
+
+    <path d="M338 184 C394 150 446 126 492 104" className="calloutLine" />
+    <circle cx="506" cy="96" r="58" className="magnifier" />
+    <path d="M462 108 H548" stroke="rgba(216,231,242,.80)" strokeWidth="19" strokeLinecap="round" />
+    <path d="M484 108 C494 76 526 76 538 108" className="weldToe" />
+    <path d="M501 107 l-10 16" stroke="#ffd75b" strokeWidth="4" strokeLinecap="round" />
+    {state.notchEnabled && <path d={`M501 108 C${493 - crack * .12} ${121 + crack * .08}, ${520 + crack * .16} ${135 + crack * .20}, ${500 - crack * .10} ${150 + crack * .30}`} className="microCrack glow" />}
+    <text x="506" y="168" textAnchor="middle" className="muted">origin only — mechanism is in cross-section</text>
+
+    <g transform="translate(72 314)">
+      <circle cx="0" cy="0" r="6" fill="#52f0df" /><text x="14" y="4" className="muted">1 Δσ cycles</text>
+      <circle cx="150" cy="0" r="6" fill="#ffd75b" /><text x="164" y="4" className="muted">2 weld toe stress raiser</text>
+      <circle cx="364" cy="0" r="6" fill="#ff4b64" /><text x="378" y="4" className="muted">3 crack origin</text>
+    </g>
+    <text x="320" y="342" textAnchor="middle" className="caseLabel" fill={status.color}>{modeText}</text>
   </SvgFrame>;
 }
 
@@ -200,6 +211,12 @@ function ForceArrow({ x1, y1, x2, y2, color }: { x1: string; y1: string; x2: str
   const marker = color === 'orange' ? 'arrowOrange' : 'arrow';
   const cls = color === 'orange' ? 'forceArrow orange' : 'forceArrow blue';
   return <path className={cls} d={`M${x1} ${y1} L${x2} ${y2}`} markerEnd={`url(#${marker})`} />;
+}
+
+function CyclicArrow({ x1, y1, x2, y2, color }: { x1: number; y1: number; x2: number; y2: number; color: 'blue' | 'orange' }) {
+  const marker = color === 'orange' ? 'arrowOrange' : 'arrow';
+  const stroke = color === 'orange' ? '#ff9e3a' : '#55b8ff';
+  return <path d={`M${x1} ${y1} L${x2} ${y2}`} stroke={stroke} strokeWidth="4" strokeLinecap="round" fill="none" markerEnd={`url(#${marker})`} opacity=".86" />;
 }
 
 function Defs() {
