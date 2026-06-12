@@ -19,8 +19,20 @@ function mid(a: Point, b: Point): Point { return { x: (a.x + b.x) / 2, y: (a.y +
 function LabelBox({ x, y, w, text, fill, anchor = 'middle' }: { x: number; y: number; w: number; text: string; fill: string; anchor?: 'start' | 'middle' }) {
   const tx = anchor === 'start' ? x + 10 : x + w / 2;
   return <g>
-    <rect x={x} y={y} width={w} height="25" rx="9" fill="rgba(6,16,29,.76)" stroke="rgba(216,237,255,.22)" />
-    <text x={tx} y={y + 17} textAnchor={anchor} className="stressLabel" fill={fill}>{text}</text>
+    <rect x={x} y={y} width={w} height="27" rx="9" fill="rgba(6,16,29,.88)" stroke="rgba(216,237,255,.30)" />
+    <text
+      x={tx}
+      y={y + 13.5}
+      textAnchor={anchor}
+      dominantBaseline="middle"
+      fill={fill}
+      fontSize="12"
+      fontWeight="950"
+      paintOrder="stroke"
+      stroke="rgba(6,16,29,.92)"
+      strokeWidth="2.4"
+      strokeLinejoin="round"
+    >{text}</text>
   </g>;
 }
 
@@ -123,17 +135,25 @@ export function PipeEffectPreview({ state }: { state: LabState }) {
   const axial = normalVisible ? state.sigmaX : 0;
   const shear = shearVisible ? state.tauXY : 0;
   const pressureExpansion = hoop * 0.13;
+  const axialExtension = axial * 0.34;
   const bendingOvalisation = state.stressView === 'combined' ? Math.max(0, axial - 38) * 0.22 : 0;
   const ruptureCue = hoop >= 72 && normalVisible;
   const rx = 56 + pressureExpansion + bendingOvalisation;
   const ry = Math.max(38, 56 + pressureExpansion * 0.35 - bendingOvalisation * 0.72);
   const splitX = 116 + rx;
   const shearSkew = shear * 0.22;
+  const basePipeX1 = 222;
+  const basePipeX2 = 382;
+  const pipeX1 = basePipeX1 - axialExtension * 0.45;
+  const pipeX2 = basePipeX2 + axialExtension * 0.45;
+  const pipeMid = (pipeX1 + pipeX2) / 2;
+  const axialColor = axial >= 67 ? COLORS.orange : COLORS.blue;
+  const axialLabel = `σL axial stretch cue ${pct(axial)}`;
   const caption = state.stressView === 'normal'
-    ? 'Normal-stress bridge: pressure/hoop expansion and axial membrane cue.'
+    ? 'Normal bridge: σL changes pipe length cue; σθ changes hoop expansion cue.'
     : state.stressView === 'shear'
       ? 'Shear bridge: torsion-like diagonal surface shear. No rupture claim.'
-      : 'Combined bridge: hoop expansion, bending ovalisation, and shear distortion cues.';
+      : 'Combined bridge: axial stretch, hoop expansion, bending ovalisation, and shear distortion cues.';
 
   return <svg viewBox="0 0 460 340" role="img" aria-label="Pipe effect preview from stress components">
     <SvgDefs />
@@ -142,16 +162,19 @@ export function PipeEffectPreview({ state }: { state: LabState }) {
     <text x="230" y="61" textAnchor="middle" className="muted">concept bridge only — not a failure-theory calculation</text>
 
     <g transform={`translate(${shearSkew * .18},0)`}>
-      <path d="M206 128 H398" stroke="#020813" strokeWidth="48" strokeLinecap="round" opacity=".88" />
-      <path d="M206 128 H398" stroke="url(#pipeStroke)" strokeWidth="34" strokeLinecap="round" />
-      <path d="M206 128 H398" stroke="#06101d" strokeWidth="13" strokeLinecap="round" opacity=".76" strokeDasharray="18 12" />
+      <path d={`M${basePipeX1} 128 H${basePipeX2}`} stroke="rgba(216,237,255,.22)" strokeWidth="44" strokeLinecap="round" strokeDasharray="8 10" />
+      <path d={`M${pipeX1} 128 H${pipeX2}`} stroke="#020813" strokeWidth="48" strokeLinecap="round" opacity=".88" />
+      <path d={`M${pipeX1} 128 H${pipeX2}`} stroke="url(#pipeStroke)" strokeWidth="34" strokeLinecap="round" />
+      <path d={`M${pipeX1} 128 H${pipeX2}`} stroke="#06101d" strokeWidth="13" strokeLinecap="round" opacity=".76" strokeDasharray="18 12" />
       {normalVisible && <>
-        <path d="M219 87 C270 70 338 70 389 87 M219 169 C270 186 338 186 389 169" stroke="rgba(85,184,255,.55)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
-        <text x="302" y="207" textAnchor="middle" className="muted">σL / axial membrane cue</text>
+        <path d={`M${pipeX1 + 12} 87 C${pipeX1 + 54} ${70 - axialExtension * .05}, ${pipeX2 - 54} ${70 - axialExtension * .05}, ${pipeX2 - 12} 87 M${pipeX1 + 12} 169 C${pipeX1 + 54} ${186 + axialExtension * .05}, ${pipeX2 - 54} ${186 + axialExtension * .05}, ${pipeX2 - 12} 169`} stroke="rgba(85,184,255,.55)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
+        <path d={`M${basePipeX1} 195 H${basePipeX2}`} stroke="rgba(216,237,255,.22)" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 6" />
+        <path d={`M${pipeX1} 195 H${pipeX2}`} stroke={axialColor} strokeWidth="2.8" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+        <text x={pipeMid} y="217" textAnchor="middle" fill={axialColor} fontSize="12" fontWeight="900">{axialLabel}</text>
       </>}
       {shearVisible && <>
-        <path d="M224 159 L266 98 M268 159 L310 98 M312 159 L354 98 M356 159 L398 98" stroke={shear >= 67 ? COLORS.purple : COLORS.cyan} strokeWidth="3.2" strokeLinecap="round" opacity=".86" />
-        <text x="302" y="226" textAnchor="middle" className="muted">τ / diagonal shear bands</text>
+        <path d={`M${pipeX1 + 18} 159 L${pipeX1 + 60} 98 M${pipeX1 + 62} 159 L${pipeX1 + 104} 98 M${pipeX2 - 104} 159 L${pipeX2 - 62} 98 M${pipeX2 - 60} 159 L${pipeX2 - 18} 98`} stroke={shear >= 67 ? COLORS.purple : COLORS.cyan} strokeWidth="3.2" strokeLinecap="round" opacity=".86" />
+        <text x={pipeMid} y={normalVisible ? 238 : 226} textAnchor="middle" className="muted">τ / diagonal shear bands</text>
       </>}
     </g>
 
@@ -175,7 +198,7 @@ export function PipeEffectPreview({ state }: { state: LabState }) {
 
     <g>
       <rect x="200" y="247" width="224" height="49" rx="15" fill="rgba(255,255,255,.045)" stroke="rgba(216,237,255,.16)" />
-      <text x="212" y="267" className="stressLabel" fill="#d8edff">{caption}</text>
+      <text x="212" y="267" fill="#d8edff" fontSize="12" fontWeight="900">{caption}</text>
       <text x="212" y="286" className="muted">Use Tab 5B later for real pipe components: σθ, σL, σr, and τ.</text>
     </g>
   </svg>;
