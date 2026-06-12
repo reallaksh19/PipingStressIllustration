@@ -1,6 +1,7 @@
-export type Mode = 'static' | 'fatigue' | 'challenge';
+export type Mode = 'static' | 'fatigue' | 'stress' | 'challenge';
 export type Material = 'ductile' | 'brittle';
 export type StaticDemand = 'tension' | 'compression';
+export type StressComponentView = 'normal' | 'shear' | 'combined';
 
 export type LabState = {
   mode: Mode;
@@ -12,6 +13,13 @@ export type LabState = {
   fatigueStressRange: number;
   fatigueCyclesSlider: number;
   notchEnabled: boolean;
+  stressView: StressComponentView;
+  sigmaX: number;
+  sigmaY: number;
+  tauXY: number;
+  showSignConvention: boolean;
+  showPairedShear: boolean;
+  showTensor: boolean;
 };
 
 export type Status = {
