@@ -22,6 +22,26 @@ const initialState: LabState = {
   notchEnabled: true,
 };
 
+const presentationOverride = `
+  .forceArrow { display: none !important; }
+  .analysis-grid {
+    grid-template-columns: minmax(560px, 1.18fr) minmax(410px, .92fr) !important;
+    grid-template-areas: "side curve" "local interp" !important;
+    grid-auto-rows: minmax(300px, auto) !important;
+  }
+  .analysis-grid .panel:nth-child(1) { grid-area: side !important; grid-row: auto !important; grid-column: auto !important; min-height: 300px !important; }
+  .analysis-grid .panel:nth-child(2) { grid-area: local !important; grid-row: auto !important; grid-column: auto !important; min-height: 300px !important; }
+  .analysis-grid .panel:nth-child(3) { grid-area: curve !important; grid-row: auto !important; grid-column: auto !important; }
+  .analysis-grid .panel:nth-child(4) { grid-area: interp !important; grid-row: auto !important; grid-column: auto !important; }
+  .analysis-grid .panel:nth-child(1) .pb,
+  .analysis-grid .panel:nth-child(2) .pb { min-height: 300px !important; display: flex; align-items: center; justify-content: center; }
+  .analysis-grid .panel:nth-child(1) svg { min-height: 310px !important; }
+  .analysis-grid .panel:nth-child(2) svg { max-height: 350px; }
+  @media (max-width: 860px) {
+    .analysis-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "local" "curve" "interp" !important; }
+  }
+`;
+
 function App() {
   const [state, setState] = useState<LabState>(initialState);
   const status = useMemo(() => state.mode === 'fatigue' ? fatigueStatus(state) : state.mode === 'static' ? staticStatus(state) : { badge: 'Review mode', color: COLORS.cyan, title: 'Review', copy: 'Classify scenarios.' }, [state]);
@@ -29,12 +49,19 @@ function App() {
   const update = (patch: Partial<LabState>) => setState(s => ({ ...s, ...patch }));
 
   return <div className="app">
+    <style>{presentationOverride}</style>
     <header>
-      <div><h1>Failure & Strength Lab</h1><p className="subtitle">Visual demonstration of stress demand, material response, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p></div>
+      <div>
+        <div className="tabs" style={{ padding: 0, borderBottom: 0, background: 'transparent', marginBottom: 8 }} aria-label="Page tab">
+          <button className="tab active" type="button">Failure & Strength Lab</button>
+        </div>
+        <h1>Failure & Strength Lab</h1>
+        <p className="subtitle">Visual demonstration of stress demand, material response, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p>
+      </div>
       <div className="pill" style={{ color: status.color }}>{status.badge}</div>
     </header>
 
-    <nav className="tabs">
+    <nav className="tabs" aria-label="Lesson mode">
       {(['static', 'fatigue', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue Loading · metallic S–N' : 'Quick Challenge'}</button>)}
     </nav>
 
@@ -46,6 +73,7 @@ function App() {
           <ControlBlock title="Static load level" tag={`${state.staticLoad}%`}><Range value={state.staticLoad} min={0} max={100} onChange={v => update({ staticLoad: v })} left="elastic" mid="near Sy" right="damage" /></ControlBlock>
           <ControlBlock title="Compare"><label className="toggle"><input type="checkbox" checked={state.compareCurve} onChange={e => update({ compareCurve: e.target.checked })}/> Compare with ghost material curve</label></ControlBlock>
           {state.material === 'brittle' && state.staticDemand === 'tension' && <ControlBlock title="Flaw"><label className="toggle"><input type="checkbox" checked={state.flawEnabled} onChange={e => update({ flawEnabled: e.target.checked })}/> Show notch / crack flaw</label></ControlBlock>}
+          <ControlBlock title="Static display rule" tag="no arrows"><p className="copy">Static graphics show grips, plates, deformation, cracking, yielding, and pipe-wall response. Direction arrows are intentionally removed for both ductile and brittle cases.</p></ControlBlock>
         </>}
         {state.mode === 'fatigue' && <>
           <ControlBlock title="Scope" tag="metallic"><p className="copy">Fatigue graphics and S-N slider are shown only for ductile metallic piping. No brittle-material fatigue slider or brittle graphics are used.</p></ControlBlock>
@@ -58,15 +86,15 @@ function App() {
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view, local/cross-section, and stress–strain curve update together.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}.` : 'Review mode.'}</p></div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : 'Review mode.'}</p></div>
           <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
-        {state.mode !== 'challenge' && <section className="grid">
+        {state.mode !== 'challenge' && <section className="grid analysis-grid">
           <Panel title="Side view" tag={state.mode === 'static' ? state.staticDemand : 'ductile metal fatigue'}><SideViewSvg state={state} status={status}/></Panel>
-          <Panel title="Local / cross-section" tag={state.mode === 'fatigue' ? 'weld toe crack' : state.staticDemand === 'tension' ? 'axial pull' : 'inward compression'}><LocalViewSvg state={state} status={status}/></Panel>
+          <Panel title="Local / cross-section" tag={state.mode === 'fatigue' ? 'weld toe crack' : 'pipe wall section'}><LocalViewSvg state={state} status={status}/></Panel>
           <Panel title={state.mode === 'fatigue' ? 'S-N curve' : 'Stress–strain curve'} tag={state.mode === 'fatigue' ? 'ductile metal' : state.material}>{state.mode === 'fatigue' ? <SNCurve state={state} status={status}/> : <StressStrainCurve state={state} status={status}/>}</Panel>
-          <Panel title="Failure interpretation" tag="conceptual"><Interpretation state={state} status={status}/></Panel>
+          <Panel title="Failure interpretation" tag="engineering readout"><Interpretation state={state} status={status}/></Panel>
         </section>}
 
         {state.mode === 'challenge' && <section className="challenge">
@@ -86,7 +114,7 @@ function App() {
             <p className="fb">Challenge principle: stress demand is applied first; material behavior changes the response, not the applied stress itself.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; Su is maximum engineering stress before final rupture zone.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
       </main>
     </div>
   </div>;
