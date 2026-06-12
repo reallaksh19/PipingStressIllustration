@@ -1,17 +1,20 @@
 # Piping Stress Illustration
 
-Interactive static teaching app for piping stress concepts.
+Interactive static/web demos for piping stress concepts.
 
 ## Current module
 
-`failure-strength-lab-v3` is the first saved module:
+### Failure & Strength Lab v3
 
-- Static loading tab uses a stress-strain (`σ–ε`) curve.
-- Fatigue loading tab uses an S-N curve with `log10(N)` cycle mapping.
-- Side view, local/cross-section view, curve panel, and interpretation panel are separated.
-- Ductile and brittle material response changes the failure interpretation, not the applied stress demand.
+React/Vite implementation of a visual piping stress concept demo.
 
-## Run locally
+Location:
+
+```bash
+failure-strength-lab-v3/
+```
+
+Run locally:
 
 ```bash
 cd failure-strength-lab-v3
@@ -19,12 +22,24 @@ npm install
 npm run dev
 ```
 
-## Build
+Build:
 
 ```bash
 npm run build
 ```
 
+## Technical model
+
+- Static loading uses stress-strain (`σ–ε`) behavior only.
+- Fatigue loading uses an S-N curve only.
+- S-N cycles are mapped as `log10(N)`, not linear screen distance.
+- Side view and cross-section/local view are separate SVG components.
+- Material response changes the failure interpretation and curve shape; it does not change the applied stress demand.
+
+## Repo verification
+
+The first committed app files are under `failure-strength-lab-v3/` on the `main` branch.
+
 ## Educational status
 
-This is a conceptual demonstration app only. It is not an ASME / B31.3 / B31.4 / B31.8 code-compliance calculator.
+This is a conceptual teaching demo only, not a code compliance calculator.
