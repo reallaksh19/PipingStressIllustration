@@ -66,13 +66,13 @@ function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poi
   const bottomMid = mid(p4, p3);
 
   return <g>
-    <path d={`M${leftMid.x - 15} ${leftMid.y - 36} L${leftMid.x - 15} ${leftMid.y + 36} M${rightMid.x + 15} ${rightMid.y - 36} L${rightMid.x + 15} ${rightMid.y + 36}`} stroke={xStroke} strokeWidth="4" strokeLinecap="round" />
-    <path d={`M${leftMid.x - 48} ${leftMid.y} L${leftMid.x - 20} ${leftMid.y} M${rightMid.x + 20} ${rightMid.y} L${rightMid.x + 48} ${rightMid.y}`} stroke={xStroke} strokeWidth="4" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+    <path d={`M${leftMid.x - 13} ${leftMid.y - 25} L${leftMid.x - 13} ${leftMid.y + 25} M${rightMid.x + 13} ${rightMid.y - 25} L${rightMid.x + 13} ${rightMid.y + 25}`} stroke={xStroke} strokeWidth="2.6" strokeLinecap="round" />
+    <path d={`M${leftMid.x - 36} ${leftMid.y} L${leftMid.x - 21} ${leftMid.y} M${rightMid.x + 21} ${rightMid.y} L${rightMid.x + 36} ${rightMid.y}`} stroke={xStroke} strokeWidth="2.6" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
     <text x="70" y="154" textAnchor="middle" className="stressLabel" fill={xStroke}>{sxLabel}</text>
     <text x="390" y="154" textAnchor="middle" className="stressLabel" fill={xStroke}>normal to x-face</text>
 
-    <path d={`M${topMid.x - 42} ${topMid.y - 15} L${topMid.x + 42} ${topMid.y - 15} M${bottomMid.x - 42} ${bottomMid.y + 15} L${bottomMid.x + 42} ${bottomMid.y + 15}`} stroke={yStroke} strokeWidth="4" strokeLinecap="round" />
-    <path d={`M${topMid.x} ${topMid.y - 50} L${topMid.x} ${topMid.y - 20} M${bottomMid.x} ${bottomMid.y + 20} L${bottomMid.x} ${bottomMid.y + 50}`} stroke={yStroke} strokeWidth="4" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+    <path d={`M${topMid.x - 30} ${topMid.y - 13} L${topMid.x + 30} ${topMid.y - 13} M${bottomMid.x - 30} ${bottomMid.y + 13} L${bottomMid.x + 30} ${bottomMid.y + 13}`} stroke={yStroke} strokeWidth="2.6" strokeLinecap="round" />
+    <path d={`M${topMid.x} ${topMid.y - 38} L${topMid.x} ${topMid.y - 21} M${bottomMid.x} ${bottomMid.y + 21} L${bottomMid.x} ${bottomMid.y + 38}`} stroke={yStroke} strokeWidth="2.6" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
     <text x="230" y="64" textAnchor="middle" className="stressLabel" fill={yStroke}>{syLabel}</text>
     <text x="230" y="254" textAnchor="middle" className="stressLabel" fill={yStroke}>normal to y-face</text>
   </g>;
@@ -80,7 +80,7 @@ function NormalStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poi
 
 function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Point; p2: Point; p3: Point; p4: Point }) {
   const stroke = state.tauXY >= 67 ? COLORS.purple : COLORS.cyan;
-  const len = 24 + state.tauXY * 0.32;
+  const len = 14 + state.tauXY * 0.19;
   const topMid = mid(p1, p2);
   const bottomMid = mid(p4, p3);
   const leftMid = mid(p1, p4);
@@ -88,14 +88,14 @@ function ShearStressTicks({ state, p1, p2, p3, p4 }: { state: LabState; p1: Poin
   const showPairs = state.showPairedShear;
 
   return <g>
-    <path d={`M${topMid.x - len} ${topMid.y - 28} L${topMid.x + len} ${topMid.y - 28}`} stroke={stroke} strokeWidth="4.6" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <path d={`M${bottomMid.x + len} ${bottomMid.y + 28} L${bottomMid.x - len} ${bottomMid.y + 28}`} stroke={stroke} strokeWidth="4.6" strokeLinecap="round" markerEnd="url(#arrow)" />
-    <text x={topMid.x} y={topMid.y - 39} textAnchor="middle" className="stressLabel" fill={stroke}>τxy {pct(state.tauXY)}</text>
+    <path d={`M${topMid.x - len} ${topMid.y - 22} L${topMid.x + len} ${topMid.y - 22}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
+    <path d={`M${bottomMid.x + len} ${bottomMid.y + 22} L${bottomMid.x - len} ${bottomMid.y + 22}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
+    <text x={topMid.x} y={topMid.y - 34} textAnchor="middle" className="stressLabel" fill={stroke}>τxy {pct(state.tauXY)}</text>
 
     {showPairs && <>
-      <path d={`M${rightMid.x + 34} ${rightMid.y - len * .72} L${rightMid.x + 34} ${rightMid.y + len * .72}`} stroke={stroke} strokeWidth="4.6" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <path d={`M${leftMid.x - 34} ${leftMid.y + len * .72} L${leftMid.x - 34} ${leftMid.y - len * .72}`} stroke={stroke} strokeWidth="4.6" strokeLinecap="round" markerEnd="url(#arrow)" />
-      <text x={rightMid.x + 48} y={rightMid.y} className="stressLabel" fill={stroke}>τyx pair</text>
+      <path d={`M${rightMid.x + 24} ${rightMid.y - len * .72} L${rightMid.x + 24} ${rightMid.y + len * .72}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
+      <path d={`M${leftMid.x - 24} ${leftMid.y + len * .72} L${leftMid.x - 24} ${leftMid.y - len * .72}`} stroke={stroke} strokeWidth="2.8" strokeLinecap="round" markerEnd="url(#arrow)" />
+      <text x={rightMid.x + 36} y={rightMid.y} className="stressLabel" fill={stroke}>τyx pair</text>
     </>}
   </g>;
 }
@@ -113,9 +113,11 @@ export function StressComponentExplanation({ state }: { state: LabState }) {
     <h3 className="result-title">{modeTitle}</h3>
     <p className="copy">{modeCopy}</p>
     <div className="table">
-      <div><span>σx</span><b>{pct(state.sigmaX)} · normal on x-face</b></div>
-      <div><span>σy</span><b>{pct(state.sigmaY)} · normal on y-face</b></div>
-      <div><span>τxy</span><b>{pct(state.tauXY)} · shear on x-face in y direction</b></div>
+      {(state.stressView === 'normal' || state.stressView === 'combined') && <>
+        <div><span>σx</span><b>{pct(state.sigmaX)} · normal on x-face</b></div>
+        <div><span>σy</span><b>{pct(state.sigmaY)} · normal on y-face</b></div>
+      </>}
+      {(state.stressView === 'shear' || state.stressView === 'combined') && <div><span>τxy</span><b>{pct(state.tauXY)} · shear on x-face in y direction</b></div>}
       <div><span>Shape cue</span><b>{state.stressView === 'shear' ? 'skew only' : state.stressView === 'normal' ? 'resize only' : 'resize + skew'}</b></div>
     </div>
     <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Important distinction</b><span className="copy">The resized/skewed object is exaggerated for learning. It is not a calculated strain result and it is not a failure prediction.</span></div>
