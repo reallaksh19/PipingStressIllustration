@@ -22,15 +22,17 @@ function DuctileTensionView({ state, status }: SideProps) {
   const p = state.staticLoad / 100;
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
-  const elong = 34 * p;
-  const neck = high ? 26 : med ? 12 : 0;
-  const leftGrip = 52 - elong;
-  const rightGrip = 588 + elong;
-  const specimenPath = `M126 170 C188 166 220 ${178 + neck * 0.35} 270 ${184 + neck} C306 ${190 + neck * 0.5} 334 ${190 + neck * 0.5} 370 ${184 + neck} C420 ${178 + neck * 0.35} 452 166 514 170 L514 250 C452 254 420 ${242 - neck * 0.35} 370 ${236 - neck} C334 ${230 - neck * 0.5} 306 ${230 - neck * 0.5} 270 ${236 - neck} C220 ${242 - neck * 0.35} 188 254 126 250 Z`;
+  // Cap elongation so grips don't go off-canvas and neck stays positive.
+  const elong = Math.min(34 * p, 28);
+  const neck = high ? 22 : med ? 10 : 0;
+  const leftGrip = Math.max(30, 52 - elong);
+  const rightGrip = Math.min(608, 588 + elong);
+  const specimenPath = `M126 170 C188 166 220 ${178 + neck * 0.3} 268 ${183 + neck} C306 ${189 + neck * 0.45} 334 ${189 + neck * 0.45} 372 ${183 + neck} C420 ${178 + neck * 0.3} 452 166 514 170 L514 250 C452 254 420 ${242 - neck * 0.3} 372 ${237 - neck} C334 ${231 - neck * 0.45} 306 ${231 - neck * 0.45} 268 ${237 - neck} C220 ${242 - neck * 0.3} 188 254 126 250 Z`;
 
   return <SvgFrame label="Ductile tension side view">
-    <ForceArrow x1="142" y1="76" x2="64" y2="76" color="blue" />
-    <ForceArrow x1="498" y1="76" x2="576" y2="76" color="blue" />
+    {/* Tension: arrows point away from specimen */}
+    <ForceArrow x1="142" y1="76" x2="64" y2="76" color="blue" dir="out" />
+    <ForceArrow x1="498" y1="76" x2="576" y2="76" color="blue" dir="out" />
     <Grip x={leftGrip} label="grip" />
     <Grip x={rightGrip - 42} label="grip" />
     <path d={specimenPath} className="specimen ductile" />
@@ -49,15 +51,17 @@ function DuctileCompressionView({ state, status }: SideProps) {
   const p = state.staticLoad / 100;
   const med = state.staticLoad >= 45;
   const high = state.staticLoad >= 72;
-  const squeeze = 28 * p;
-  const bulge = high ? 34 : med ? 20 : 4;
+  // Cap squeeze so body width stays positive.
+  const squeeze = Math.min(28 * p, 24);
+  const bulge = high ? 28 : med ? 16 : 2;
   const leftPlate = 78 + squeeze;
   const rightPlate = 516 - squeeze;
-  const bodyPath = `M${leftPlate + 45} 174 C210 ${164 - bulge * 0.28} 250 ${160 - bulge} 320 ${166 - bulge * 0.7} C390 ${160 - bulge} 430 ${164 - bulge * 0.28} ${rightPlate - 45} 174 L${rightPlate - 45} 248 C430 ${258 + bulge * 0.28} 390 ${262 + bulge} 320 ${256 + bulge * 0.7} C250 ${262 + bulge} 210 ${258 + bulge * 0.28} ${leftPlate + 45} 248 Z`;
+  const bodyPath = `M${leftPlate + 45} 174 C210 ${164 - bulge * 0.25} 254 ${161 - bulge} 320 ${166 - bulge * 0.65} C386 ${161 - bulge} 430 ${164 - bulge * 0.25} ${rightPlate - 45} 174 L${rightPlate - 45} 248 C430 ${258 + bulge * 0.25} 386 ${262 + bulge} 320 ${256 + bulge * 0.65} C254 ${262 + bulge} 210 ${258 + bulge * 0.25} ${leftPlate + 45} 248 Z`;
 
   return <SvgFrame label="Ductile compression side view">
-    <ForceArrow x1="64" y1="76" x2="150" y2="76" color="orange" />
-    <ForceArrow x1="576" y1="76" x2="490" y2="76" color="orange" />
+    {/* Compression: arrows point inward toward specimen */}
+    <ForceArrow x1="64" y1="76" x2="150" y2="76" color="orange" dir="in" />
+    <ForceArrow x1="576" y1="76" x2="490" y2="76" color="orange" dir="in" />
     <CompressionPlate x={leftPlate} />
     <CompressionPlate x={rightPlate - 26} />
     <path d={bodyPath} className="specimen ductile" />
@@ -78,8 +82,8 @@ function BrittleTensionView({ state, status }: SideProps) {
   const gap = high ? 30 : 0;
 
   return <SvgFrame label="Brittle tension side view">
-    <ForceArrow x1="142" y1="76" x2="64" y2="76" color="blue" />
-    <ForceArrow x1="498" y1="76" x2="576" y2="76" color="blue" />
+    <ForceArrow x1="142" y1="76" x2="64" y2="76" color="blue" dir="out" />
+    <ForceArrow x1="498" y1="76" x2="576" y2="76" color="blue" dir="out" />
     <Grip x={58} label="grip" />
     <Grip x={540} label="grip" />
     <path d={`M126 180H${316 - gap} L${316 - gap} 240H126Z`} className="specimen brittle" />
@@ -106,8 +110,8 @@ function BrittleCompressionView({ state, status }: SideProps) {
   const right = 510 - squeeze;
 
   return <SvgFrame label="Brittle compression side view">
-    <ForceArrow x1="64" y1="76" x2="150" y2="76" color="orange" />
-    <ForceArrow x1="576" y1="76" x2="490" y2="76" color="orange" />
+    <ForceArrow x1="64" y1="76" x2="150" y2="76" color="orange" dir="in" />
+    <ForceArrow x1="576" y1="76" x2="490" y2="76" color="orange" dir="in" />
     <CompressionPlate x={left - 46} />
     <CompressionPlate x={right + 20} />
     <rect x={left} y="170" width={right - left} height="88" rx="7" className="specimen brittle" />
@@ -132,13 +136,18 @@ function FatigueSideView({ state, status }: SideProps) {
   const notchFactor = state.notchEnabled ? 1 : 0.28;
   const severity = clamp((0.58 * rangeRatio + 0.42 * cycleRatio) * notchFactor);
   const halo = state.notchEnabled ? 18 + severity * 40 : 14 + severity * 18;
-  const amp = 6 + Math.min(18, state.fatigueStressRange * 0.11);
+  // amp drives the cyclic pipe wave – keep it bounded so paths don't exit the frame.
+  const amp = 4 + Math.min(14, state.fatigueStressRange * 0.09);
   const pipeTop = `M82 ${196 - amp * 0.25} C172 ${184 - amp}, 245 ${184 - amp}, 320 ${198 - amp * 0.25} C412 ${212 + amp}, 502 ${212 + amp}, 570 ${200 + amp * 0.2}`;
   const pipeBottom = `M82 ${244 + amp * 0.2} C172 ${256 + amp}, 245 ${256 + amp}, 320 ${242 + amp * 0.25} C412 ${228 - amp}, 502 ${228 - amp}, 570 ${240 - amp * 0.2}`;
   const centreLine = `M82 220 C172 ${208 - amp}, 245 ${208 - amp}, 320 220 C412 ${232 + amp}, 502 ${232 + amp}, 570 220`;
   const ghostUp = `M82 ${214 - amp} C172 ${202 - amp}, 245 ${202 - amp}, 320 ${214 - amp} C412 ${226}, 502 ${226}, 570 ${216}`;
   const ghostDown = `M82 ${226 + amp} C172 ${238}, 245 ${238}, 320 ${226 + amp} C412 ${214 + amp}, 502 ${214 + amp}, 570 ${224 + amp}`;
-  const modeText = rangeRatio > 1 ? 'high Δσ: welded attachment toe is fatigue-critical' : rangeRatio > 0.82 ? 'near S-N boundary: hotspot must be watched' : 'low Δσ: hotspot shown, crack mechanism stays in local view';
+  const modeText = !state.notchEnabled
+    ? 'smooth detail: no weld/notch hotspot – lower fatigue sensitivity'
+    : rangeRatio > 1 ? 'high Δσ: welded attachment toe is fatigue-critical'
+    : rangeRatio > 0.82 ? 'near S-N boundary: hotspot must be watched'
+    : 'low Δσ: hotspot shown, crack mechanism stays in local view';
   const hotspotLabel = state.notchEnabled ? 'weld toe / notch hotspot' : 'smooth pipe: lower concentration';
 
   return <SvgFrame label="Fatigue side view: ductile metallic pipe cyclic motion and welded attachment hotspot">
@@ -207,10 +216,26 @@ function CompressionPlate({ x }: { x: number }) {
   </g>;
 }
 
-function ForceArrow({ x1, y1, x2, y2, color }: { x1: string; y1: string; x2: string; y2: string; color: 'blue' | 'orange' }) {
+/**
+ * ForceArrow – dir controls arrowhead placement:
+ *   'out' = arrowhead at x2,y2 end (tensile: arrow tip points away from specimen)
+ *   'in' = arrowhead at x1,y1 end (compressive: arrow tip points toward specimen)
+ * We achieve 'in' by drawing the path from x2→x1 so markerEnd is at x1,y1.
+ */
+function ForceArrow({
+  x1, y1, x2, y2, color, dir = 'out',
+}: {
+  x1: string; y1: string; x2: string; y2: string;
+  color: 'blue' | 'orange';
+  dir?: 'in' | 'out';
+}) {
   const marker = color === 'orange' ? 'arrowOrange' : 'arrow';
   const cls = color === 'orange' ? 'forceArrow orange' : 'forceArrow blue';
-  return <path className={cls} d={`M${x1} ${y1} L${x2} ${y2}`} markerEnd={`url(#${marker})`} />;
+  // For 'in' (compression) flip the path direction so the arrowhead ends at the specimen side.
+  const d = dir === 'in'
+    ? `M${x2} ${y2} L${x1} ${y1}`
+    : `M${x1} ${y1} L${x2} ${y2}`;
+  return <path className={cls} d={d} markerEnd={`url(#${marker})`} />;
 }
 
 function CyclicArrow({ x1, y1, x2, y2, color }: { x1: number; y1: number; x2: number; y2: number; color: 'blue' | 'orange' }) {
