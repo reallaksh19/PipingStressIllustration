@@ -186,7 +186,7 @@ function App() {
         </>}
         {state.mode === 'loads' && <>
           <ControlBlock title="Load source" tag={state.loadsActiveLoad}>
-            <Segment active={state.loadsActiveLoad} options={['weight','pressure','event','thermal','settlement','nozzle']} onPick={v => update({ loadsActiveLoad: v as any })}/>
+            <Segment active={state.loadsActiveLoad} options={['weight','pressure','event','thermal','settlement']} onPick={v => update({ loadsActiveLoad: v as any })}/>
           </ControlBlock>
           {state.loadsActiveLoad !== 'thermal' && <ControlBlock title="Intensity" tag={`${state.loadsSustainedLevel}%`}><Range value={state.loadsSustainedLevel} min={0} max={100} onChange={v => update({ loadsSustainedLevel: v })} left="low" mid="design" right="high" /></ControlBlock>}
           {state.loadsActiveLoad === 'thermal' && <ControlBlock title="Temperature rise ΔT" tag={`${state.loadsThermalDelta * 2}°C`}><Range value={state.loadsThermalDelta} min={0} max={100} onChange={v => update({ loadsThermalDelta: v })} left="0°C" mid="100°C" right="200°C" /></ControlBlock>}
@@ -272,7 +272,7 @@ function App() {
             <div className="bucket"><b>Static strength response</b><br/><span className="copy">σ = F/A, ε = σ/E, Sy and Su belong here.</span></div>
             <div className="bucket"><b>Generic stress state</b><br/><span className="copy">σx, σy, τxy, τyx describe stress at a point before pipe-specific notation.</span></div>
             <div className="bucket"><b>Pipe stress components</b><br/><span className="copy">Pressure → σθ and σL; bending → longitudinal tension/compression and ovalisation; torsion → τt.</span></div>
-            <div className="bucket"><b>Load classification</b><br/><span className="copy">Weight/pressure/event are force-controlled; thermal/settlement/nozzle movement are displacement-controlled.</span></div>
+            <div className="bucket"><b>Load classification</b><br/><span className="copy">Weight/pressure/event are force-controlled; thermal and settlement are displacement-controlled.</span></div>
             <div className="bucket"><b>Metal fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here for ductile metallic piping.</span></div>
             <p className="fb">Challenge principle: choose the right coordinate system and load route first.</p>
           </div>

@@ -1,6 +1,6 @@
 export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe'
   | 'loads' | 'expansion' | 'combined' | 'challenge';
-export type LoadCategory = 'weight' | 'pressure' | 'event' | 'thermal' | 'settlement' | 'nozzle';
+export type LoadCategory = 'weight' | 'pressure' | 'event' | 'thermal' | 'settlement';
 export type LoadDuration = 'always' | 'short' | 'cycle';
 export type LoadRestraint = 'free' | 'guided' | 'restrained';
 export type Material = 'ductile' | 'brittle';
