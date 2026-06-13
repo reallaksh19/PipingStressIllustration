@@ -118,21 +118,159 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <details class="tab4-learning-layer">
+    <details class="tab4-learning-layer" id="dynamic-learning-layer">
       <summary>
         <div>
-          <div class="tab4-learning-title">ⓘ Tab 4 learning layer</div>
-          <div class="tab4-learning-subtitle">Pipe-specific stress helpers · pressure design, sustained route, bending, torsion, and B31.3 paragraph map.</div>
+          <div class="tab4-learning-title" id="dynamic-learning-title">ⓘ Learning layer</div>
+          <div class="tab4-learning-subtitle" id="dynamic-learning-subtitle">Select a lesson tab to load focused concept, piping, B31.3 map, mistake, and next-step guidance.</div>
         </div>
         <span class="tab4-learning-toggle"></span>
       </summary>
-      <div class="tab4-learning-grid">
-        <div class="tab4-learn-cell"><b><span>θ</span>Hoop σθ</b><p>Concept: circumferential membrane stress from internal pressure. Piping: pressure-dominant rupture tends to split pipe longitudinally. B31.3 map: pressure-design family, especially para 304 straight-pipe pressure thickness checks; verify exact edition wording. Mistake: do not call generic σy hoop stress unless the coordinate system is cylindrical.</p></div>
-        <div class="tab4-learn-cell"><b><span>L</span>Axial σL</b><p>Concept: longitudinal stress parallel to pipe axis. Piping: pressure-end, weight bending, thermal restraint, and terminal effects can contribute. B31.3 map: sustained longitudinal checks under 302.3.5 family, while pressure design remains a separate 304 route. Mistake: do not mix axial membrane, bending, and restrained thermal stress as one identical category.</p></div>
-        <div class="tab4-learn-cell"><b><span>r</span>Radial σr</b><p>Concept: stress through wall thickness. Piping: often small in thin-wall teaching but real for thick-wall thinking. B31.3 map: routine checks usually use pressure-design rules; thick-wall or special cases need project review. Mistake: radial stress is neglected only when the thin-wall simplification is justified.</p></div>
-        <div class="tab4-learn-cell"><b><span>M</span>Bending M</b><p>Concept: longitudinal tension on one side and compression on the opposite side. Piping: spans, supports, guides, anchors, equipment loads, and settlement create bending and ovalisation cues. B31.3 map: sustained, occasional, or displacement range depending on source. Mistake: do not combine bending with pressure using one universal pass/fail route.</p></div>
-        <div class="tab4-learn-cell"><b><span>τ</span>Torsion τt</b><p>Concept: twisting shear around the pipe axis. Piping: eccentric loads, equipment movement, branches, and constrained rotations may generate torsion. B31.3 map: include it in the relevant stress route according to load case and verify against the licensed edition. Mistake: do not label torsion as pressure hoop stress or generic τxy without coordinate definition.</p></div>
-      </div>
+      <div class="tab4-learning-grid" id="dynamic-learning-grid"></div>
     </details>
+    <script>
+      const LEARNING_BY_TAB = {
+        Static: {
+          title: 'ⓘ Static learning layer',
+          subtitle: 'Stress–strain, ductility, demand source, pipe wall behavior, and B31.3 route selection.',
+          cells: [
+            ['M', 'Material', 'Ductile metal gives warning through elastic strain, yielding, plasticity, and necking. Low-ductility cases need fracture/flaw thinking before visible deformation.'],
+            ['P', 'Demand', 'Static tension/compression is only a visual cue. First identify whether the real load is force-controlled or displacement-controlled.'],
+            ['○', 'Pipe wall', 'The annulus picture is a local wall bridge. Real checks still need OD, thickness, corrosion allowance, material, temperature, pressure, and load category.'],
+            ['§', 'B31.3 map', 'Pressure design belongs to para. 304 family. Sustained/displacement/occasional checks route through 302.3.5 / 302.3.6 and flexibility/support logic.'],
+            ['!', 'Mistake', 'Do not use the normalized stress–strain point as a B31.3 pass/fail value. It teaches behavior, not code compliance.'],
+          ],
+        },
+        Fatigue: {
+          title: 'ⓘ Fatigue learning layer',
+          subtitle: 'Ductile metallic fatigue: stress range, cycles, hotspot detail, S-N idea, and screening boundaries.',
+          cells: [
+            ['Δσ', 'Stress range', 'Fatigue is controlled by repeated stress range, not one static peak. Startup/shutdown, vibration, pulsation, and thermal cycles can dominate.'],
+            ['N', 'Cycles', 'The S-N axis is logarithmic. Lower stress repeated many times can be more damaging than a single high static event.'],
+            ['W', 'Hotspot', 'Weld toes, branch connections, socket welds, clamps, and small-bore attachments are common initiation locations.'],
+            ['§', 'B31.3 map', 'Map displacement cycles to expansion stress range / flexibility logic. Severe cyclic service may need project-specific fatigue or vibration assessment.'],
+            ['!', 'Mistake', 'Do not call a generic S-N point a B31.3 pass/fail result. It is normalized educational screening.'],
+          ],
+        },
+        'Stress Pt': {
+          title: 'ⓘ Stress components learning layer',
+          subtitle: 'Generic Cartesian stress at a point before pipe-specific notation or failure theory.',
+          cells: [
+            ['σx', 'Normal X', 'σx acts normal to the x-face. It is a Cartesian component and should not be called hoop stress.'],
+            ['σy', 'Normal Y', 'σy acts normal to the y-face. Coordinate definition matters before interpretation.'],
+            ['τ', 'Shear', 'τxy is shear on the x-face in the y direction. Paired shear appears for rotational equilibrium.'],
+            ['[ ]', 'Tensor', 'The stress tensor is a compact bookkeeping form. It is not yet a pipe code check.'],
+            ['Next', 'Pipe route', 'After generic σx/σy/τxy, move to Pipe Stress for σθ, σL, bending, and torsion notation.'],
+          ],
+        },
+        'Pipe Stress': {
+          title: 'ⓘ Pipe Stress learning layer',
+          subtitle: 'Pipe-specific stress helpers · pressure design, sustained route, bending, torsion, and B31.3 paragraph map.',
+          cells: [
+            ['θ', 'Hoop σθ', 'Circumferential membrane stress from pressure. Pressure-dominant rupture tends to split pipe longitudinally. Map to pressure-design para. 304 family.'],
+            ['L', 'Axial σL', 'Longitudinal stress parallel to pipe axis. Pressure end load, weight bending, restrained thermal effects, and terminal loads may contribute.'],
+            ['M', 'Bending', 'Bending creates longitudinal tension on one side and compression on the opposite side. Route depends on source: sustained, occasional, or displacement.'],
+            ['τ', 'Torsion', 'Twisting shear around the pipe axis can come from eccentric loads, branch geometry, or constrained rotations.'],
+            ['!', 'Mistake', 'Do not read σx/σy as hoop/axial unless the coordinate system has been changed to cylindrical pipe notation.'],
+          ],
+        },
+        Loads: {
+          title: 'ⓘ Load Types learning layer',
+          subtitle: 'Classify source first: force-controlled, displacement-controlled, occasional, sustained, or expansion range.',
+          cells: [
+            ['W', 'Weight', 'Weight and pressure are sustained force-origin loads in normal screening. They usually feed sustained stress logic.'],
+            ['T', 'Thermal', 'Thermal growth is displacement-controlled. Free expansion creates movement; restraint converts growth into secondary reaction.'],
+            ['E', 'Event', 'Wind, seismic, relief, slug, or trip cases are occasional/event loads. Duration and restraint behavior matter.'],
+            ['S', 'Settlement', 'Support movement is imposed displacement. It should not be treated like simple sustained weight.'],
+            ['!', 'Mistake', 'Do not classify by appearance only. Identify the physical source, then choose the stress route.'],
+          ],
+        },
+        Expansion: {
+          title: 'ⓘ Pipe Expansion learning layer',
+          subtitle: 'Thermal growth, pressure elongation, restraint reaction, and flexibility route.',
+          cells: [
+            ['ΔL', 'Free growth', 'Unrestrained pipe expands approximately by ΔL = α·L·ΔT. Movement itself is not stress until restrained.'],
+            ['R', 'Restrained', 'Guides, anchors, equipment nozzles, and stops convert growth into reactions and secondary stress.'],
+            ['P', 'Pressure', 'Straight-pipe pressure elongation is separate from Bourdon bend opening, which is handled in its own tab.'],
+            ['§', 'B31.3 map', 'Thermal displacement cycles route to expansion stress range and flexibility analysis, not sustained weight stress.'],
+            ['Next', 'Bourdon', 'Use the Bourdon tab when bend curvature and internal pressure create bend-opening displacement.'],
+          ],
+        },
+        Bourdon: {
+          title: 'ⓘ Bourdon Effect learning layer',
+          subtitle: 'Pressure-induced bend straightening, end movement, and nozzle/support reaction relevance.',
+          cells: [
+            ['B', 'Mechanism', 'Internal pressure tends to open curved bends. The visual cue is bend straightening, not a generic thermal expansion slider.'],
+            ['P', 'Pressure', 'Pressure is the active input. Higher pressure and bend geometry can increase the opening cue.'],
+            ['∠', 'Bend angle', '45°, 90°, and 180° bends have different visual end displacement and reaction sensitivity.'],
+            ['N', 'Nozzle', 'Guided or restrained ends can turn displacement into nozzle/support reaction. Free ends mostly move.'],
+            ['!', 'Boundary', 'This is qualitative piping relevance. Detailed stress analysis needs actual geometry, pressure, restraints, and code basis.'],
+          ],
+        },
+        Combined: {
+          title: 'ⓘ Combined Stress learning layer',
+          subtitle: 'Hoop plus longitudinal stress combined with Von Mises or Tresca screening logic.',
+          cells: [
+            ['H', 'Hoop σH', 'Hoop stress comes from pressure and acts circumferentially. It is usually tensile for internal pressure.'],
+            ['L', 'Longitudinal σL', 'Longitudinal stress may be tensile or compressive depending on pressure, bending, and restraint effects.'],
+            ['VM', 'Von Mises', 'Von Mises is distortion-energy based and often written for combined principal/component stress comparison.'],
+            ['Tr', 'Tresca', 'Tresca is maximum shear based and is typically more conservative for the same state.'],
+            ['!', 'Mistake', 'Do not combine stresses before selecting the right source/category. Sustained, occasional, and displacement routes differ.'],
+          ],
+        },
+        Review: {
+          title: 'ⓘ Review learning layer',
+          subtitle: 'Quick challenge summary: choose coordinate system, load route, stress name, and failure mode correctly.',
+          cells: [
+            ['1', 'Material', 'Separate ductile yielding/plasticity from brittle fracture/flaw sensitivity.'],
+            ['2', 'Coordinate', 'Separate Cartesian σx/σy/τxy from pipe σθ/σL/τt notation.'],
+            ['3', 'Load', 'Classify force-controlled and displacement-controlled sources before code route selection.'],
+            ['4', 'Cycle', 'Fatigue needs stress range and cycles, not only maximum stress.'],
+            ['5', 'Code map', 'Use the app as a paragraph-map guide only; final checks require project edition, data, and licensed code.'],
+          ],
+        },
+      };
+
+      const DEFAULT_TAB = 'Static';
+      const titleEl = document.getElementById('dynamic-learning-title');
+      const subtitleEl = document.getElementById('dynamic-learning-subtitle');
+      const gridEl = document.getElementById('dynamic-learning-grid');
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+      }
+
+      function normalizeTabLabel(label) {
+        return String(label || '').trim() || DEFAULT_TAB;
+      }
+
+      function renderLearning(tabLabel) {
+        const key = normalizeTabLabel(tabLabel);
+        const content = LEARNING_BY_TAB[key] || LEARNING_BY_TAB[DEFAULT_TAB];
+        titleEl.textContent = content.title;
+        subtitleEl.textContent = content.subtitle;
+        gridEl.innerHTML = content.cells.map(([icon, heading, text]) => `
+          <div class="tab4-learn-cell">
+            <b><span>${escapeHtml(icon)}</span>${escapeHtml(heading)}</b>
+            <p>${escapeHtml(text)}</p>
+          </div>
+        `).join('');
+      }
+
+      function activeTabLabel() {
+        const active = document.querySelector('.lesson-tabs .tab.active .tabLabel');
+        return active?.textContent || DEFAULT_TAB;
+      }
+
+      document.addEventListener('click', event => {
+        const tab = event.target?.closest?.('.lesson-tabs .tab');
+        const label = tab?.querySelector?.('.tabLabel')?.textContent;
+        if (label) requestAnimationFrame(() => renderLearning(label));
+      });
+
+      const observer = new MutationObserver(() => renderLearning(activeTabLabel()));
+      observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], childList: true });
+      renderLearning(DEFAULT_TAB);
+    </script>
   </body>
 </html>
