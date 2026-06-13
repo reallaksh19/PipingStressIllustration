@@ -1,4 +1,6 @@
-export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe' | 'challenge';
+export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe'
+  | 'loads' | 'expansion' | 'combined' | 'challenge';
+export type LoadCategory = 'sustained' | 'occasional' | 'thermal' | 'displacement';
 export type Material = 'ductile' | 'brittle';
 export type StaticDemand = 'tension' | 'compression';
 export type StressComponentView = 'normal' | 'shear' | 'combined';
@@ -26,6 +28,19 @@ export type LabState = {
   pipeAxial: number;
   pipeBending: number;
   pipeTorsion: number;
+  loadsActiveLoad: LoadCategory;
+  loadsSustainedLevel: number;
+  loadsThermalDelta: number;
+  loadsOccasionalOn: boolean;
+  expDeltaT: number;
+  expPressure: number;
+  expRestrained: boolean;
+  expShowBourdon: boolean;
+  csH: number;
+  csL: number;
+  csLSign: 'tension' | 'compression';
+  csTheory: 'vonmises' | 'tresca';
+  csAF: number;
 };
 
 export type Status = {
@@ -43,4 +58,26 @@ export const COLORS = {
   blue: '#55b8ff',
   cyan: '#52f0df',
   purple: '#b884ff',
+};
+
+export type LoadsState = {
+  activeLoad: LoadCategory;
+  sustainedLevel: number;
+  thermalDelta: number;
+  occasionalOn: boolean;
+};
+
+export type ExpansionState = {
+  deltaT: number;
+  pressure: number;
+  restrained: boolean;
+  showBourdon: boolean;
+};
+
+export type CombinedStressState = {
+  sH: number;
+  sL: number;
+  sLSign: 'tension' | 'compression';
+  theory: 'vonmises' | 'tresca';
+  allowableFactor: number;
 };
