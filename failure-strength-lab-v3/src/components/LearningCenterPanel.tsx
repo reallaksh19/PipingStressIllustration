@@ -36,6 +36,7 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
     : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
 
   return <details
+    className="learning-center-panel"
     aria-label={`${label} helper content`}
     style={{
       position: 'fixed',
@@ -54,6 +55,19 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
       fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     }}
   >
+    <style>{`
+      .learning-center-panel > summary::-webkit-details-marker,
+      .learning-helper-card > summary::-webkit-details-marker { display: none; }
+      .learning-center-panel .lc-open-label,
+      .learning-helper-card .helper-open-label { display: inline-flex; align-items: center; gap: 6px; }
+      .learning-center-panel .lc-close-label,
+      .learning-helper-card .helper-close-label { display: none; align-items: center; gap: 6px; }
+      .learning-center-panel[open] .lc-open-label { display: none; }
+      .learning-center-panel[open] .lc-close-label { display: inline-flex; }
+      .learning-helper-card[open] .helper-open-label { display: none; }
+      .learning-helper-card[open] .helper-close-label { display: inline-flex; }
+    `}</style>
+
     <summary style={{
       cursor: 'pointer',
       listStyle: 'none',
@@ -68,7 +82,10 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
         <div style={{ color: '#52f0df', fontSize: 12, fontWeight: 950, letterSpacing: '.11em', textTransform: 'uppercase' }}>ⓘ Learning Center</div>
         <div style={{ color: '#d8edff', fontWeight: 950, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
       </div>
-      <span style={{ border: '1px solid rgba(216,237,255,.22)', color: '#dcfffb', borderRadius: 999, background: 'rgba(255,255,255,.07)', padding: '8px 12px', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>Open / collapse ↑↓</span>
+      <span style={{ border: '1px solid rgba(216,237,255,.22)', color: '#dcfffb', borderRadius: 999, background: 'rgba(255,255,255,.07)', padding: '8px 12px', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>
+        <span className="lc-open-label"><span aria-hidden="true">▼</span> Open panel</span>
+        <span className="lc-close-label"><span aria-hidden="true">▲</span> Collapse to bottom</span>
+      </span>
     </summary>
 
     <div style={{ display: 'grid', gap: 10, padding: '0 14px 14px' }}>
@@ -81,9 +98,14 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
-        {helpers.map((helper, index) => <details key={`${helper.title}-${helper.route}`} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 16, background: 'rgba(255,255,255,.04)', overflow: 'hidden' }}>
-          <summary style={{ cursor: 'pointer', listStyle: 'none', padding: '10px 11px', display: 'flex', justifyContent: 'space-between', gap: 10, color: '#d8edff', fontWeight: 950, fontSize: 12 }}>
-            <span>{helper.title}</span><span style={{ color: '#a9bdd5', fontWeight: 900 }}>{helper.route}</span>
+        {helpers.map((helper, index) => <details className="learning-helper-card" key={`${helper.title}-${helper.route}`} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 16, background: 'rgba(255,255,255,.04)', overflow: 'hidden' }}>
+          <summary style={{ cursor: 'pointer', listStyle: 'none', padding: '10px 11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, color: '#d8edff', fontWeight: 950, fontSize: 12 }}>
+            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{helper.title}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#a9bdd5', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              <span>{helper.route}</span>
+              <span className="helper-open-label"><span aria-hidden="true">▼</span> Show</span>
+              <span className="helper-close-label"><span aria-hidden="true">▲</span> Hide</span>
+            </span>
           </summary>
           <div style={{ display: 'grid', gap: 7, padding: '0 10px 10px' }}>
             <LearningCell title="Concept" text={helper.concept} tone="concept" />
