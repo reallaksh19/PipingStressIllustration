@@ -28,7 +28,9 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
       ? fatigueLearningHelpers(state)
       : state.mode === 'stress'
         ? stressComponentLearningHelpers(state)
-        : [];
+        : state.mode === 'pipe'
+          ? pipeStressLearningHelpers(state)
+          : [];
 
   if (helpers.length === 0) return null;
 
@@ -36,12 +38,16 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
     ? 'Tab 2 · Fatigue Learning Center'
     : state.mode === 'stress'
       ? 'Tab 3 · Stress Components Learning Center'
-      : 'Tab 1 · Static Learning Center';
+      : state.mode === 'pipe'
+        ? 'Tab 4 · Pipe Stress Learning Center'
+        : 'Tab 1 · Static Learning Center';
   const subtitle = state.mode === 'fatigue'
     ? 'Stress range, cycles, hotspot detail, S-N limitation, and B31.3 fatigue route.'
     : state.mode === 'stress'
       ? 'Cartesian stress notation, normal/shear components, tensor view, pipe-coordinate boundary, and B31.3 interpretation.'
-      : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
+      : state.mode === 'pipe'
+        ? 'Pipe-specific stress names: hoop σθ, longitudinal σL, bending, torsion τt, and B31.3 route selection.'
+        : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
 
   return <details
     className="learning-center-panel"
@@ -312,6 +318,67 @@ function stressComponentLearningHelpers(state: LabState): LearningHelper[] {
       b313: 'Initial map: pressure design 304 family, sustained/displacement stress categories 302.3.5 family, occasional 302.3.6 family, flexibility 319 family, and SIF/flexibility interpretation via Appendix D / B31J where applicable. Educational paragraph map only.',
       mistake: 'Do not say this generic point-stress tab is code compliant. It has no pipe geometry, wall thickness, material allowables, load combination, SIF/flexibility factor, or support boundary model.',
       next: 'Next helper rollout should move to Pipe Stress so σθ, σL, bending, and torsion are presented in pipe-specific terms.',
+    },
+  ];
+}
+
+function pipeStressLearningHelpers(state: LabState): LearningHelper[] {
+  const activeView = state.pipeStressView === 'pressure'
+    ? 'pressure view'
+    : state.pipeStressView === 'bending'
+      ? 'bending view'
+      : state.pipeStressView === 'torsion'
+        ? 'torsion view'
+        : 'combined view';
+  const pressureSummary = `σθ ${state.pipeHoop}% · σL ${state.pipeAxial}%`;
+  const bendingSummary = `M ${state.pipeBending}%`;
+  const torsionSummary = `τt ${state.pipeTorsion}%`;
+
+  return [
+    {
+      title: 'Pipe cylindrical coordinates',
+      route: activeView,
+      concept: 'This tab changes from the generic x/y stress element to pipe-specific cylindrical notation: hoop σθ, longitudinal σL, radial σr, and torsional shear τt.',
+      piping: 'Use these names when reading pipe stress output. Hoop is around the circumference, longitudinal is along the pipe axis, radial is through the wall, and torsion is twisting shear around the pipe axis.',
+      b313: 'B31.3 checks are selected by load source and stress category, not by a generic Cartesian label. This tab is the bridge from notation to pressure design, sustained, occasional, and displacement routes.',
+      mistake: 'Do not carry Tab 3 σx/σy labels into pipe work without redefining the coordinate system. Hoop stress is σθ, and longitudinal stress is σL.',
+      next: 'Use Load Types next to decide whether the pipe stress belongs to pressure design, sustained, occasional, or displacement-range logic.',
+    },
+    {
+      title: 'Hoop stress σθ from pressure',
+      route: pressureSummary,
+      concept: 'Internal pressure produces circumferential or hoop stress around the pipe wall. In thin-wall teaching it is usually the dominant pressure membrane component.',
+      piping: 'Pressure-dominant pipe rupture tendency is often visualized as a longitudinal split because hoop stress pulls around the circumference. The app shows this as a naming and mechanism lesson, not a wall-thickness calculator.',
+      b313: 'Map pressure boundary integrity to the 304 pressure-design family. Sustained longitudinal effects from pressure end load are a separate route from hoop-pressure wall design.',
+      mistake: 'Do not use the hoop slider as a B31.3 wall-thickness result. Real pressure design needs diameter, thickness, corrosion allowance, joint quality, material allowable, temperature, and code edition.',
+      next: 'After hoop stress, review σL because closed-end pressure, weight bending, and terminal loads can also create longitudinal stress.',
+    },
+    {
+      title: 'Longitudinal stress σL and bending',
+      route: `${pressureSummary} · ${bendingSummary}`,
+      concept: 'Longitudinal stress acts parallel to the pipe axis. It can include axial membrane stress and bending stress, with tension on one side of the pipe and compression on the opposite side during bending.',
+      piping: 'Weight, pressure end load, wind, seismic, thermal restraint, settlement, branch/nozzle loads, and support reactions can all contribute to longitudinal stress depending on the load case.',
+      b313: 'Map force-origin longitudinal stress to sustained or occasional routes as applicable. Map displacement-origin bending from thermal or settlement to the displacement/flexibility route instead.',
+      mistake: 'Do not lump every longitudinal stress into sustained stress. The same-looking bending pattern can be sustained, occasional, or displacement-controlled depending on the source.',
+      next: 'Use the Load Types tab to classify the source before using Combined Stress or any B31.3 paragraph map.',
+    },
+    {
+      title: 'Torsional shear τt',
+      route: torsionSummary,
+      concept: 'Torsional shear is the twisting shear around the pipe axis. It is not hoop stress and it is not the same notation as τxy from the generic point-stress tab.',
+      piping: 'Torsion can be introduced by eccentric branch loads, offset supports, constrained rotations, skewed restraints, equipment nozzle moments, or 3D routing that twists the line.',
+      b313: 'Treat torsional contribution through the applicable load case and stress category. For code work, torsion should be interpreted with the same source route as the rest of the case: sustained, occasional, or displacement.',
+      mistake: 'Do not judge torsion only by the arrow direction on the sketch. Real torsional stress depends on geometry, section properties, load path, restraints, and sign convention.',
+      next: 'Use Combined Stress only as an educational combination after the source/category route is clear.',
+    },
+    {
+      title: 'B31.3 lens for Tab 4',
+      route: 'pipe stress map',
+      concept: 'Tab 4 provides pipe-specific stress names and teaches which component is associated with pressure, axial loading, bending, and torsion.',
+      piping: 'A practical pipe-stress workflow checks pressure wall design, sustained weight/pressure stress, occasional event cases, thermal displacement range, support reactions, and terminal/nozzle loads separately before summarizing risk.',
+      b313: 'Initial map: 304 pressure design, 302.3.5 sustained/displacement stress categories, 302.3.6 occasional stress, 319 flexibility, support/restraint interpretation, and Appendix D / B31J SIF/flexibility where applicable. Educational paragraph map only.',
+      mistake: 'Do not call this tab code compliant. It has normalized sliders only and no actual line size, wall thickness, material allowable, temperature, SIF, flexibility factor, support model, or load combination.',
+      next: 'Next helper rollout should move to Load Types because the same stress component is judged differently depending on the physical load source.',
     },
   ];
 }
