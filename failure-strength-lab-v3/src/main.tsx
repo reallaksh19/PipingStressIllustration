@@ -170,7 +170,7 @@ const presentationOverride = `
   }
 
   .analysis-grid {
-    grid-template-columns: minmax(560px, 1.18fr) minmax(410px, .92fr) !important;
+    grid-template-columns: minmax(300px, 1.18fr) minmax(260px, .92fr) !important;
     grid-template-areas: "side curve" "local interp" !important;
     grid-auto-rows: minmax(300px, auto) !important;
   }
@@ -184,7 +184,7 @@ const presentationOverride = `
   .analysis-grid .panel:nth-child(2) svg { max-height: 350px; }
 
   .pipe-grid {
-    grid-template-columns: minmax(520px, 1fr) minmax(440px, 1fr) !important;
+    grid-template-columns: minmax(300px, 1fr) minmax(260px, 1fr) !important;
     grid-template-areas: "side section" "map note" !important;
     grid-auto-rows: minmax(315px, auto) !important;
   }
@@ -195,12 +195,12 @@ const presentationOverride = `
   .pipe-grid .panel:nth-child(1) .pb,
   .pipe-grid .panel:nth-child(2) .pb { min-height: 315px !important; display: flex; align-items: center; justify-content: center; }
 
-  @media (max-width: 860px) {
+  @media (max-width: 680px) {
     .appHeader { grid-template-columns: 1fr !important; }
     .statusStack { justify-items: start; }
     .brandRow { align-items: flex-start; }
     .appIcon { width: 46px; height: 46px; flex-basis: 46px; border-radius: 15px; }
-    .lesson-tabs { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+    .lesson-tabs { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
     .analysis-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "local" "curve" "interp" !important; }
     .pipe-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "section" "map" "note" !important; }
   }
