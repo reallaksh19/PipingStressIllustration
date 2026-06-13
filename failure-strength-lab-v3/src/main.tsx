@@ -485,4 +485,23 @@ function Segment({ active, options, onPick }: { active: string; options: string[
 function Range({ value, min, max, onChange, left, mid, right }: { value: number; min: number; max: number; onChange: (v:number)=>void; left: string; mid?: string; right: string }) { return <div className="range"><div className="row"><input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))}/></div><div className="labels"><span>{left}</span>{mid && <span>{mid}</span>}<span>{right}</span></div></div>; }
 function Panel({ title, tag, children }: { title: string; tag: string; children: React.ReactNode }) { return <article className="panel"><div className="ph"><span>{title}</span><span>{tag}</span></div><div className="pb">{children}</div></article>; }
 
-createRoot(document.getElementById('root')!).render(<App />);
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return <div style={{ padding: 32, color: '#ff4b64', fontFamily: 'ui-monospace, monospace', fontSize: 14 }}>
+        <b>App failed to render</b>
+        <pre style={{ marginTop: 12, whiteSpace: 'pre-wrap', color: '#a9bdd5' }}>{this.state.error.message}</pre>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
+createRoot(document.getElementById('root')!).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
