@@ -233,21 +233,14 @@ function StressLearningBar({ state }: { state: LabState }) {
   return <div
     aria-label="Tab 3 learning layer status bar"
     style={{
-      position: 'fixed',
-      left: 24,
-      right: 24,
-      bottom: 18,
-      zIndex: 30,
       display: 'grid',
       gap: 9,
       padding: '12px 14px',
       borderRadius: 22,
       border: '1px solid rgba(82,240,223,.28)',
       background: 'linear-gradient(180deg,rgba(9,20,36,.94),rgba(6,16,29,.97))',
-      boxShadow: '0 -14px 38px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06)',
-      backdropFilter: 'blur(14px)',
-      maxHeight: '34vh',
-      overflowY: 'auto',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)',
+      marginTop: 8,
     }}
   >
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
