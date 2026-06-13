@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LabState, Status } from '../model/types';
 import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
 
@@ -7,6 +8,7 @@ type Readout = { headline: string; principle: string; items: Item[]; steps: Step
 type StaticHelper = { title: string; route: string; concept: string; piping: string; b313: string; mistake: string; next: string };
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
+  const [activeStaticHelper, setActiveStaticHelper] = useState<string | null>(null);
   const r = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
   return <div className="interp" style={{ gap: 13 }}>
     <span className="badge" style={{ color: status.color }}>{status.badge}</span>
@@ -24,39 +26,57 @@ export function Interpretation({ state, status }: { state: LabState; status: Sta
       </div>)}
     </div>
 
-    {state.mode === 'static' && <StaticLearningHelpers state={state} />}
-
     <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
     <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
+
+    {state.mode === 'static' && <StaticLearningBar state={state} active={activeStaticHelper} onPick={setActiveStaticHelper} />}
   </div>;
 }
 
-function StaticLearningHelpers({ state }: { state: LabState }) {
+function StaticLearningBar({ state, active, onPick }: { state: LabState; active: string | null; onPick: (title: string | null) => void }) {
   const helpers = staticHelpers(state);
-  return <div style={{ display: 'grid', gap: 8 }} aria-label="Static loading learning helpers">
-    <div className="bucket" style={{ borderColor: 'rgba(184,132,255,.34)', background: 'rgba(184,132,255,.055)' }}>
-      <b>ⓘ Tab 1 learning layer</b>
-      <span className="copy">Use these helpers like a Little P.Eng-style route: mechanism → piping example → B31.3 map → common mistake. Educational interpretation only; verify exact wording and applicability in the licensed project B31.3 edition.</span>
-    </div>
-    {helpers.map(helper => <HelperDetails key={helper.title} helper={helper} />)}
-  </div>;
-}
+  const selected = helpers.find(helper => helper.title === active) ?? null;
+  const iconFor = (title: string) => title.includes('Material') ? 'M' : title.includes('demand') ? 'P' : title.includes('section') ? '○' : title.includes('curve') ? 'σ–ε' : '§';
+  const shortFor = (title: string) => title.replace('B31.3 lens for Tab 1', 'B31.3').replace('Static demand visual', 'Demand').replace('Pipe-wall section', 'Wall').replace('Stress–strain curve', 'Curve').replace('Material response', 'Material');
 
-function HelperDetails({ helper }: { helper: StaticHelper }) {
-  const gridStyle = { display: 'grid', gridTemplateColumns: '112px 1fr', gap: 6, alignItems: 'start' } as const;
-  return <details className="card" style={{ borderColor: 'rgba(82,240,223,.26)' }}>
-    <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', fontWeight: 950 }}>
-      <span>ⓘ {helper.title}</span>
-      <span style={{ color: '#52f0df', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase' }}>{helper.route}</span>
-    </summary>
-    <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-      <div style={gridStyle}><b>Concept</b><span className="copy">{helper.concept}</span></div>
-      <div style={gridStyle}><b>Piping use</b><span className="copy">{helper.piping}</span></div>
-      <div style={gridStyle}><b>B31.3 map</b><span className="copy">{helper.b313}</span></div>
-      <div style={gridStyle}><b>Mistake</b><span className="copy">{helper.mistake}</span></div>
-      <div style={gridStyle}><b>Next</b><span className="copy">{helper.next}</span></div>
+  return <div style={{ display: 'grid', gap: 10, borderTop: '1px solid rgba(190,220,255,.18)', paddingTop: 10 }} aria-label="Static loading learning bar">
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      {helpers.map(helper => {
+        const activeButton = selected?.title === helper.title;
+        return <button
+          key={helper.title}
+          type="button"
+          onClick={() => onPick(activeButton ? null : helper.title)}
+          title={`ⓘ ${helper.title}`}
+          style={{
+            border: `1px solid ${activeButton ? 'rgba(82,240,223,.82)' : 'rgba(190,220,255,.20)'}`,
+            borderRadius: 999,
+            background: activeButton ? 'linear-gradient(135deg,rgba(85,184,255,.25),rgba(82,240,223,.10))' : 'rgba(255,255,255,.045)',
+            color: activeButton ? '#dcfffb' : '#d8edff',
+            padding: '8px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 7,
+            cursor: 'pointer',
+            fontWeight: 950,
+            fontSize: 12,
+          }}
+        >
+          <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: 'rgba(6,16,29,.56)', color: '#52f0df', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{iconFor(helper.title)}</span>
+          <span>{shortFor(helper.title)}</span>
+        </button>;
+      })}
     </div>
-  </details>;
+
+    {selected && <div className="bucket" style={{ borderColor: 'rgba(184,132,255,.34)', background: 'rgba(184,132,255,.055)' }}>
+      <b>ⓘ {selected.title} <span style={{ color: '#52f0df', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase' }}> · {selected.route}</span></b>
+      <span className="copy"><b>Concept:</b> {selected.concept}</span>
+      <span className="copy"><b>Piping:</b> {selected.piping}</span>
+      <span className="copy"><b>B31.3 map:</b> {selected.b313}</span>
+      <span className="copy"><b>Mistake:</b> {selected.mistake}</span>
+      <span className="copy"><b>Next:</b> {selected.next}</span>
+    </div>}
+  </div>;
 }
 
 function staticHelpers(state: LabState): StaticHelper[] {
@@ -131,20 +151,20 @@ function staticReadout(state: LabState): Readout {
 
   if (ductile && tension) {
     return {
-      headline: load >= 72 ? 'Ductile tensile plasticity controls the picture' : 'Ductile tension gives visible warning before rupture',
-      principle: 'For ductile static tension, read the sequence as elastic stretch → yield → plastic strain localization. The visual focus is deformation, not arrow direction.',
+      headline: load >= 76 ? 'Ductile tensile necking follows plastic deformation' : load >= 45 ? 'Ductile tension is in plastic deformation range' : 'Ductile tension gives visible warning before rupture',
+      principle: 'For ductile static tension, read the sequence as elastic stretch → yield/plastic deformation → necking. The visual focus is staged deformation, not arrow direction.',
       items: [
         { label: 'Demand', value: 'Static axial tension' },
         { label: 'Material', value: 'Ductile metal' },
         { label: 'Range', value: level },
-        { label: 'Failure mode', value: load >= 72 ? 'Necking / rupture risk' : 'Yield / deformation watch' },
+        { label: 'Failure mode', value: load >= 76 ? 'Necking after plasticity' : load >= 45 ? 'Plastic deformation' : 'Elastic stretch' },
       ],
       steps: [
         { title: 'Elastic response', text: 'Strain follows stress and should recover when unloaded.' },
-        { title: 'Yielding starts', text: 'Permanent strain appears once the simplified Sy region is reached.' },
-        { title: 'Plastic localization', text: 'At high demand the section necks; remaining area reduces and rupture becomes plausible.' },
+        { title: 'Plastic deformation', text: 'After yield, permanent strain spreads along the specimen before the neck forms.' },
+        { title: 'Necking', text: 'At high demand, plastic strain localizes; the remaining area reduces and rupture becomes plausible.' },
       ],
-      watch: 'Dog-bone stretch, yield band, and necking lines in side view; wall thinning/yield band in cross-section.',
+      watch: 'Side view now separates the broad plastic deformation zone from the later necking zone, matching the σ–ε curve sequence.',
       caution: 'This is a teaching visualization. It is not an allowable-stress or code compliance check.',
     };
   }
