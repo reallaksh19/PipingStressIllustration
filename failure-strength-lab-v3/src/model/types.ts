@@ -43,7 +43,6 @@ export type LabState = {
   expShowBourdon: boolean;
   bourdonPressure: number;
   bourdonBendAngle: BourdonBendAngle;
-  bourdonFlexibility: number;
   bourdonEndCondition: BourdonEndCondition;
   csH: number;
   csL: number;
@@ -87,7 +86,6 @@ export type ExpansionState = {
 export type BourdonState = {
   pressure: number;
   bendAngle: BourdonBendAngle;
-  flexibility: number;
   endCondition: BourdonEndCondition;
 };
 
