@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Failure and Strength Lab icon">
+  <defs>
+    <linearGradient id="bg" x1="10" y1="10" x2="86" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12365a"/>
+      <stop offset="0.55" stop-color="#07192e"/>
+      <stop offset="1" stop-color="#160f2e"/>
+    </linearGradient>
+    <linearGradient id="pipe" x1="18" y1="47" x2="78" y2="47" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b7893"/>
+      <stop offset="0.5" stop-color="#e8f7ff"/>
+      <stop offset="1" stop-color="#58718b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="6" y="6" width="84" height="84" rx="22" fill="url(#bg)" stroke="#52f0df" stroke-width="3"/>
+  <path d="M20 50 C30 34 46 34 56 50 C64 63 74 63 80 52" fill="none" stroke="#02101d" stroke-width="18" stroke-linecap="round"/>
+  <path d="M20 50 C30 34 46 34 56 50 C64 63 74 63 80 52" fill="none" stroke="url(#pipe)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M20 50 C30 34 46 34 56 50 C64 63 74 63 80 52" fill="none" stroke="#06101d" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 7" opacity="0.72"/>
+  <circle cx="22" cy="50" r="6" fill="#52f0df" filter="url(#glow)"/>
+  <circle cx="80" cy="52" r="6" fill="#b884ff" filter="url(#glow)"/>
+  <text x="48" y="30" text-anchor="middle" fill="#eef7ff" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="900">σ</text>
+</svg>
