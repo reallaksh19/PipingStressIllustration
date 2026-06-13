@@ -20,11 +20,11 @@ export function SideViewSvg({ state, status }: SideProps) {
 
 function DuctileTensionView({ state, status }: SideProps) {
   const p = state.staticLoad / 100;
-  const med = state.staticLoad >= 45;
-  const high = state.staticLoad >= 72;
-  // Cap elongation so grips don't go off-canvas and neck stays positive.
+  const plastic = p >= 0.44;
+  const necking = p >= 0.76;
+  // Match the stress-strain curve stages: elastic -> yield/plastic -> necking tail.
   const elong = Math.min(34 * p, 28);
-  const neck = high ? 22 : med ? 10 : 0;
+  const neck = necking ? 24 : plastic ? 5 : 0;
   const leftGrip = Math.max(30, 52 - elong);
   const rightGrip = Math.min(608, 588 + elong);
   const specimenPath = `M126 170 C188 166 220 ${178 + neck * 0.3} 268 ${183 + neck} C306 ${189 + neck * 0.45} 334 ${189 + neck * 0.45} 372 ${183 + neck} C420 ${178 + neck * 0.3} 452 166 514 170 L514 250 C452 254 420 ${242 - neck * 0.3} 372 ${237 - neck} C334 ${231 - neck * 0.45} 306 ${231 - neck * 0.45} 268 ${237 - neck} C220 ${242 - neck * 0.3} 188 254 126 250 Z`;
@@ -37,14 +37,40 @@ function DuctileTensionView({ state, status }: SideProps) {
     <Grip x={rightGrip - 42} label="grip" />
     <path d={specimenPath} className="specimen ductile" />
     <path d="M168 188H246 M394 188H472 M168 232H246 M394 232H472" className="gaugeMarks" />
-    {med && <ellipse cx="320" cy="210" rx={high ? 82 : 64} ry={high ? 36 : 44} className="yield" />}
-    {high && <>
-      <path d="M294 175 C302 194 300 225 292 246 M348 175 C340 194 342 225 350 246" className="neckLine" />
-      <text x="320" y="292" textAnchor="middle" className="caseLabel" fill={status.color}>necking + plastic deformation</text>
+
+    {plastic && <>
+      <ellipse cx="320" cy="210" rx={necking ? 108 : 78} ry={necking ? 49 : 41} className="yield" />
+      <path d="M218 183 C252 194 285 196 320 192 C356 196 390 194 424 183 M218 237 C252 226 285 224 320 228 C356 224 390 226 424 237" stroke="rgba(255,158,58,.58)" strokeWidth="3" strokeLinecap="round" fill="none" strokeDasharray="9 8" />
+      <text x="238" y="286" textAnchor="middle" fill="#ff9e3a" fontSize="13" fontWeight="900">plastic deformation</text>
     </>}
-    {!high && <text x="320" y="292" textAnchor="middle" className="caseLabel" fill={status.color}>{med ? 'yield band appears before rupture' : 'elastic stretch, returns when unloaded'}</text>}
-    <text x="320" y="328" textAnchor="middle" className="muted">same tensile demand; ductile response gives visible deformation warning</text>
+
+    {necking && <>
+      <path d="M291 174 C300 194 299 226 290 248 M350 174 C341 194 342 226 351 248" className="neckLine" />
+      <path d="M302 166 C315 184 315 236 302 254 M338 166 C325 184 325 236 338 254" stroke="#ff4b64" strokeWidth="3.8" strokeLinecap="round" fill="none" filter="drop-shadow(0 0 10px rgba(255,75,100,.55))" />
+      <text x="402" y="286" textAnchor="middle" fill="#ff4b64" fontSize="13" fontWeight="900">necking zone</text>
+    </>}
+
+    <StageStrip active={necking ? 'necking' : plastic ? 'plastic' : 'elastic'} />
+    <text x="320" y="328" textAnchor="middle" className="muted">side view follows σ–ε curve stages: elastic → plastic deformation → necking tail</text>
   </SvgFrame>;
+}
+
+function StageStrip({ active }: { active: 'elastic' | 'plastic' | 'necking' }) {
+  const stages = [
+    { key: 'elastic', x: 196, label: 'elastic', color: '#55b8ff' },
+    { key: 'plastic', x: 320, label: 'plastic', color: '#ff9e3a' },
+    { key: 'necking', x: 444, label: 'necking', color: '#ff4b64' },
+  ] as const;
+  return <g>
+    <path d="M196 304 H444" stroke="rgba(216,237,255,.24)" strokeWidth="3" strokeLinecap="round" />
+    {stages.map(stage => {
+      const on = stage.key === active;
+      return <g key={stage.key}>
+        <circle cx={stage.x} cy="304" r={on ? 8 : 5} fill={on ? stage.color : 'rgba(216,237,255,.26)'} stroke="#06101d" strokeWidth="2" />
+        <text x={stage.x} y="321" textAnchor="middle" fill={on ? stage.color : 'rgba(169,189,213,.86)'} fontSize="11" fontWeight="900">{stage.label}</text>
+      </g>;
+    })}
+  </g>;
 }
 
 function DuctileCompressionView({ state, status }: SideProps) {
