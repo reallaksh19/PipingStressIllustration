@@ -8,52 +8,72 @@ type Readout = { headline: string; principle: string; items: Item[]; steps: Step
 type StaticHelper = { title: string; route: string; concept: string; piping: string; b313: string; mistake: string; next: string };
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
-  const [activeStaticHelper, setActiveStaticHelper] = useState<string | null>(null);
   const r = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
-  return <div className="interp" style={{ gap: 13 }}>
-    <span className="badge" style={{ color: status.color }}>{status.badge}</span>
-    <h3 className="result-title">{r.headline}</h3>
-    <p className="copy">{r.principle}</p>
+  return <>
+    <div className="interp" style={{ gap: 13 }}>
+      <span className="badge" style={{ color: status.color }}>{status.badge}</span>
+      <h3 className="result-title">{r.headline}</h3>
+      <p className="copy">{r.principle}</p>
 
-    <div className="table">
-      {r.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
+      <div className="table">
+        {r.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
+      </div>
+
+      <div style={{ display: 'grid', gap: 8 }}>
+        {r.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
+          <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
+          <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
+        </div>)}
+      </div>
+
+      <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
+      <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
     </div>
 
-    <div style={{ display: 'grid', gap: 8 }}>
-      {r.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
-        <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
-        <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
-      </div>)}
-    </div>
-
-    <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
-    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
-
-    {state.mode === 'static' && <StaticLearningBar state={state} active={activeStaticHelper} onPick={setActiveStaticHelper} />}
-  </div>;
+    {state.mode === 'static' && <StaticLearningBar state={state} />}
+  </>;
 }
 
-function StaticLearningBar({ state, active, onPick }: { state: LabState; active: string | null; onPick: (title: string | null) => void }) {
+export function StaticLearningBar({ state }: { state: LabState }) {
   const helpers = staticHelpers(state);
-  const selected = helpers.find(helper => helper.title === active) ?? null;
+  const [active, setActive] = useState<string>(helpers[0]?.title ?? 'Material response');
+  const selected = helpers.find(helper => helper.title === active) ?? helpers[0];
   const iconFor = (title: string) => title.includes('Material') ? 'M' : title.includes('demand') ? 'P' : title.includes('section') ? '○' : title.includes('curve') ? 'σ–ε' : '§';
   const shortFor = (title: string) => title.replace('B31.3 lens for Tab 1', 'B31.3').replace('Static demand visual', 'Demand').replace('Pipe-wall section', 'Wall').replace('Stress–strain curve', 'Curve').replace('Material response', 'Material');
 
-  return <div style={{ display: 'grid', gap: 10, borderTop: '1px solid rgba(190,220,255,.18)', paddingTop: 10 }} aria-label="Static loading learning bar">
+  return <div
+    aria-label="Static loading learning layer status bar"
+    style={{
+      position: 'fixed',
+      left: 24,
+      right: 24,
+      bottom: 18,
+      zIndex: 30,
+      display: 'grid',
+      gap: 9,
+      padding: '12px 14px',
+      borderRadius: 22,
+      border: '1px solid rgba(82,240,223,.28)',
+      background: 'linear-gradient(180deg,rgba(9,20,36,.94),rgba(6,16,29,.97))',
+      boxShadow: '0 -14px 38px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06)',
+      backdropFilter: 'blur(14px)',
+    }}
+  >
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, paddingRight: 6, color: '#52f0df', fontWeight: 950, letterSpacing: '.08em', textTransform: 'uppercase', fontSize: 11 }}>ⓘ Tab 1 learning layer</span>
       {helpers.map(helper => {
         const activeButton = selected?.title === helper.title;
         return <button
           key={helper.title}
           type="button"
-          onClick={() => onPick(activeButton ? null : helper.title)}
+          onClick={() => setActive(helper.title)}
           title={`ⓘ ${helper.title}`}
           style={{
             border: `1px solid ${activeButton ? 'rgba(82,240,223,.82)' : 'rgba(190,220,255,.20)'}`,
             borderRadius: 999,
             background: activeButton ? 'linear-gradient(135deg,rgba(85,184,255,.25),rgba(82,240,223,.10))' : 'rgba(255,255,255,.045)',
             color: activeButton ? '#dcfffb' : '#d8edff',
-            padding: '8px 10px',
+            padding: '7px 10px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: 7,
@@ -62,20 +82,33 @@ function StaticLearningBar({ state, active, onPick }: { state: LabState; active:
             fontSize: 12,
           }}
         >
-          <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: 'rgba(6,16,29,.56)', color: '#52f0df', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{iconFor(helper.title)}</span>
+          <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: 'rgba(6,16,29,.72)', color: '#52f0df', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{iconFor(helper.title)}</span>
           <span>{shortFor(helper.title)}</span>
         </button>;
       })}
+      <button
+        type="button"
+        onClick={() => document.querySelector('[data-panel-title="Failure interpretation"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        style={{ marginLeft: 'auto', border: '1px solid rgba(255,215,91,.30)', borderRadius: 999, background: 'rgba(255,215,91,.08)', color: '#ffd75b', padding: '8px 11px', fontWeight: 950, cursor: 'pointer' }}
+      >
+        Failure interpretation ↑
+      </button>
     </div>
 
-    {selected && <div className="bucket" style={{ borderColor: 'rgba(184,132,255,.34)', background: 'rgba(184,132,255,.055)' }}>
-      <b>ⓘ {selected.title} <span style={{ color: '#52f0df', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase' }}> · {selected.route}</span></b>
-      <span className="copy"><b>Concept:</b> {selected.concept}</span>
-      <span className="copy"><b>Piping:</b> {selected.piping}</span>
-      <span className="copy"><b>B31.3 map:</b> {selected.b313}</span>
-      <span className="copy"><b>Mistake:</b> {selected.mistake}</span>
-      <span className="copy"><b>Next:</b> {selected.next}</span>
+    {selected && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8, alignItems: 'stretch' }}>
+      <LearningCell title={`Concept · ${selected.route}`} text={selected.concept} color="#52f0df" />
+      <LearningCell title="Piping" text={selected.piping} color="#55b8ff" />
+      <LearningCell title="B31.3 map" text={selected.b313} color="#ffd75b" />
+      <LearningCell title="Mistake" text={selected.mistake} color="#ff4b64" />
+      <LearningCell title="Next" text={selected.next} color="#b884ff" />
     </div>}
+  </div>;
+}
+
+function LearningCell({ title, text, color }: { title: string; text: string; color: string }) {
+  return <div style={{ minWidth: 0, display: 'grid', gap: 3, padding: '9px 10px', borderRadius: 16, border: '1px solid rgba(190,220,255,.14)', background: 'rgba(255,255,255,.035)' }}>
+    <b style={{ color, fontSize: 11, letterSpacing: '.07em', textTransform: 'uppercase' }}>{title}</b>
+    <span className="copy" style={{ fontSize: 12, lineHeight: 1.32 }}>{text}</span>
   </div>;
 }
 
@@ -147,24 +180,24 @@ function staticReadout(state: LabState): Readout {
   const ductile = state.material === 'ductile';
   const tension = state.staticDemand === 'tension';
   const load = state.staticLoad;
-  const level = load < 45 ? 'Elastic teaching range' : load < 72 ? 'Transition / yield-sensitive range' : 'Damage range';
+  const level = load < 45 ? 'Elastic teaching range' : load < 72 ? 'Transition / yield-sensitive range' : load < 93 ? 'Damage range' : 'Rupture range';
 
   if (ductile && tension) {
     return {
-      headline: load >= 76 ? 'Ductile tensile necking follows plastic deformation' : load >= 45 ? 'Ductile tension is in plastic deformation range' : 'Ductile tension gives visible warning before rupture',
-      principle: 'For ductile static tension, read the sequence as elastic stretch → yield/plastic deformation → necking. The visual focus is staged deformation, not arrow direction.',
+      headline: load >= 93 ? 'Ductile rupture follows necking' : load >= 76 ? 'Ductile tensile necking follows plastic deformation' : load >= 45 ? 'Ductile tension is in plastic deformation range' : 'Ductile tension gives visible warning before rupture',
+      principle: 'For ductile static tension, read the sequence as elastic stretch → yield/plastic deformation → necking → rupture. The visual focus is staged deformation, not arrow direction.',
       items: [
         { label: 'Demand', value: 'Static axial tension' },
         { label: 'Material', value: 'Ductile metal' },
         { label: 'Range', value: level },
-        { label: 'Failure mode', value: load >= 76 ? 'Necking after plasticity' : load >= 45 ? 'Plastic deformation' : 'Elastic stretch' },
+        { label: 'Failure mode', value: load >= 93 ? 'Rupture after necking' : load >= 76 ? 'Necking after plasticity' : load >= 45 ? 'Plastic deformation' : 'Elastic stretch' },
       ],
       steps: [
         { title: 'Elastic response', text: 'Strain follows stress and should recover when unloaded.' },
         { title: 'Plastic deformation', text: 'After yield, permanent strain spreads along the specimen before the neck forms.' },
-        { title: 'Necking', text: 'At high demand, plastic strain localizes; the remaining area reduces and rupture becomes plausible.' },
+        { title: 'Necking and rupture', text: 'At high demand plastic strain localizes, area reduces, and final separation occurs after the necking stage.' },
       ],
-      watch: 'Side view now separates the broad plastic deformation zone from the later necking zone, matching the σ–ε curve sequence.',
+      watch: 'Side view now separates broad plastic deformation, later necking, and final rupture to match the σ–ε curve sequence.',
       caution: 'This is a teaching visualization. It is not an allowable-stress or code compliance check.',
     };
   }
