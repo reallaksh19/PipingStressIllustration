@@ -3,77 +3,110 @@ import { SvgDefs } from './SvgDefs';
 
 export type CombinedStressState = {
   sH: number;   // 0-100 hoop stress % of SMYS
-  sL: number;   // 0-100 longitudinal stress % of SMYS (can be + or -)
+  sL: number;   // 0-100 longitudinal stress % of SMYS, sign handled separately
   sLSign: 'tension' | 'compression';
   theory: 'vonmises' | 'tresca';
-  allowableFactor: number; // 0.72 | 0.90 — B31.3 vs B31.8 style
+  allowableFactor: number; // 0.72 | 0.90 style teaching limit
 };
 
-function clamp(n: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, n)); }
+type CombinedMetrics = {
+  sH: number;
+  sL: number;
+  vonMisesVal: number;
+  trescaVal: number;
+  activeVal: number;
+  activeName: 'Von Mises' | 'Tresca';
+  activePass: boolean;
+  vmPass: boolean;
+  trPass: boolean;
+};
+
+function clamp(n: number, lo = 0, hi = 1) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function pct(n: number) {
+  return (n * 100).toFixed(1);
+}
+
+function combinedMetrics(state: CombinedStressState): CombinedMetrics {
+  const sH = state.sH / 100;
+  const sLRaw = state.sL / 100;
+  const sL = state.sLSign === 'compression' ? -sLRaw : sLRaw;
+  const vonMisesVal = Math.sqrt(Math.max(0, sH * sH - sH * sL + sL * sL));
+  const trescaVal = Math.max(Math.abs(sH - sL), Math.abs(sH), Math.abs(sL));
+  const activeVal = state.theory === 'vonmises' ? vonMisesVal : trescaVal;
+  const activeName = state.theory === 'vonmises' ? 'Von Mises' : 'Tresca';
+
+  return {
+    sH,
+    sL,
+    vonMisesVal,
+    trescaVal,
+    activeVal,
+    activeName,
+    activePass: activeVal <= state.allowableFactor,
+    vmPass: vonMisesVal <= state.allowableFactor,
+    trPass: trescaVal <= state.allowableFactor,
+  };
+}
+
+function vonMisesPoints(cx: number, cy: number, scale: number, factor = 1) {
+  return Array.from({ length: 121 }, (_, i) => {
+    const t = (i / 120) * 2 * Math.PI;
+    // σH² − σH·σL + σL² = 1, plotted on the same σH/σL axes as Tresca.
+    const px = (Math.cos(t) + 0.5 * Math.sin(t)) * factor;
+    const py = ((Math.sqrt(3) / 2) * Math.sin(t)) * factor;
+    return `${(cx + px * scale).toFixed(1)},${(cy - py * scale).toFixed(1)}`;
+  }).join(' ');
+}
+
+function trescaPoints(cx: number, cy: number, scale: number, factor = 1) {
+  const verts: [number, number][] = [
+    [1, 0], [1, 1], [0, 1], [-1, 0], [-1, -1], [0, -1],
+  ];
+  return verts
+    .map(([x, y]) => `${(cx + x * factor * scale).toFixed(1)},${(cy - y * factor * scale).toFixed(1)}`)
+    .join(' ');
+}
+
+function ratioColor(value: number, allowable: number) {
+  return value > allowable ? COLORS.red : value > allowable * 0.85 ? COLORS.orange : COLORS.green;
+}
 
 // ── Yield surface SVG ────────────────────────────────────────────────────────
 
 export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }) {
-  const cx = 230, cy = 170, scale = 108; // scale: 1 unit (SMYS) = 108px
-  const sH = state.sH / 100;
-  const sLRaw = state.sL / 100;
-  const sL = state.sLSign === 'compression' ? -sLRaw : sLRaw;
+  const cx = 230;
+  const cy = 164;
+  const scale = 96; // one fixed scale: 1.0S = 96px for both VM and Tresca
   const AF = state.allowableFactor;
-
-  // Von Mises ellipse: σ1² - σ1σ2 + σ2² = 1
-  // We parametrise: x = cosθ + 0.5·sinθ, y = (√3/2)·sinθ  (rotated)
-  const vMPoints = Array.from({ length: 121 }, (_, i) => {
-    const t = (i / 120) * 2 * Math.PI;
-    const px = Math.cos(t) + 0.5 * Math.sin(t);
-    const py = (Math.sqrt(3) / 2) * Math.sin(t);
-    return `${(cx + px * scale).toFixed(1)},${(cy - py * scale).toFixed(1)}`;
-  }).join(' ');
-
-  // Tresca hexagon vertices (σ1-σ2 space at σ3=0)
-  const tVerts: [number, number][] = [
-    [1, 0], [1, 1], [0, 1], [-1, 0], [-1, -1], [0, -1],
-  ];
-  const trPoints = tVerts.map(([x, y]) =>
-    `${(cx + x * scale).toFixed(1)},${(cy - y * scale).toFixed(1)}`
-  ).join(' ');
-
-  // Current operating dot
-  const dotX = cx + sH * scale;
-  const dotY = cy - sL * scale;
-
-  // Combined stress checks
-  const vonMisesVal = Math.sqrt(sH * sH - sH * sL + sL * sL);
-  const tresca1 = Math.abs(sH - sL);
-  const tresca2 = Math.abs(sH);
-  const tresca3 = Math.abs(sL);
-  const trescaVal = Math.max(tresca1, tresca2, tresca3);
-  const checkVal = state.theory === 'vonmises' ? vonMisesVal : trescaVal;
-  const pass = checkVal <= AF;
-  const dotColor = pass ? COLORS.green : COLORS.red;
-
-  // B31.8 combined stress (Von Mises form): SC = [SL²-SL·SH+SH²]^0.5
-  const scPct = vonMisesVal * 100;
+  const m = combinedMetrics(state);
+  const dotX = cx + m.sH * scale;
+  const dotY = cy - m.sL * scale;
+  const activeColor = state.theory === 'vonmises' ? COLORS.cyan : COLORS.yellow;
+  const inactiveColor = state.theory === 'vonmises' ? COLORS.yellow : COLORS.cyan;
+  const dotColor = ratioColor(m.activeVal, AF);
 
   return (
-    <svg viewBox="0 0 460 340" role="img" aria-label="Yield surface — Von Mises ellipse and Tresca hexagon">
+    <svg viewBox="0 0 460 340" role="img" aria-label="Yield surface comparison — Von Mises ellipse and Tresca hexagon on common scale">
       <SvgDefs />
       <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
-      <path d="M55 78H405 M55 240H405 M115 48V270 M230 48V270 M345 48V270" stroke="rgba(216,237,255,.07)" />
+      <path d="M55 68H405 M55 164H405 M55 260H405 M134 48V282 M230 48V282 M326 48V282" stroke="rgba(216,237,255,.07)" />
 
       <text x="230" y="36" textAnchor="middle" className="label" fill={COLORS.cyan}>
-        Yield surface — {state.theory === 'vonmises' ? 'Von Mises' : 'Tresca'} in σH–σL space
+        Common-scale yield check in σH–σL space
       </text>
 
-      {/* axes */}
-      <path d={`M${cx - scale - 20} ${cy} H${cx + scale + 30}`}
+      {/* axes: both checks use these same S-based axes */}
+      <path d={`M${cx - scale - 24} ${cy} H${cx + scale + 34}`}
         stroke="rgba(216,237,255,.48)" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
-      <path d={`M${cx} ${cy + scale + 18} V${cy - scale - 18}`}
+      <path d={`M${cx} ${cy + scale + 24} V${cy - scale - 24}`}
         stroke="rgba(216,237,255,.48)" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
-      <text x={cx + scale + 32} y={cy + 5} fill="#a9bdd5" fontSize="11" fontWeight="900">σH</text>
-      <text x={cx + 8} y={cy - scale - 20} fill="#a9bdd5" fontSize="11" fontWeight="900">σL</text>
+      <text x={cx + scale + 36} y={cy + 5} fill="#a9bdd5" fontSize="11" fontWeight="900">σH / S</text>
+      <text x={cx + 8} y={cy - scale - 26} fill="#a9bdd5" fontSize="11" fontWeight="900">σL / S</text>
       <text x={cx - 20} y={cy + 14} fill="#a9bdd5" fontSize="10">0</text>
-      {/* SMYS tick labels */}
-      {([[-1,'−S'],[1,'S']] as const).map(([v, lbl]) => {
+      {([[-1, '−1.0S'], [1, '1.0S']] as const).map(([v, lbl]) => {
         const n = Number(v);
         return <g key={lbl as string}>
           <text x={cx + n * scale} y={cy + 18} textAnchor="middle" fill="#a9bdd5" fontSize="10">{lbl as string}</text>
@@ -81,69 +114,68 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
         </g>;
       })}
 
-      {/* Tresca hexagon */}
-      <polygon points={trPoints}
-        fill="rgba(255,215,91,.06)" stroke={COLORS.yellow}
-        strokeWidth={state.theory === 'tresca' ? 3 : 1.4}
-        strokeDasharray={state.theory === 'tresca' ? '' : '7 6'} opacity=".78" />
+      {/* Full-strength reference surfaces. These never rescale when the theory toggles. */}
+      <polygon points={trescaPoints(cx, cy, scale, 1)}
+        fill="rgba(255,215,91,.045)" stroke={COLORS.yellow}
+        strokeWidth={state.theory === 'tresca' ? 3 : 1.25}
+        strokeDasharray={state.theory === 'tresca' ? '' : '7 6'} opacity=".74" />
+      <polyline points={vonMisesPoints(cx, cy, scale, 1)}
+        fill="rgba(82,240,223,.055)" stroke={COLORS.cyan}
+        strokeWidth={state.theory === 'vonmises' ? 3 : 1.25}
+        strokeDasharray={state.theory === 'vonmises' ? '' : '7 6'} opacity=".82" />
 
-      {/* Von Mises ellipse */}
-      <polyline points={vMPoints}
-        fill="rgba(82,240,223,.07)" stroke={COLORS.cyan}
-        strokeWidth={state.theory === 'vonmises' ? 3 : 1.4}
-        strokeDasharray={state.theory === 'vonmises' ? '' : '7 6'} opacity=".88" />
-
-      {/* allowable surface (scaled) */}
-      <polyline
-        points={Array.from({ length: 121 }, (_, i) => {
-          const t = (i / 120) * 2 * Math.PI;
-          const px = (Math.cos(t) + 0.5 * Math.sin(t)) * AF;
-          const py = (Math.sqrt(3) / 2) * Math.sin(t) * AF;
-          return `${(cx + px * scale).toFixed(1)},${(cy - py * scale).toFixed(1)}`;
-        }).join(' ')}
-        fill="none" stroke={COLORS.cyan}
-        strokeWidth="1.5" strokeDasharray="5 5" opacity=".45" />
-      <text x={cx + AF * scale * 0.72} y={cy - AF * scale * 0.55 - 8}
-        fill={COLORS.cyan} fontSize="10" fontWeight="900" opacity=".7">
-        {AF}S allowable
+      {/* Allowable envelopes: same AF factor, same axes, different geometry. */}
+      <polygon points={trescaPoints(cx, cy, scale, AF)}
+        fill="none" stroke={state.theory === 'tresca' ? COLORS.yellow : inactiveColor}
+        strokeWidth={state.theory === 'tresca' ? 2.2 : 1.1}
+        strokeDasharray="5 5" opacity={state.theory === 'tresca' ? .72 : .32} />
+      <polyline points={vonMisesPoints(cx, cy, scale, AF)}
+        fill="none" stroke={state.theory === 'vonmises' ? COLORS.cyan : inactiveColor}
+        strokeWidth={state.theory === 'vonmises' ? 2.2 : 1.1}
+        strokeDasharray="5 5" opacity={state.theory === 'vonmises' ? .72 : .32} />
+      <text x={300} y={80} fill={activeColor} fontSize="10" fontWeight="900" opacity=".88">
+        active allowable = {(AF * 100).toFixed(0)}%S, no graph rescale
       </text>
 
-      {/* crosshairs */}
+      {/* crosshairs and operating point */}
       <path d={`M${dotX} ${cy} V${dotY}`} stroke="rgba(255,215,91,.42)" strokeDasharray="4 5" />
       <path d={`M${cx} ${dotY} H${dotX}`} stroke="rgba(255,215,91,.42)" strokeDasharray="4 5" />
-
-      {/* operating point */}
       <circle cx={dotX} cy={dotY} r="9" fill={dotColor} stroke="#06101d" strokeWidth="2.5" />
       <circle cx={dotX} cy={dotY} r="18" fill="none" stroke={dotColor} strokeOpacity=".42" strokeWidth="3" />
-      <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY - 14, 34)} fill={dotColor} fontSize="12" fontWeight="900">
+      <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY - 14, 38)} fill={dotColor} fontSize="12" fontWeight="900">
         operating point
       </text>
-      <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY + 4, 50)} className="muted">
-        SC = {scPct.toFixed(1)}%S
+      <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY + 4, 54)} className="muted">
+        VM {pct(m.vonMisesVal)}%S · Tresca {pct(m.trescaVal)}%S
       </text>
 
-      <text x="230" y="298" textAnchor="middle" className="caseLabel"
-        fill={pass ? COLORS.green : COLORS.red}>
-        {pass
-          ? `${state.theory === 'vonmises' ? 'Von Mises' : 'Tresca'} check: PASS — SC = ${scPct.toFixed(1)}%S ≤ ${(AF*100).toFixed(0)}%S`
-          : `${state.theory === 'vonmises' ? 'Von Mises' : 'Tresca'} check: FAIL — SC = ${scPct.toFixed(1)}%S > ${(AF*100).toFixed(0)}%S`
-        }
+      <text x="104" y="300" textAnchor="start" fill={m.vmPass ? COLORS.green : COLORS.red} fontSize="11" fontWeight="900">
+        VM = {pct(m.vonMisesVal)}%S {m.vmPass ? '✓' : '✗'}
+      </text>
+      <text x="230" y="300" textAnchor="middle" fill="#a9bdd5" fontSize="11" fontWeight="900">
+        limit = {(AF * 100).toFixed(0)}%S
+      </text>
+      <text x="356" y="300" textAnchor="end" fill={m.trPass ? COLORS.green : COLORS.red} fontSize="11" fontWeight="900">
+        Tresca = {pct(m.trescaVal)}%S {m.trPass ? '✓' : '✗'}
+      </text>
+      <text x="230" y="320" textAnchor="middle" className="caseLabel" fill={m.activePass ? COLORS.green : COLORS.red}>
+        {m.activeName} active check: {m.activePass ? 'PASS' : 'FAIL'} — SC = {pct(m.activeVal)}%S {m.activePass ? '≤' : '>'} {(AF * 100).toFixed(0)}%S
       </text>
     </svg>
   );
 }
 
-// ─── Mohr-circle-style stress element (pipe cross-section view) ──────────────
+// ─── Pipe cross-section view ─────────────────────────────────────────────────
 
 export function CombinedStressPipeSection({ state }: { state: CombinedStressState }) {
-  const sH = state.sH / 100;
-  const sLraw = state.sL / 100;
-  const sL = state.sLSign === 'compression' ? -sLraw : sLraw;
-  const sc  = Math.sqrt(sH * sH - sH * sL + sL * sL);
-  const scColor = sc > state.allowableFactor ? COLORS.red : sc > state.allowableFactor * 0.85 ? COLORS.orange : COLORS.green;
-  const cx = 230, cy = 155, ro = 78, ri = 48;
-  const hoopExpand = sH * 22;
-  const ovalise    = Math.abs(sL) * 14;
+  const m = combinedMetrics(state);
+  const scColor = ratioColor(m.activeVal, state.allowableFactor);
+  const cx = 230;
+  const cy = 155;
+  const ro = 78;
+  const ri = 48;
+  const hoopExpand = Math.abs(m.sH) * 22;
+  const ovalise = Math.abs(m.sL) * 14;
 
   return (
     <svg viewBox="0 0 460 340" role="img" aria-label="Pipe cross-section showing combined stress state">
@@ -151,7 +183,7 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
       <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
       <text x="230" y="38" textAnchor="middle" className="label" fill={COLORS.cyan}>Pipe wall stress state (cross-section)</text>
       <text x="230" y="57" textAnchor="middle" className="muted">
-        S<tspan baselineShift="sub" fontSize="9">C</tspan> = [S<tspan baselineShift="sub" fontSize="9">L</tspan>² − S<tspan baselineShift="sub" fontSize="9">L</tspan>·S<tspan baselineShift="sub" fontSize="9">H</tspan> + S<tspan baselineShift="sub" fontSize="9">H</tspan>²]<tspan dy="-4" fontSize="10">½</tspan>
+        Same σH/σL input; result bar follows active theory: {m.activeName}
       </text>
 
       {/* pipe annulus */}
@@ -163,9 +195,9 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
 
       {/* hoop stress arrows */}
       {state.sH > 5 && <>
-        <path d={`M${cx - ro - hoopExpand - 22} ${cy} C${cx - ro - hoopExpand - 8} ${cy-22},${cx - ro - hoopExpand - 8} ${cy+22},${cx - ro - hoopExpand - 22} ${cy}`}
+        <path d={`M${cx - ro - hoopExpand - 22} ${cy} C${cx - ro - hoopExpand - 8} ${cy - 22},${cx - ro - hoopExpand - 8} ${cy + 22},${cx - ro - hoopExpand - 22} ${cy}`}
           stroke={COLORS.blue} strokeWidth="2.6" fill="none" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-        <path d={`M${cx + ro + hoopExpand + 22} ${cy} C${cx + ro + hoopExpand + 8} ${cy-22},${cx + ro + hoopExpand + 8} ${cy+22},${cx + ro + hoopExpand + 22} ${cy}`}
+        <path d={`M${cx + ro + hoopExpand + 22} ${cy} C${cx + ro + hoopExpand + 8} ${cy - 22},${cx + ro + hoopExpand + 8} ${cy + 22},${cx + ro + hoopExpand + 22} ${cy}`}
           stroke={COLORS.blue} strokeWidth="2.6" fill="none" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
         <text x={cx} y={cy - ro - hoopExpand - 22} textAnchor="middle"
           fill={COLORS.blue} fontSize="11" fontWeight="900">σH = {state.sH}%S</text>
@@ -174,17 +206,17 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
       {/* longitudinal stress: in/out of plane shown as dot/cross */}
       {state.sL > 5 && (
         state.sLSign === 'tension' ? <>
-          {[[-ro*0.5,0],[ro*0.5,0],[0,-ro*0.5],[0,ro*0.5]].map(([dx,dy],i) => (
-            <circle key={i} cx={cx+dx} cy={cy+dy} r="5"
+          {[[-ro * 0.5, 0], [ro * 0.5, 0], [0, -ro * 0.5], [0, ro * 0.5]].map(([dx, dy], i) => (
+            <circle key={i} cx={cx + dx} cy={cy + dy} r="5"
               fill={COLORS.orange} stroke="#06101d" strokeWidth="1.5" />
           ))}
           <text x={cx} y={cy + ro + hoopExpand + 30} textAnchor="middle"
             fill={COLORS.orange} fontSize="11" fontWeight="900">σL tension {state.sL}%S (out of page)</text>
         </> : <>
-          {[[-ro*0.5,0],[ro*0.5,0],[0,-ro*0.5],[0,ro*0.5]].map(([dx,dy],i) => (
+          {[[-ro * 0.5, 0], [ro * 0.5, 0], [0, -ro * 0.5], [0, ro * 0.5]].map(([dx, dy], i) => (
             <g key={i}>
-              <circle cx={cx+dx} cy={cy+dy} r="6" fill="rgba(255,158,58,.22)" stroke={COLORS.orange} strokeWidth="2" />
-              <path d={`M${cx+dx-4} ${cy+dy-4} L${cx+dx+4} ${cy+dy+4} M${cx+dx+4} ${cy+dy-4} L${cx+dx-4} ${cy+dy+4}`}
+              <circle cx={cx + dx} cy={cy + dy} r="6" fill="rgba(255,158,58,.22)" stroke={COLORS.orange} strokeWidth="2" />
+              <path d={`M${cx + dx - 4} ${cy + dy - 4} L${cx + dx + 4} ${cy + dy + 4} M${cx + dx + 4} ${cy + dy - 4} L${cx + dx - 4} ${cy + dy + 4}`}
                 stroke={COLORS.orange} strokeWidth="2.5" strokeLinecap="round" />
             </g>
           ))}
@@ -193,18 +225,19 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
         </>
       )}
 
-      {/* SC result bar */}
-      <rect x={86} y={280} width="268" height="14" rx="7"
+      {/* Active-theory result bar */}
+      <rect x={76} y={276} width="308" height="14" rx="7"
         fill="rgba(255,255,255,.06)" stroke="rgba(216,237,255,.22)" strokeWidth="1.5" />
-      <rect x={86} y={280} width={clamp(sc, 0, 1) * 268} height="14" rx="7"
+      <rect x={76} y={276} width={clamp(m.activeVal, 0, 1) * 308} height="14" rx="7"
         fill={`${scColor}88`} stroke={scColor} strokeWidth="1.5" />
-      <text x="220" y="293" textAnchor="middle" fill={scColor} fontSize="11" fontWeight="900">
-        SC = {(sc * 100).toFixed(1)}%S
+      <path d={`M${76 + clamp(state.allowableFactor, 0, 1) * 308} 272 V295`} stroke="rgba(216,237,255,.72)" strokeWidth="2" />
+      <text x="230" y="289" textAnchor="middle" fill={scColor} fontSize="11" fontWeight="900">
+        {m.activeName} SC = {pct(m.activeVal)}%S
       </text>
       <text x="230" y="318" textAnchor="middle" className="caseLabel" fill={scColor}>
-        {sc <= state.allowableFactor
-          ? `Combined check PASS: ${(sc*100).toFixed(1)}%S ≤ ${(state.allowableFactor*100).toFixed(0)}%S`
-          : `Combined check FAIL: ${(sc*100).toFixed(1)}%S > ${(state.allowableFactor*100).toFixed(0)}%S`}
+        {m.activePass
+          ? `${m.activeName} check PASS: ${pct(m.activeVal)}%S ≤ ${(state.allowableFactor * 100).toFixed(0)}%S`
+          : `${m.activeName} check FAIL: ${pct(m.activeVal)}%S > ${(state.allowableFactor * 100).toFixed(0)}%S`}
       </text>
     </svg>
   );
@@ -213,51 +246,43 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
 // ─── Readout panel ────────────────────────────────────────────────────────────
 
 export function CombinedStressReadout({ state }: { state: CombinedStressState }) {
-  const sH = state.sH / 100;
-  const sLraw = state.sL / 100;
-  const sL = state.sLSign === 'compression' ? -sLraw : sLraw;
-  const vonMisesVal = Math.sqrt(sH*sH - sH*sL + sL*sL);
-  const trescaVal   = Math.max(Math.abs(sH - sL), Math.abs(sH), Math.abs(sL));
+  const m = combinedMetrics(state);
   const AF = state.allowableFactor;
-  const vmPass = vonMisesVal <= AF;
-  const trPass = trescaVal   <= AF;
-  const checkVal = state.theory === 'vonmises' ? vonMisesVal : trescaVal;
-  const pass = checkVal <= AF;
-  const color = pass ? COLORS.green : COLORS.red;
+  const color = m.activePass ? COLORS.green : COLORS.red;
 
   return (
     <div className="interp stress-readout">
       <span className="badge" style={{ color }}>
-        {state.theory === 'vonmises' ? 'Von Mises criterion' : 'Tresca criterion'}
+        {m.activeName} criterion · fixed σH/σL scale
       </span>
       <h3 className="result-title">
-        {pass ? 'Combined stress check: PASS' : 'Combined stress check: FAIL'}
+        {m.activePass ? 'Combined stress check: PASS' : 'Combined stress check: FAIL'}
       </h3>
       <p className="copy">
-        The combined stress S<sub>C</sub> accounts for both hoop and longitudinal stress acting simultaneously. For a thin-wall pipeline, the 2-D Von Mises form is S<sub>C</sub> = [S<sub>L</sub>² − S<sub>L</sub>·S<sub>H</sub> + S<sub>H</sub>²]<sup>½</sup>. ASME B31.8 clause 833.4(a)–(2) requires S<sub>C</sub> ≤ 0.9·S·T. ASME B31.3 uses a similar allowable stress S<sub>h</sub> for sustained cases.
+        Von Mises and Tresca are now compared from the same hoop/longitudinal input point and the same S-based graph scale. The toggle changes the active acceptance geometry, not the axis scale or the stress inputs. Use this as a theory comparison; route-specific B31.3 acceptance still needs the proper paragraph family and project data.
       </p>
       <div className="table">
         <div><span>σH input</span><b>{state.sH}%S ({state.sH > 67 ? 'high — rupture zone' : 'moderate'})</b></div>
         <div><span>σL input</span><b>{state.sL}%S {state.sLSign}</b></div>
         <div><span>Von Mises SC</span>
-          <b style={{ color: vmPass ? COLORS.green : COLORS.red }}>
-            {(vonMisesVal*100).toFixed(1)}%S {vmPass ? '✓' : '✗'} vs {(AF*100).toFixed(0)}%S
+          <b style={{ color: m.vmPass ? COLORS.green : COLORS.red }}>
+            {pct(m.vonMisesVal)}%S {m.vmPass ? '✓' : '✗'} vs {(AF * 100).toFixed(0)}%S
           </b>
         </div>
         <div><span>Tresca SC</span>
-          <b style={{ color: trPass ? COLORS.green : COLORS.red }}>
-            {(trescaVal*100).toFixed(1)}%S {trPass ? '✓' : '✗'} vs {(AF*100).toFixed(0)}%S
+          <b style={{ color: m.trPass ? COLORS.green : COLORS.red }}>
+            {pct(m.trescaVal)}%S {m.trPass ? '✓' : '✗'} vs {(AF * 100).toFixed(0)}%S
           </b>
         </div>
-        <div><span>Active theory</span><b>{state.theory === 'vonmises' ? 'Von Mises (energy, ellipse)' : 'Tresca (shear, hexagon)'}</b></div>
+        <div><span>Active theory</span><b>{state.theory === 'vonmises' ? 'Von Mises (energy, ellipse)' : 'Tresca (maximum shear, hexagon)'}</b></div>
       </div>
       <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}>
-        <b>Why Von Mises for pipelines?</b>
-        <span className="copy">Von Mises is slightly less conservative than Tresca (ellipse is ~15% larger). PDO GU969 and ASME B31.8 both specify Von Mises for combined stress assessment of ductile steel pipelines.</span>
+        <b>Scale correction</b>
+        <span className="copy">Both surfaces use σH/S and σL/S axes. The dashed allowable envelope is scaled by the allowable factor; the graph itself does not resize when switching between Von Mises and Tresca.</span>
       </div>
       <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}>
-        <b>B31.3 vs B31.8 allowable</b>
-        <span className="copy">B31.3 compares sustained SL against 1.0·Sh. B31.8 uses the combined Von Mises SC ≤ 0.9·S·T. The slider lets you compare both allowable factors.</span>
+        <b>Engineering boundary</b>
+        <span className="copy">Von Mises and Tresca are useful combined-stress theory screens. They do not replace B31.3 route selection for pressure design, sustained, occasional, or displacement stress checks.</span>
       </div>
     </div>
   );
