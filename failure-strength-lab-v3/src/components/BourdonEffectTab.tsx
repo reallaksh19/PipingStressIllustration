@@ -41,50 +41,50 @@ function buildBendGeometry(state: BourdonState) {
   const pressure = clamp(state.pressure / 100);
   const pressureDrivenFlex = pressureFlexibilityCue(state);
   const response = clamp(pressure * (0.42 + pressureDrivenFlex * 0.58), 0, 1);
-  const open = response * 46;
-  const pressureBulge = response * 9;
+  const open = response * 44;
+  const pressureBulge = response * 8;
 
   if (state.bendAngle === '45') {
-    const oldEnd = { x: 484, y: 150 };
-    const curEnd = { x: oldEnd.x + open * 0.55, y: oldEnd.y + open * 0.12 };
+    const oldEnd = { x: 500, y: 150 };
+    const curEnd = { x: oldEnd.x + open * 0.58, y: oldEnd.y + open * 0.10 };
     return {
       response,
       pressureDrivenFlex,
       oldEnd,
       curEnd,
-      installed: 'M96 242 H270 C334 242 376 205 434 170 L484 150',
-      current: `M96 242 H280 C350 ${242 - pressureBulge} ${392 + open * 0.25} ${205 - pressureBulge * 0.7} ${448 + open * 0.35} ${174 + open * 0.08} L${curEnd.x} ${curEnd.y}`,
-      pressureGuide: `M130 202 C242 178 354 ${160 - open * 0.15} ${curEnd.x - 28} ${curEnd.y - 20}`,
-      labelPos: { x: 326, y: 292 },
+      installed: 'M88 242 H282 C350 242 392 204 452 169 L500 150',
+      current: `M88 242 H292 C368 ${242 - pressureBulge} ${410 + open * 0.22} ${205 - pressureBulge * 0.7} ${466 + open * 0.35} ${173 + open * 0.08} L${curEnd.x} ${curEnd.y}`,
+      pressureGuide: `M132 196 C248 165 360 ${148 - open * 0.12} ${curEnd.x - 28} ${curEnd.y - 20}`,
+      labelPos: { x: 308, y: 284 },
     };
   }
 
   if (state.bendAngle === '180') {
-    const oldEnd = { x: 112, y: 118 };
-    const curEnd = { x: oldEnd.x - open * 0.38, y: oldEnd.y + open * 0.14 };
+    const oldEnd = { x: 120, y: 108 };
+    const curEnd = { x: oldEnd.x - open * 0.36, y: oldEnd.y + open * 0.12 };
     return {
       response,
       pressureDrivenFlex,
       oldEnd,
       curEnd,
-      installed: 'M96 252 H278 C402 252 402 116 278 116 H112',
-      current: `M96 252 H286 C${420 + open * 0.42} ${252 + pressureBulge} ${420 + open * 0.42} ${116 - pressureBulge} ${286} 116 H${curEnd.x}`,
-      pressureGuide: `M138 205 C232 171 332 171 444 205`,
-      labelPos: { x: 323, y: 294 },
+      installed: 'M88 252 H286 C424 252 424 108 286 108 H120',
+      current: `M88 252 H296 C${442 + open * 0.35} ${252 + pressureBulge} ${442 + open * 0.35} ${108 - pressureBulge} ${296} 108 H${curEnd.x}`,
+      pressureGuide: `M132 205 C236 165 350 165 464 205`,
+      labelPos: { x: 308, y: 286 },
     };
   }
 
-  const oldEnd = { x: 372, y: 98 };
-  const curEnd = { x: oldEnd.x + open * 0.72, y: oldEnd.y + open * 0.42 };
+  const oldEnd = { x: 388, y: 88 };
+  const curEnd = { x: oldEnd.x + open * 0.70, y: oldEnd.y + open * 0.38 };
   return {
     response,
     pressureDrivenFlex,
     oldEnd,
     curEnd,
-    installed: 'M96 248 H282 C360 248 372 188 372 98',
-    current: `M96 248 H292 C${374 + open * 0.45} ${248 - pressureBulge} ${400 + open * 0.58} ${188 + open * 0.10} ${curEnd.x} ${curEnd.y}`,
-    pressureGuide: `M130 204 C250 170 350 ${145 - open * 0.18} ${curEnd.x - 16} ${curEnd.y - 18}`,
-    labelPos: { x: 326, y: 294 },
+    installed: 'M88 248 H292 C378 248 388 178 388 88',
+    current: `M88 248 H304 C${394 + open * 0.42} ${248 - pressureBulge} ${418 + open * 0.50} ${178 + open * 0.08} ${curEnd.x} ${curEnd.y}`,
+    pressureGuide: `M132 198 C260 160 370 ${136 - open * 0.15} ${curEnd.x - 18} ${curEnd.y - 18}`,
+    labelPos: { x: 304, y: 286 },
   };
 }
 
@@ -96,56 +96,54 @@ export function BourdonEffectSvg({ state }: { state: BourdonState }) {
   const reactionPct = state.endCondition === 'free' ? 0 : state.endCondition === 'guided' ? movementPct * 0.45 : movementPct * 0.92;
   const reactionColor = reactionPct > 72 ? COLORS.red : reactionPct > 44 ? COLORS.orange : COLORS.yellow;
   const pressureColor = state.pressure > 72 ? COLORS.red : state.pressure > 44 ? COLORS.orange : COLORS.blue;
-  const pipeWidth = 34;
-  const boreWidth = 11;
-  const pressureWidth = 2.5 + pressure * 5;
+  const pipeWidth = 40;
+  const boreWidth = 13;
+  const pressureWidth = 2.4 + pressure * 4.2;
+  const endTag = state.endCondition === 'free' ? 'movement only' : state.endCondition === 'guided' ? 'guide reaction' : 'anchor/nozzle reaction';
 
-  return <svg viewBox="0 0 640 370" role="img" aria-label="Bourdon effect in a pressurized pipe bend">
+  return <svg viewBox="0 0 640 330" role="img" aria-label="Bourdon effect in a pressurized pipe bend">
     <SvgDefs />
-    <rect x="14" y="18" width="612" height="330" rx="30" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
-    <path d="M52 116H588 M52 210H588 M52 304H588 M160 48V334 M320 48V334 M480 48V334" stroke="rgba(216,237,255,.055)" />
+    <rect x="14" y="16" width="612" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
+    <path d="M52 104H588 M52 188H588 M52 272H588 M160 48V296 M320 48V296 M480 48V296" stroke="rgba(216,237,255,.055)" />
 
-    <text x="320" y="42" textAnchor="middle" className="label" fill={COLORS.cyan}>Bourdon effect — pressure tends to straighten a bend</text>
-    <text x="320" y="64" textAnchor="middle" className="muted">Pressure drives the opening response; geometry and end condition decide visible movement/reaction</text>
+    <text x="320" y="39" textAnchor="middle" className="label" fill={COLORS.cyan}>Bourdon effect — pressure opens / straightens a bend</text>
+    <text x="320" y="60" textAnchor="middle" className="muted">Pressure is the driver. Bend angle scales movement; end condition converts movement to reaction.</text>
 
     <g aria-label="installed zero pressure reference bend">
-      <path d={geometry.installed} stroke="rgba(216,237,255,.32)" strokeWidth={pipeWidth + 2} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="18 13" />
-      <path d={geometry.installed} stroke="rgba(6,16,29,.70)" strokeWidth={boreWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="18 13" />
-      <text x="110" y="318" className="muted">dashed ghost = installed / zero-pressure bend shape</text>
+      <path d={geometry.installed} stroke="rgba(216,237,255,.28)" strokeWidth={pipeWidth + 3} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="22 16" />
+      <path d={geometry.installed} stroke="rgba(6,16,29,.68)" strokeWidth={boreWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="22 16" />
+      <text x="115" y="296" className="muted">dashed = installed / zero-pressure bend</text>
     </g>
 
     <g aria-label="current pressurized pipe bend">
-      <path d={geometry.current} stroke="#020813" strokeWidth={pipeWidth + 20} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".92" />
+      <path d={geometry.current} stroke="#020813" strokeWidth={pipeWidth + 20} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".94" />
       <path d={geometry.current} stroke="url(#pipeStroke)" strokeWidth={pipeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <path d={geometry.current} stroke="rgba(255,255,255,.32)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".75" />
-      <path d={geometry.current} stroke="#06101d" strokeWidth={boreWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".82" />
+      <path d={geometry.current} stroke="rgba(255,255,255,.34)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".78" />
+      <path d={geometry.current} stroke="#06101d" strokeWidth={boreWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity=".84" />
       <circle cx={geometry.curEnd.x} cy={geometry.curEnd.y} r="9" fill={COLORS.cyan} stroke="#06101d" strokeWidth="3" />
     </g>
 
-    <path d={`M${pointText(geometry.oldEnd)} L${pointText(geometry.curEnd)}`} stroke={COLORS.cyan} strokeWidth="3" strokeLinecap="round" markerEnd="url(#arrow)" strokeDasharray="7 7" />
-    <text x={Math.min(548, geometry.curEnd.x + 14)} y={Math.max(86, geometry.curEnd.y - 12)} fill={COLORS.cyan} fontSize="12" fontWeight="900">end movement {pct(movementPct)}</text>
-
     <path d={geometry.pressureGuide} stroke={pressureColor} strokeWidth={pressureWidth} fill="none" strokeDasharray="9 8" strokeLinecap="round" />
-    <text x="320" y="92" textAnchor="middle" fill={pressureColor} fontSize="12" fontWeight="900">internal pressure {pct(state.pressure)} → pressure-driven bend opening {pct(geometry.pressureDrivenFlex * 100)}</text>
+    <path d={`M${pointText(geometry.oldEnd)} L${pointText(geometry.curEnd)}`} stroke={COLORS.cyan} strokeWidth="3" strokeLinecap="round" markerEnd="url(#arrow)" strokeDasharray="7 7" />
 
     {state.endCondition !== 'free' && <g aria-label="restraint reaction at pipe end">
-      <rect x={Math.min(575, geometry.curEnd.x + 18)} y={Math.max(80, geometry.curEnd.y - 42)} width="22" height="84" rx="7" fill="rgba(216,231,242,.22)" stroke="rgba(216,231,242,.72)" strokeWidth="2.4" />
-      <path d={`M${Math.min(565, geometry.curEnd.x + 12)} ${geometry.curEnd.y} L${geometry.curEnd.x + 2} ${geometry.curEnd.y}`} stroke={reactionColor} strokeWidth="4" strokeLinecap="round" markerEnd="url(#arrowOrange)" />
-      <text x="498" y="292" fill={reactionColor} fontSize="12" fontWeight="900">reaction / nozzle load {pct(reactionPct)}</text>
+      <rect x={Math.min(560, geometry.curEnd.x + 16)} y={Math.max(74, geometry.curEnd.y - 38)} width="20" height="76" rx="7" fill="rgba(216,231,242,.22)" stroke="rgba(216,231,242,.72)" strokeWidth="2.2" />
+      <path d={`M${Math.min(550, geometry.curEnd.x + 10)} ${geometry.curEnd.y} L${geometry.curEnd.x + 2} ${geometry.curEnd.y}`} stroke={reactionColor} strokeWidth="4" strokeLinecap="round" markerEnd="url(#arrowOrange)" />
     </g>}
 
-    <g transform="translate(466 108)">
-      <rect x="0" y="0" width="138" height="116" rx="18" fill="rgba(6,16,29,.62)" stroke="rgba(190,220,255,.20)" />
-      <text x="14" y="24" fill={COLORS.yellow} fontSize="12" fontWeight="900">Active case</text>
-      <text x="14" y="48" className="muted">{bendLabel(state.bendAngle)}</text>
-      <text x="14" y="68" className="muted">pressure {pct(state.pressure)}</text>
-      <text x="14" y="88" className="muted">derived opening {pct(geometry.pressureDrivenFlex * 100)}</text>
-      <text x="14" y="108" className="muted">{state.endCondition === 'free' ? 'free end' : state.endCondition === 'guided' ? 'guided end' : 'restrained end'}</text>
+    <g transform="translate(444 82)">
+      <rect x="0" y="0" width="164" height="134" rx="18" fill="rgba(6,16,29,.70)" stroke="rgba(190,220,255,.22)" />
+      <text x="14" y="23" fill={COLORS.yellow} fontSize="12" fontWeight="900">Active case</text>
+      <text x="14" y="47" className="muted">{bendLabel(state.bendAngle)}</text>
+      <text x="14" y="67" className="muted">pressure {pct(state.pressure)}</text>
+      <text x="14" y="87" className="muted">opening {pct(geometry.pressureDrivenFlex * 100)}</text>
+      <text x="14" y="107" className="muted">movement {pct(movementPct)}</text>
+      <text x="14" y="126" fill={reactionColor} fontSize="11" fontWeight="900">{endTag}: {pct(reactionPct)}</text>
     </g>
 
-    <g transform={`translate(${geometry.labelPos.x - 86} ${geometry.labelPos.y - 18})`}>
-      <rect x="0" y="0" width="172" height="28" rx="14" fill="rgba(82,240,223,.10)" stroke="rgba(82,240,223,.28)" />
-      <text x="86" y="19" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">smooth pipe · opening from pressure</text>
+    <g transform={`translate(${geometry.labelPos.x - 100} ${geometry.labelPos.y - 18})`}>
+      <rect x="0" y="0" width="200" height="28" rx="14" fill="rgba(82,240,223,.10)" stroke="rgba(82,240,223,.28)" />
+      <text x="100" y="19" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">smooth thick pipe · not chain links</text>
     </g>
   </svg>;
 }
@@ -161,7 +159,7 @@ export function BourdonMechanismPanel({ state }: { state: BourdonState }) {
     <div className="table">
       <div><span>Pressure input</span><b>{pct(state.pressure)}</b></div>
       <div><span>Bend geometry</span><b>{bendLabel(state.bendAngle)}</b></div>
-      <div><span>Derived opening response</span><b>{pct(derivedOpening * 100)} · driven by pressure and bend curvature</b></div>
+      <div><span>Derived opening</span><b>{pct(derivedOpening * 100)} · pressure and bend curvature</b></div>
       <div><span>Straightening cue</span><b>{straightening}% qualitative bend-opening tendency</b></div>
     </div>
     <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}>
