@@ -71,27 +71,6 @@ function LearningCenter({ label, helpers }: { label: string; helpers: LearningHe
 function shortFor(title: string) {
   return title
     .replace('B31.3 lens for Tab 1', 'B31.3')
-    .replace('Static demand visual', 'Demand')
-    .replace('Pipe-wall section', 'Wall')
-    .replace('Stress–strain curve', 'Curve')
-    .replace('Material response', 'Material');
-}
-
-function iconFor(title: string) {
-  if (title.includes('Material')) return 'M';
-  if (title.includes('demand')) return 'P';
-  if (title.includes('section')) return '○';
-  if (title.includes('Stress–strain')) return 'σ–ε';
-  if (title.includes('Stress range')) return 'Δσ';
-  if (title.includes('Cycles')) return 'N';
-  if (title.includes('Hotspot')) return 'W';
-  if (title.includes('S-N')) return 'S-N';
-  return '§';
-}
-
-function shortFor(title: string) {
-  return title
-    .replace('B31.3 lens for Tab 1', 'B31.3')
     .replace('B31.3 lens for Tab 2', 'B31.3')
     .replace('Static demand visual', 'Demand')
     .replace('Pipe-wall section', 'Wall')
