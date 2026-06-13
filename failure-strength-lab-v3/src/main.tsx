@@ -11,7 +11,7 @@ import { SNCurve } from './components/SNCurve';
 import { Interpretation } from './components/Interpretation';
 import { StressComponentExplanation, StressComponentsSvg, StressEngineeringNote, StressTensorCard } from './components/StressComponentsSvg';
 import { PipeStressNote, PipeStressReadout, PipeStressSectionSvg, PipeStressSideSvg } from './components/PipeStressSvg';
-import { LoadsCodeTable, LoadsReadout, LoadsSideSvg } from './components/LoadsTab';
+import { LoadsClassificationMap, LoadsMistakePanel, LoadsReadout, LoadsSideSvg } from './components/LoadsTab';
 import { PipeExpansionEquations, PipeExpansionReadout, PipeExpansionSideSvg } from './components/PipeExpansionTab';
 import { CombinedStressPipeSection, CombinedStressReadout, CombinedStressYieldSvg } from './components/CombinedStressTab';
 
@@ -37,10 +37,11 @@ const initialState: LabState = {
   pipeAxial: 32,
   pipeBending: 46,
   pipeTorsion: 38,
-  loadsActiveLoad: 'sustained',
+  loadsActiveLoad: 'weight',
   loadsSustainedLevel: 50,
   loadsThermalDelta: 40,
-  loadsOccasionalOn: false,
+  loadsDuration: 'always',
+  loadsRestraint: 'guided',
   expDeltaT: 50,
   expPressure: 40,
   expRestrained: true,
@@ -110,7 +111,7 @@ function App() {
         : state.mode === 'pipe'
           ? { badge: 'Pipe stress 5B', color: COLORS.cyan, title: 'Pipe stress components', copy: 'Pipe-specific cylindrical notation.' }
           : state.mode === 'loads'
-            ? { badge: 'Load types', color: COLORS.orange, title: 'Primary vs Secondary loads', copy: 'Classifying forces and displacements before stress.' }
+            ? { badge: 'Load source', color: COLORS.orange, title: 'Load classification dashboard', copy: 'Classifying force-controlled and displacement-controlled load routes.' }
             : state.mode === 'expansion'
               ? { badge: 'Pipe expansion', color: COLORS.cyan, title: 'Thermal & pressure elongation', copy: 'ΔL = α·L·ΔT — restrained or free.' }
               : state.mode === 'combined'
@@ -138,7 +139,7 @@ function App() {
     </header>
 
     <nav className="tabs" aria-label="Lesson mode">
-      {(['static', 'fatigue', 'stress', 'pipe', 'loads', 'expansion', 'combined', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue · S–N' : mode === 'stress' ? 'Stress Components' : mode === 'pipe' ? 'Pipe Stress · σθ σL τ' : mode === 'loads' ? 'Load Types · P / S' : mode === 'expansion' ? 'Pipe Expansion · ΔL' : mode === 'combined' ? 'Combined Stress · VM' : 'Quick Challenge'}</button>)}
+      {(['static', 'fatigue', 'stress', 'pipe', 'loads', 'expansion', 'combined', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue · S–N' : mode === 'stress' ? 'Stress Components' : mode === 'pipe' ? 'Pipe Stress · σθ σL τ' : mode === 'loads' ? 'Load Types · source route' : mode === 'expansion' ? 'Pipe Expansion · ΔL' : mode === 'combined' ? 'Combined Stress · VM' : 'Quick Challenge'}</button>)}
     </nav>
 
     <div className="content">
@@ -184,12 +185,14 @@ function App() {
           <ControlBlock title="Notation rule" tag="separate"><p className="copy">Do not read σx or σy as hoop. In this tab: σθ is hoop, σL is axial/longitudinal, σr is radial concept text, and τt is torsion shear.</p></ControlBlock>
         </>}
         {state.mode === 'loads' && <>
-          <ControlBlock title="Load category" tag={state.loadsActiveLoad}>
-            <Segment active={state.loadsActiveLoad} options={['sustained','occasional','thermal','displacement']} onPick={v => update({ loadsActiveLoad: v as any })}/>
+          <ControlBlock title="Load source" tag={state.loadsActiveLoad}>
+            <Segment active={state.loadsActiveLoad} options={['weight','pressure','event','thermal','settlement','nozzle']} onPick={v => update({ loadsActiveLoad: v as any })}/>
           </ControlBlock>
-          {(state.loadsActiveLoad === 'sustained' || state.loadsActiveLoad === 'occasional') && <ControlBlock title="Load intensity" tag={`${state.loadsSustainedLevel}%`}><Range value={state.loadsSustainedLevel} min={0} max={100} onChange={v => update({ loadsSustainedLevel: v })} left="low" mid="design" right="high" /></ControlBlock>}
+          {state.loadsActiveLoad !== 'thermal' && <ControlBlock title="Intensity" tag={`${state.loadsSustainedLevel}%`}><Range value={state.loadsSustainedLevel} min={0} max={100} onChange={v => update({ loadsSustainedLevel: v })} left="low" mid="design" right="high" /></ControlBlock>}
           {state.loadsActiveLoad === 'thermal' && <ControlBlock title="Temperature rise ΔT" tag={`${state.loadsThermalDelta * 2}°C`}><Range value={state.loadsThermalDelta} min={0} max={100} onChange={v => update({ loadsThermalDelta: v })} left="0°C" mid="100°C" right="200°C" /></ControlBlock>}
-          <ControlBlock title="ASME B31.3 note" tag="concept"><p className="copy">Sustained SL ≤ 1.0·Sh · Occasional SL+Socc ≤ 1.33·Sh · Expansion SE ≤ f(1.25Sc+0.25Sh)</p></ControlBlock>
+          <ControlBlock title="Duration" tag={state.loadsDuration}><Segment active={state.loadsDuration} options={['always','short','cycle']} onPick={v => update({ loadsDuration: v as any })}/></ControlBlock>
+          <ControlBlock title="Restraint" tag={state.loadsRestraint}><Segment active={state.loadsRestraint} options={['free','guided','restrained']} onPick={v => update({ loadsRestraint: v as any })}/></ControlBlock>
+          <ControlBlock title="Purpose" tag="classify"><p className="copy">Pick the real source first. The tab then separates force-controlled loads from displacement-controlled loads before sending the concept to the next module.</p></ControlBlock>
         </>}
         {state.mode === 'expansion' && <>
           <ControlBlock title="Pipe condition" tag={state.expRestrained ? 'restrained' : 'unrestrained'}><Segment active={state.expRestrained ? 'restrained' : 'unrestrained'} options={['restrained','unrestrained']} onPick={v => update({ expRestrained: v === 'restrained' })}/></ControlBlock>
@@ -208,8 +211,8 @@ function App() {
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : state.mode === 'pipe' ? 'Pipe Stress Components' : state.mode === 'loads' ? 'Load Types' : state.mode === 'expansion' ? 'Pipe Expansion' : state.mode === 'combined' ? 'Combined Stress' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move only the visible generic stress sliders: normal view resizes, shear view skews, combined view does both. Pipe stress has been moved to its own tab.' : state.mode === 'pipe' ? 'Use pipe-specific sliders for σθ hoop, σL axial membrane, bending ovalisation, and τt torsion shear. This is still concept-level, not a code check.' : state.mode === 'loads' ? 'Classify sustained, occasional, thermal, and displacement loads before choosing stress equations.' : state.mode === 'expansion' ? 'Show free or restrained thermal expansion, pressure elongation, and Bourdon effect.' : state.mode === 'combined' ? 'Compare Von Mises and Tresca combined-stress checks for hoop and longitudinal stress.' : 'Review mode.'}</p></div>
-          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · generic stress point' : state.mode === 'pipe' ? 'σθ · σL · M · τt · pipe notation' : state.mode === 'loads' ? 'primary · secondary · displacement' : state.mode === 'expansion' ? 'ΔL · αLΔT · Bourdon' : state.mode === 'combined' ? 'σH · σL · VM/Tresca' : 'σ = F/A · ε = σ/E'}</div>
+          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : state.mode === 'pipe' ? 'Pipe Stress Components' : state.mode === 'loads' ? 'Load Types' : state.mode === 'expansion' ? 'Pipe Expansion' : state.mode === 'combined' ? 'Combined Stress' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move only the visible generic stress sliders: normal view resizes, shear view skews, combined view does both. Pipe stress has been moved to its own tab.' : state.mode === 'pipe' ? 'Use pipe-specific sliders for σθ hoop, σL axial membrane, bending ovalisation, and τt torsion shear. This is still concept-level, not a code check.' : state.mode === 'loads' ? 'Classification dashboard: identify the physical source, classify force/displacement behavior, then choose the stress route.' : state.mode === 'expansion' ? 'Show free or restrained thermal expansion, pressure elongation, and Bourdon effect.' : state.mode === 'combined' ? 'Compare Von Mises and Tresca combined-stress checks for hoop and longitudinal stress.' : 'Review mode.'}</p></div>
+          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · generic stress point' : state.mode === 'pipe' ? 'σθ · σL · M · τt · pipe notation' : state.mode === 'loads' ? 'source · behavior · route' : state.mode === 'expansion' ? 'ΔL · αLΔT · Bourdon' : state.mode === 'combined' ? 'σH · σL · VM/Tresca' : 'σ = F/A · ε = σ/E'}</div>
         </section>
 
         {(state.mode === 'static' || state.mode === 'fatigue') && <section className="grid analysis-grid">
@@ -234,8 +237,13 @@ function App() {
         </section>}
 
         {state.mode === 'loads' && (() => {
-          const ls: LoadsState = { activeLoad: state.loadsActiveLoad, sustainedLevel: state.loadsSustainedLevel, thermalDelta: state.loadsThermalDelta, occasionalOn: state.loadsOccasionalOn };
-          return <section className="grid analysis-grid"><Panel title="Load visualisation" tag={state.loadsActiveLoad}><LoadsSideSvg state={ls} /></Panel><Panel title="Load classification" tag="primary vs secondary"><LoadsCodeTable /></Panel><Panel title="Engineering interpretation" tag="B31.3 context"><LoadsReadout state={ls} /></Panel></section>;
+          const ls: LoadsState = { activeLoad: state.loadsActiveLoad, intensity: state.loadsSustainedLevel, thermalDelta: state.loadsThermalDelta, duration: state.loadsDuration, restraint: state.loadsRestraint };
+          return <section className="grid pipe-grid">
+            <Panel title="Panel 1 · physical load visual" tag={state.loadsActiveLoad}><LoadsSideSvg state={ls} /></Panel>
+            <Panel title="Panel 2 · classification map" tag="force vs displacement"><LoadsClassificationMap state={ls} /></Panel>
+            <Panel title="Panel 3 · stress route" tag="next module"><LoadsReadout state={ls} /></Panel>
+            <Panel title="Panel 4 · common mistake" tag="correction"><LoadsMistakePanel state={ls} /></Panel>
+          </section>;
         })()}
 
         {state.mode === 'expansion' && (() => {
@@ -264,19 +272,19 @@ function App() {
             <div className="bucket"><b>Static strength response</b><br/><span className="copy">σ = F/A, ε = σ/E, Sy and Su belong here.</span></div>
             <div className="bucket"><b>Generic stress state</b><br/><span className="copy">σx, σy, τxy, τyx describe stress at a point before pipe-specific notation.</span></div>
             <div className="bucket"><b>Pipe stress components</b><br/><span className="copy">Pressure → σθ and σL; bending → longitudinal tension/compression and ovalisation; torsion → τt.</span></div>
+            <div className="bucket"><b>Load classification</b><br/><span className="copy">Weight/pressure/event are force-controlled; thermal/settlement/nozzle movement are displacement-controlled.</span></div>
             <div className="bucket"><b>Metal fatigue response</b><br/><span className="copy">Δσ, N cycles, hotspot/notch/weld and S-N curve belong here for ductile metallic piping.</span></div>
-            <div className="bucket"><b>Brittle concept</b><br/><span className="copy">Brittle risk is flaw/fracture-toughness controlled: ΔK, crack size, environment, KIC.</span></div>
-            <p className="fb">Challenge principle: choose the right coordinate system first. Generic σx/σy is not automatically pipe hoop/axial notation.</p>
+            <p className="fb">Challenge principle: choose the right coordinate system and load route first.</p>
           </div>
         </section>}
-        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: generic point stress view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Pipe stress has been moved to Tab 5B.` : state.mode === 'pipe' ? `Pipe stress 5B: view=${state.pipeStressView}, σθ=${state.pipeHoop}%, σL=${state.pipeAxial}%, bending=${state.pipeBending}%, τt=${state.pipeTorsion}%. Concept-level only; no failure-theory or code-check calculation.` : state.mode === 'loads' ? `Loads tab: category=${state.loadsActiveLoad}, sustained/event intensity=${state.loadsSustainedLevel}%, thermal ΔT scale=${state.loadsThermalDelta * 2}°C.` : state.mode === 'expansion' ? `Expansion tab: ΔT=${state.expDeltaT * 2}°C, pressure=${state.expPressure}%, ${state.expRestrained ? 'restrained thermal stress shown' : 'free elongation shown'}, Bourdon=${state.expShowBourdon ? 'on' : 'off'}.` : state.mode === 'combined' ? `Combined stress tab: σH=${state.csH}%S, σL=${state.csL}%S ${state.csLSign}, theory=${state.csTheory}, allowable=${(state.csAF*100).toFixed(0)}%S.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
+        <section className="tech"><div className="tech-label">Technical bar</div><div className="tech-text">{state.mode === 'fatigue' ? `Metal fatigue view only: Δσ = stress range, N ≈ ${cycleLabel(state.fatigueCyclesSlider)} cycles. Brittle behavior is text-only as flaw/ΔK/KIC concept, not an S-N graphic.` : state.mode === 'stress' ? `Stress components 5A: generic point stress view=${state.stressView}, σx=${state.sigmaX}%, σy=${state.sigmaY}%, τxy=${state.tauXY}%. Pipe stress has been moved to Tab 5B.` : state.mode === 'pipe' ? `Pipe stress 5B: view=${state.pipeStressView}, σθ=${state.pipeHoop}%, σL=${state.pipeAxial}%, bending=${state.pipeBending}%, τt=${state.pipeTorsion}%. Concept-level only; no failure-theory or code-check calculation.` : state.mode === 'loads' ? `Loads dashboard: source=${state.loadsActiveLoad}, intensity=${state.loadsSustainedLevel}%, ΔT scale=${state.loadsThermalDelta * 2}°C, duration=${state.loadsDuration}, restraint=${state.loadsRestraint}.` : state.mode === 'expansion' ? `Expansion tab: ΔT=${state.expDeltaT * 2}°C, pressure=${state.expPressure}%, ${state.expRestrained ? 'restrained thermal stress shown' : 'free elongation shown'}, Bourdon=${state.expShowBourdon ? 'on' : 'off'}.` : state.mode === 'combined' ? `Combined stress tab: σH=${state.csH}%S, σL=${state.csL}%S ${state.csLSign}, theory=${state.csTheory}, allowable=${(state.csAF*100).toFixed(0)}%S.` : 'Static: σ = F/A and ε = σ/E in elastic range. Sy marks ductile yield onset; brittle response is flaw-sensitive. Static visuals intentionally avoid arrows and focus on physical response.'}</div></section>
       </main>
     </div>
   </div>;
 }
 
 function ControlBlock({ title, tag, children }: { title: string; tag?: string; children: React.ReactNode }) { return <div className="block"><div className="bt"><span>{title}</span><span>{tag}</span></div>{children}</div>; }
-function Segment({ active, options, onPick }: { active: string; options: string[]; onPick: (v: string) => void }) { return <div className="seg" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>{options.map(o => <button key={o} className={active === o ? 'active' : ''} onClick={() => onPick(o)}>{o[0].toUpperCase()+o.slice(1)}</button>)}</div>; }
+function Segment({ active, options, onPick }: { active: string; options: string[]; onPick: (v: string) => void }) { return <div className="seg" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>{options.map(o => <button key={o} className={active === o ? 'active' : ''} onClick={() => onPick(o)}>{o === 'windSeismic' ? 'Wind/seismic' : o[0].toUpperCase()+o.slice(1)}</button>)}</div>; }
 function Range({ value, min, max, onChange, left, mid, right }: { value: number; min: number; max: number; onChange: (v:number)=>void; left: string; mid?: string; right: string }) { return <div className="range"><div className="row"><input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))}/><span className="value">{value}%</span></div><div className="labels"><span>{left}</span>{mid && <span>{mid}</span>}<span>{right}</span></div></div>; }
 function Panel({ title, tag, children }: { title: string; tag: string; children: React.ReactNode }) { return <article className="panel"><div className="ph"><span>{title}</span><span>{tag}</span></div><div className="pb">{children}</div></article>; }
 
