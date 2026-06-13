@@ -26,14 +26,22 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
     ? staticLearningHelpers(state)
     : state.mode === 'fatigue'
       ? fatigueLearningHelpers(state)
-      : [];
+      : state.mode === 'stress'
+        ? stressComponentLearningHelpers(state)
+        : [];
 
   if (helpers.length === 0) return null;
 
-  const label = state.mode === 'fatigue' ? 'Tab 2 · Fatigue Learning Center' : 'Tab 1 · Static Learning Center';
+  const label = state.mode === 'fatigue'
+    ? 'Tab 2 · Fatigue Learning Center'
+    : state.mode === 'stress'
+      ? 'Tab 3 · Stress Components Learning Center'
+      : 'Tab 1 · Static Learning Center';
   const subtitle = state.mode === 'fatigue'
     ? 'Stress range, cycles, hotspot detail, S-N limitation, and B31.3 fatigue route.'
-    : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
+    : state.mode === 'stress'
+      ? 'Cartesian stress notation, normal/shear components, tensor view, pipe-coordinate boundary, and B31.3 interpretation.'
+      : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
 
   return <details
     className="learning-center-panel"
@@ -244,6 +252,66 @@ function fatigueLearningHelpers(state: LabState): LearningHelper[] {
       b313: 'Initial map: displacement stress range 302.3.5(d), flexibility analysis 319, expansion stress range 319.4.4 family, occasional/dynamic route 302.3.6 family, and SIF/flexibility via Appendix D / B31J where applicable. Educational paragraph map only.',
       mistake: 'Do not use a generic material S-N curve as a substitute for project fatigue requirements, code stress-range equations, dynamic analysis, or fracture assessment.',
       next: 'Next tab helper rollout should move to Stress Components so users separate σx/σy/τxy notation from pipe hoop/axial notation.',
+    },
+  ];
+}
+
+function stressComponentLearningHelpers(state: LabState): LearningHelper[] {
+  const activeView = state.stressView === 'normal'
+    ? 'normal-stress view'
+    : state.stressView === 'shear'
+      ? 'shear-stress view'
+      : 'combined component view';
+  const sigmaSummary = `σx ${state.sigmaX}% · σy ${state.sigmaY}%`;
+  const shearSummary = `τxy ${state.tauXY}%`;
+  const tensorRoute = state.showTensor ? 'tensor visible' : 'tensor hidden';
+  const pairedRoute = state.showPairedShear ? 'paired shear shown' : 'single shear cue';
+
+  return [
+    {
+      title: 'Cartesian stress state',
+      route: activeView,
+      concept: 'This tab is a point-stress notation lesson. It shows normal and shear components on a small Cartesian stress element before moving into pipe cylindrical notation.',
+      piping: 'Pipe stress output can be misunderstood if the coordinate system is unclear. Local x/y component labels are not automatically pipe axial/hoop directions unless the model explicitly defines them that way.',
+      b313: 'Use this as theory background only. B31.3 interpretation normally routes stresses by category and pipe component names such as longitudinal, hoop/pressure, torsion, bending, sustained, occasional, or displacement range.',
+      mistake: 'Do not call σy hoop stress just because it points vertically on the screen. Hoop stress is σθ only after a pipe cylindrical coordinate system is defined.',
+      next: 'After this tab, use Pipe Stress · σθ σL τ to convert the notation into pipe-specific names.',
+    },
+    {
+      title: 'Normal stress σx / σy',
+      route: sigmaSummary,
+      concept: 'Normal stress acts perpendicular to the face on which it is drawn. σx belongs to the x-normal face and σy belongs to the y-normal face in this small element sketch.',
+      piping: 'A straight run, elbow, branch, nozzle, or finite-element local result must define local axes before an engineer can decide whether a component is axial, hoop, radial, or a local bending stress.',
+      b313: 'B31.3 routine checks do not ask the user to enter a generic σx/σy pair. The code route should be selected from the actual pipe load case and stress category.',
+      mistake: 'Do not map σx to axial and σy to hoop by default. That mapping is only valid if x is aligned with the pipe axis and y is aligned circumferentially, which this generic tab does not assume.',
+      next: 'Use the sign-convention cue, then move to Pipe Stress for σL and σθ terminology.',
+    },
+    {
+      title: 'Shear stress τxy',
+      route: `${shearSummary} · ${pairedRoute}`,
+      concept: 'τxy is shear on the x-face acting in the y direction. A paired shear component appears on the adjacent face for rotational equilibrium in the stress element.',
+      piping: 'In piping, shear-like effects can come from torsion, transverse shear, eccentric branch loads, local attachments, or constrained rotations; the source determines the code route.',
+      b313: 'Treat shear contribution according to the applicable stress category and load case. For routine teaching, connect torsional shear to the Pipe Stress tab before any combined stress display.',
+      mistake: 'Do not write σxy for shear. The conventional notation is τxy. Also do not treat a drawn shear arrow as a complete torsional pipe check.',
+      next: 'Use Pipe Stress torsion view for τt, then Combined Stress for educational combination only after category selection.',
+    },
+    {
+      title: 'Tensor and sign convention',
+      route: tensorRoute,
+      concept: 'The stress tensor is a bookkeeping form that gathers normal and shear components at one point. The sign convention explains which arrow direction is positive in this drawing.',
+      piping: 'Software and hand calculations may report stresses in global, local element, or pipe coordinates. The engineer must identify that coordinate system before applying any code interpretation.',
+      b313: 'The tensor display is not a B31.3 pass/fail calculation. It is a bridge to understanding how component stresses are later categorized and combined by the correct load route.',
+      mistake: 'Do not combine values from different coordinate systems or load cases into one tensor. Coordinate basis and load-case basis must match.',
+      next: 'Use Load Types later to choose sustained, occasional, or displacement logic before using Combined Stress.',
+    },
+    {
+      title: 'B31.3 lens for Tab 3',
+      route: 'notation map',
+      concept: 'Tab 3 teaches notation discipline. It prevents the common error of treating every component label as a code stress category.',
+      piping: 'A practical pipe-stress workflow first identifies the physical load source, the coordinate system, and the pipe component names before judging any result against a code route.',
+      b313: 'Initial map: pressure design 304 family, sustained/displacement stress categories 302.3.5 family, occasional 302.3.6 family, flexibility 319 family, and SIF/flexibility interpretation via Appendix D / B31J where applicable. Educational paragraph map only.',
+      mistake: 'Do not say this generic point-stress tab is code compliant. It has no pipe geometry, wall thickness, material allowables, load combination, SIF/flexibility factor, or support boundary model.',
+      next: 'Next helper rollout should move to Pipe Stress so σθ, σL, bending, and torsion are presented in pipe-specific terms.',
     },
   ];
 }
