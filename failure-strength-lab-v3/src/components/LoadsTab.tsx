@@ -98,6 +98,24 @@ function activeMeta(state: LoadsState) {
   return LOAD_META[state.activeLoad];
 }
 
+function applicabilityText(load: LoadCategory) {
+  if (load === 'weight') return 'Applicability: sustained / always present';
+  if (load === 'pressure') return 'Applicability: sustained pressure case';
+  if (load === 'event') return 'Applicability: occasional / short event';
+  if (load === 'thermal') return 'Applicability: expansion range; cyclic if repeated operation';
+  return 'Applicability: imposed support movement; usually one-time unless movement repeats';
+}
+
+function contextControlText(state: LoadsState) {
+  if (state.activeLoad === 'thermal') {
+    return `thermal restraint = ${state.restraint}`;
+  }
+  if (state.activeLoad === 'event') {
+    return `dynamic restraint = ${state.restraint === 'free' ? 'none' : state.restraint === 'guided' ? 'guide / stop active' : 'snubber / hard stop active'}`;
+  }
+  return 'no duration/restraint knob for this load source';
+}
+
 function ArrowDefs() {
   return <defs>
     <marker id="loadArrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill={COLORS.blue}/></marker>
@@ -116,12 +134,14 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
   const rightX = 550;
   const restrained = state.restraint === 'restrained';
   const guided = state.restraint === 'guided';
+  const eventRestraintFactor = state.restraint === 'free' ? 1 : state.restraint === 'guided' ? 0.74 : 0.52;
 
   const weightSag = state.activeLoad === 'weight' ? 4 + level * 0.24 : 0;
   const pressureBulge = state.activeLoad === 'pressure' ? 6 + level * 0.24 : 0;
   const pressureEndForce = state.activeLoad === 'pressure' ? 18 + level * 0.38 : 0;
-  const eventBow = state.activeLoad === 'event' ? 7 + level * 0.36 : 0;
+  const eventBow = state.activeLoad === 'event' ? (7 + level * 0.36) * eventRestraintFactor : 0;
   const eventArrow = state.activeLoad === 'event' ? 34 + level * 0.44 : 0;
+  const eventReaction = state.activeLoad === 'event' && state.restraint !== 'free' ? 22 + level * 0.24 : 0;
   const settlementDrop = state.activeLoad === 'settlement' ? 6 + level * 0.58 : 0;
   const thermalGrowth = state.activeLoad === 'thermal' ? 12 + state.thermalDelta * 0.50 : 0;
   const rightSupportY = 224 + settlementDrop;
@@ -141,7 +161,7 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
     <path d="M52 116H588 M52 210H588 M52 304H588 M160 48V334 M320 48V334 M480 48V334" stroke="rgba(216,237,255,.06)" />
 
     <text x="320" y="42" textAnchor="middle" className="label" fill={meta.color}>{meta.label}: physical load source</text>
-    <text x="320" y="64" textAnchor="middle" className="muted">slider response is intentionally exaggerated for teaching</text>
+    <text x="320" y="64" textAnchor="middle" className="muted">Only controls that physically apply to the selected source are shown</text>
 
     {state.activeLoad === 'thermal' && <>
       <path d={`M${leftX} 138 H${rightX}`} stroke="rgba(216,237,255,.28)" strokeWidth="7" strokeLinecap="round" />
@@ -156,6 +176,7 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
         <path d="M508 246 H548" stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
         <text x="320" y="265" textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">{restrained ? 'restrained growth creates anchor reactions' : 'guided growth: reaction depends on restraint direction'}</text>
       </>}
+      {state.restraint === 'free' && <text x="320" y="265" textAnchor="middle" className="muted">free growth: large ΔL, no restraint reaction shown</text>}
     </>}
 
     {state.activeLoad !== 'thermal' && <>
@@ -191,7 +212,14 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
       <path d={`M102 132 H${102 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
       <path d={`M455 132 H${455 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
       <circle cx="320" cy="100" r={12 + level * 0.20} fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="6 7" />
+      {state.restraint !== 'free' && <>
+        <rect x="84" y="162" width="16" height="88" rx="5" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
+        <rect x="540" y="162" width="16" height="88" rx="5" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
+        <path d={`M132 252 H${132 - eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
+        <path d={`M508 252 H${508 + eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
+      </>}
       <text x="320" y="98" textAnchor="middle" className="label" fill={COLORS.yellow}>short event force {pct(level)}: wind / seismic / relief</text>
+      <text x="320" y="286" textAnchor="middle" className="muted">{state.restraint === 'free' ? 'no dynamic restraint selected' : state.restraint === 'guided' ? 'guide/stop reduces lateral bow and adds reaction' : 'snubber/hard stop strongly limits event motion'}</text>
     </>}
 
     {state.activeLoad === 'settlement' && <>
@@ -203,7 +231,7 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
 
     <g transform="translate(68 322)">
       <circle cx="0" cy="0" r="6" fill={meta.color}/>
-      <text x="14" y="4" className="muted">{meta.behavior}; {meta.category}; restraint = {state.restraint}; duration = {state.duration}</text>
+      <text x="14" y="4" className="muted">{meta.behavior}; {meta.category}; {applicabilityText(state.activeLoad)}; {contextControlText(state)}</text>
     </g>
   </svg>;
 }
@@ -259,10 +287,12 @@ export function LoadsReadout({ state }: { state: LoadsState }) {
       <div><span>Source</span><b>{meta.short}</b></div>
       <div><span>Load type</span><b>{meta.behavior}</b></div>
       <div><span>Category</span><b>{meta.category}</b></div>
+      <div><span>Applicability</span><b>{applicabilityText(state.activeLoad).replace('Applicability: ', '')}</b></div>
       <div><span>Route</span><b>{meta.route}</b></div>
       <div><span>Main concern</span><b>{meta.concern}</b></div>
       <div><span>Next tab</span><b>{meta.next}</b></div>
       <div><span>{isThermal ? 'ΔT scale' : 'Intensity'}</span><b>{isThermal ? tempLabel(state.thermalDelta) : pct(state.intensity)}</b></div>
+      {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Context control</span><b>{contextControlText(state)}</b></div>}
     </div>
     <div className="bucket" style={{ borderColor: `${meta.color}66` }}><b>Teaching boundary</b><span className="copy">This tab classifies the load. It does not replace sustained, occasional, expansion, or displacement-stress code checks.</span></div>
   </div>;
@@ -276,8 +306,8 @@ export function LoadsMistakePanel({ state }: { state: LoadsState }) {
     <div className="card wrong"><strong>Mistake</strong><span>{meta.mistake}</span></div>
     <div className="card correct"><strong>Correction</strong><span>{meta.correction}</span></div>
     <div className="table">
-      <div><span>Duration</span><b>{state.duration}</b></div>
-      <div><span>Restraint</span><b>{state.restraint}</b></div>
+      <div><span>Applicability</span><b>{applicabilityText(state.activeLoad).replace('Applicability: ', '')}</b></div>
+      {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Responsive context</span><b>{contextControlText(state)}</b></div>}
       <div><span>Classification</span><b>{meta.category}</b></div>
     </div>
     <p className="fb">Correct sequence: source → force/displacement behavior → stress route → detailed equation.</p>
