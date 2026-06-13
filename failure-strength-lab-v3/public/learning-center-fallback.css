@@ -1,0 +1,65 @@
+.fallback-learning-panel {
+  position: fixed;
+  left: max(12px, calc((100vw - 1540px) / 2 + 12px));
+  right: max(12px, calc((100vw - 1540px) / 2 + 12px));
+  bottom: 12px;
+  z-index: 950;
+  max-height: min(72vh, 720px);
+  overflow-y: auto;
+  border: 1px solid rgba(82,240,223,.36);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(8,23,41,.98), rgba(5,14,26,.96));
+  box-shadow: 0 -14px 40px rgba(0,0,0,.42), inset 0 0 28px rgba(82,240,223,.05);
+  color: #eef7ff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  backdrop-filter: blur(16px);
+}
+.fallback-learning-panel[hidden] { display: none !important; }
+.fallback-learning-panel summary,
+.fallback-helper summary { cursor: pointer; list-style: none; }
+.fallback-learning-panel summary::-webkit-details-marker,
+.fallback-helper summary::-webkit-details-marker { display: none; }
+.fallback-learning-panel > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  min-height: 48px;
+}
+.fallback-learning-panel .close-label,
+.fallback-helper .hide-label { display: none; }
+.fallback-learning-panel[open] .open-label { display: none; }
+.fallback-learning-panel[open] .close-label { display: inline-flex; }
+.fallback-helper[open] .show-label { display: none; }
+.fallback-helper[open] .hide-label { display: inline-flex; }
+.fallback-learning-kicker { color: #52f0df; font-size: 12px; font-weight: 950; letter-spacing: .11em; text-transform: uppercase; }
+.fallback-learning-title { color: #d8edff; font-size: 14px; font-weight: 950; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fallback-learning-action,
+.fallback-route {
+  border: 1px solid rgba(216,237,255,.22);
+  color: #dcfffb;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+.fallback-learning-body { display: grid; gap: 10px; padding: 0 14px 14px; }
+.fallback-learning-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; border-top: 1px solid rgba(216,237,255,.12); padding-top: 10px; }
+.fallback-learning-head h3 { margin: 0 0 2px; font-size: 18px; letter-spacing: -.02em; }
+.fallback-learning-head p { margin: 0; color: #a9bdd5; font-size: 12px; line-height: 1.35; }
+.fallback-helper-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.fallback-helper { border: 1px solid rgba(190,220,255,.16); border-radius: 16px; background: rgba(255,255,255,.04); overflow: hidden; }
+.fallback-helper summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; color: #d8edff; font-size: 12px; font-weight: 950; }
+.fallback-helper-route { display: inline-flex; gap: 8px; align-items: center; color: #a9bdd5; white-space: nowrap; }
+.fallback-helper-body { display: grid; gap: 7px; padding: 0 10px 10px; }
+.fallback-cell { display: grid; gap: 3px; padding: 8px 9px; border-radius: 12px; border: 1px solid rgba(190,220,255,.12); background: rgba(6,16,29,.42); }
+.fallback-cell b { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.fallback-cell span { color: #a9bdd5; font-size: 12px; line-height: 1.32; }
+@media (max-width: 760px) {
+  .fallback-learning-panel { left: 8px; right: 8px; bottom: 8px; }
+  .fallback-learning-head { display: grid; }
+  .fallback-helper-grid { grid-template-columns: 1fr; }
+}
