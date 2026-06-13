@@ -23,12 +23,13 @@ type LearningHelper = {
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
   const readout = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
+  const learningPanelMaxHeight = state.mode === 'static' || state.mode === 'fatigue' ? 430 : 236;
 
   return <div
     className="interp failure-readout"
     style={{
       gap: 10,
-      maxHeight: state.mode === 'static' ? 430 : 236,
+      maxHeight: learningPanelMaxHeight,
       overflowY: 'auto',
       paddingRight: 6,
     }}
@@ -52,6 +53,7 @@ export function Interpretation({ state, status }: { state: LabState; status: Sta
     <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{readout.caution}</span></div>
 
     {state.mode === 'static' && <LearningCenter label="Tab 1 Learning Center" helpers={staticLearningHelpers(state)} />}
+    {state.mode === 'fatigue' && <LearningCenter label="Tab 2 Fatigue Learning Center" helpers={fatigueLearningHelpers(state)} />}
   </div>;
 }
 
@@ -150,6 +152,65 @@ function staticLearningHelpers(state: LabState): LearningHelper[] {
       b313: 'Initial map: 301 design conditions, 304 pressure design, 302.3.5 sustained/displacement stress categories, 302.3.6 occasional stress, 319 flexibility, 321 supports, 323 materials, Appendix A allowables. Educational paragraph map only.',
       mistake: 'Do not say “code compliant” from this tab. It has no pipe size, material, temperature, pressure, support layout, SIF/flexibility factors, or load combinations.',
       next: 'Next helper rollout should start with Load Types because it decides which B31.3 route is relevant.',
+    },
+  ];
+}
+
+function fatigueLearningHelpers(state: LabState): LearningHelper[] {
+  const logN = logCycles(state.fatigueCyclesSlider);
+  const boundary = allowableStressRangePercent(logN);
+  const ratio = state.fatigueStressRange / Math.max(boundary, 1);
+  const nearBoundary = ratio > 0.82;
+  const cycleText = cycleLabel(state.fatigueCyclesSlider);
+  const hotspotText = state.notchEnabled ? 'weld/notch hotspot active' : 'smooth detail selected';
+
+  return [
+    {
+      title: 'Stress range Δσ',
+      route: 'cyclic range',
+      concept: `Fatigue is driven by repeated stress range, not by one static peak. Current Δσ is ${state.fatigueStressRange}% in this normalized teaching view.`,
+      piping: 'In process piping, stress range may come from startup/shutdown thermal cycles, pressure pulsation, vibration, slugging, relief discharge, rotating equipment, or cyclic support movement.',
+      b313: 'Map cyclic displacement-type behavior to the displacement stress-range / flexibility route: 302.3.5(d), 319, and 319.4.4 family. Verify exact wording, edition, cycle factor, material, and service category in the licensed project code.',
+      mistake: 'Do not judge fatigue from maximum stress alone. A lower stress repeated many times can damage a weld toe or branch connection even when sustained stress looks acceptable.',
+      next: 'Use Load Types first to decide whether the source is thermal displacement, vibration, pressure pulsation, or occasional event before using Combined Stress.',
+    },
+    {
+      title: 'Cycles N',
+      route: 'life axis',
+      concept: `The S-N axis is logarithmic. The current setting is about ${cycleText} cycles, and the displayed teaching boundary is about ${boundary.toFixed(0)}%.`,
+      piping: 'Batch operation, daily startup, compressor pulsation, pump vibration, and frequent thermal swing can make cycle count the governing fatigue input.',
+      b313: 'For displacement stress range, connect the cycle-count idea to stress-range reduction / cycle-factor interpretation in the B31.3 expansion stress-range route. Dynamic or vibration cases need project-specific evaluation.',
+      mistake: 'Do not combine always-present sustained load and cyclic stress range into one generic value. Mean load, range, source, and number of cycles are separate ideas.',
+      next: 'Review the S-N curve helper, then classify the physical load source in Load Types.',
+    },
+    {
+      title: 'Weld toe / notch hotspot',
+      route: hotspotText,
+      concept: state.notchEnabled
+        ? 'A geometric discontinuity concentrates cyclic stress. The visual hotspot marks where crack initiation is most likely.'
+        : 'A smooth detail reduces local concentration, but fatigue can still occur when range and cycles are high.',
+      piping: 'Practical piping fatigue often initiates at weld toes, branch connections, small-bore connections, socket welds, attachments, clamps, pipe shoes, or local discontinuities.',
+      b313: 'Map local geometry effects to SIF/flexibility treatment where applicable: 319 with Appendix D / B31J-type interpretation. Component-specific treatment and project method must be checked.',
+      mistake: 'Do not rely only on nominal pipe-span stress for fatigue. The local detail class, weld profile, branch geometry, attachment, and vibration source can control the result.',
+      next: 'Use Pipe Stress for stress components, then use Load Types to select the correct code route.',
+    },
+    {
+      title: 'S-N curve limitation',
+      route: nearBoundary ? 'near/above warning' : 'below warning',
+      concept: `The S-N curve is a teaching boundary. The current point is ${nearBoundary ? 'near or above' : 'below'} the normalized warning line; it is not a code-certified fatigue calculation.`,
+      piping: 'Real piping fatigue assessment needs weld/detail quality, environment, corrosion, temperature, mean stress, stress concentration, dynamic amplification, support condition, and inspection history.',
+      b313: 'Do not treat this displayed S-N curve as the B31.3 equation. B31.3 routes cyclic displacement through expansion stress range, while vibration/pulsation or crack-like cases may need dynamic analysis or fracture mechanics outside this simple view.',
+      mistake: 'Do not label the plotted S-N point as pass/fail. It is normalized, qualitative, and intended to teach why repeated loading can fail below yield.',
+      next: 'For code-style reasoning, use Load Types before Combined Stress; for existing cracks, move beyond this app to inspection/fracture assessment.',
+    },
+    {
+      title: 'B31.3 lens for Tab 2',
+      route: 'fatigue map',
+      concept: 'Tab 2 teaches cyclic damage: stress range, cycle count, local initiation at a discontinuity, crack growth, and final fracture cue.',
+      piping: 'A pipe stress engineer should connect fatigue to load source, thermal cycle count, vibration source, SIF/detail, supports/restraints, branch geometry, and inspection strategy.',
+      b313: 'Initial map: 302.3.5(d) displacement stress range, 319 flexibility analysis, 319.4.4 expansion stress range family, 302.3.6 occasional/dynamic event family, and Appendix D / B31J-style SIF/flexibility where applicable. Educational paragraph map only.',
+      mistake: 'Do not replace B31.3 stress-range logic, dynamic analysis, project fatigue requirements, or fracture assessment with a generic material S-N curve.',
+      next: 'Next helper rollout should move to Stress Components so users separate σx/σy/τxy notation from pipe hoop/axial notation.',
     },
   ];
 }
