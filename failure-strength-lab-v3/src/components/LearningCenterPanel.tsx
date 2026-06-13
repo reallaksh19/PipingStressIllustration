@@ -35,51 +35,89 @@ export function LearningCenterPanel({ state }: { state: LabState }) {
     ? 'Stress range, cycles, hotspot detail, S-N limitation, and B31.3 fatigue route.'
     : 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.';
 
-  return <section
+  return <details
+    className="learning-center-panel"
     aria-label={`${label} helper content`}
     style={{
       position: 'fixed',
-      left: 'max(10px, calc((100vw - 1540px) / 2 + 380px))',
-      right: 'max(10px, calc((100vw - 1540px) / 2 + 10px))',
+      left: 'max(12px, calc((100vw - 1540px) / 2 + 12px))',
+      right: 'max(12px, calc((100vw - 1540px) / 2 + 12px))',
       bottom: 12,
       zIndex: 900,
-      maxHeight: '42vh',
+      maxHeight: 'min(72vh, 720px)',
       overflowY: 'auto',
-      display: 'grid',
-      gap: 10,
-      padding: '12px 14px',
       borderRadius: 24,
       border: '1px solid rgba(82,240,223,.36)',
-      background: 'linear-gradient(135deg, rgba(8,23,41,.97), rgba(5,14,26,.95))',
+      background: 'linear-gradient(135deg, rgba(8,23,41,.98), rgba(5,14,26,.96))',
       boxShadow: '0 -14px 40px rgba(0,0,0,.42), inset 0 0 28px rgba(82,240,223,.05)',
       color: '#eef7ff',
       backdropFilter: 'blur(16px)',
       fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     }}
   >
-    <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'start' }}>
-      <div>
+    <style>{`
+      .learning-center-panel > summary::-webkit-details-marker,
+      .learning-helper-card > summary::-webkit-details-marker { display: none; }
+      .learning-center-panel .lc-open-label,
+      .learning-helper-card .helper-open-label { display: inline-flex; align-items: center; gap: 6px; }
+      .learning-center-panel .lc-close-label,
+      .learning-helper-card .helper-close-label { display: none; align-items: center; gap: 6px; }
+      .learning-center-panel[open] .lc-open-label { display: none; }
+      .learning-center-panel[open] .lc-close-label { display: inline-flex; }
+      .learning-helper-card[open] .helper-open-label { display: none; }
+      .learning-helper-card[open] .helper-close-label { display: inline-flex; }
+    `}</style>
+
+    <summary style={{
+      cursor: 'pointer',
+      listStyle: 'none',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 14,
+      padding: '10px 14px',
+      minHeight: 48,
+    }}>
+      <div style={{ minWidth: 0 }}>
         <div style={{ color: '#52f0df', fontSize: 12, fontWeight: 950, letterSpacing: '.11em', textTransform: 'uppercase' }}>ⓘ Learning Center</div>
-        <h3 style={{ margin: '3px 0 2px', fontSize: 17, letterSpacing: '-.02em' }}>{label}</h3>
-        <p style={{ margin: 0, color: '#a9bdd5', fontSize: 12, lineHeight: 1.35 }}>{subtitle}</p>
+        <div style={{ color: '#d8edff', fontWeight: 950, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
       </div>
-      <span style={{ border: '1px solid rgba(216,237,255,.22)', color: '#dcfffb', borderRadius: 999, background: 'rgba(255,255,255,.07)', padding: '7px 10px', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>standalone panel</span>
-    </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 8 }}>
-      {helpers.map((helper, index) => <details key={`${helper.title}-${helper.route}`} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 16, background: 'rgba(255,255,255,.04)', overflow: 'hidden' }}>
-        <summary style={{ cursor: 'pointer', listStyle: 'none', padding: '10px 11px', display: 'flex', justifyContent: 'space-between', gap: 10, color: '#d8edff', fontWeight: 950, fontSize: 12 }}>
-          <span>{helper.title}</span><span style={{ color: '#a9bdd5', fontWeight: 900 }}>{helper.route}</span>
-        </summary>
-        <div style={{ display: 'grid', gap: 7, padding: '0 10px 10px' }}>
-          <LearningCell title="Concept" text={helper.concept} tone="concept" />
-          <LearningCell title="Piping" text={helper.piping} tone="piping" />
-          <LearningCell title="B31.3 map" text={helper.b313} tone="code" />
-          <LearningCell title="Mistake" text={helper.mistake} tone="mistake" />
-          <LearningCell title="Next" text={helper.next} tone="next" />
+      <span style={{ border: '1px solid rgba(216,237,255,.22)', color: '#dcfffb', borderRadius: 999, background: 'rgba(255,255,255,.07)', padding: '8px 12px', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>
+        <span className="lc-open-label"><span aria-hidden="true">▼</span> Open panel</span>
+        <span className="lc-close-label"><span aria-hidden="true">▲</span> Collapse to bottom</span>
+      </span>
+    </summary>
+
+    <div style={{ display: 'grid', gap: 10, padding: '0 14px 14px' }}>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'start', borderTop: '1px solid rgba(216,237,255,.12)', paddingTop: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ margin: '0 0 2px', fontSize: 18, letterSpacing: '-.02em' }}>{label}</h3>
+          <p style={{ margin: 0, color: '#a9bdd5', fontSize: 12, lineHeight: 1.35 }}>{subtitle}</p>
         </div>
-      </details>)}
+        <span style={{ border: '1px solid rgba(216,237,255,.22)', color: '#dcfffb', borderRadius: 999, background: 'rgba(255,255,255,.07)', padding: '7px 10px', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>wide bottom panel</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
+        {helpers.map((helper, index) => <details className="learning-helper-card" key={`${helper.title}-${helper.route}`} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 16, background: 'rgba(255,255,255,.04)', overflow: 'hidden' }}>
+          <summary style={{ cursor: 'pointer', listStyle: 'none', padding: '10px 11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, color: '#d8edff', fontWeight: 950, fontSize: 12 }}>
+            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{helper.title}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#a9bdd5', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              <span>{helper.route}</span>
+              <span className="helper-open-label"><span aria-hidden="true">▼</span> Show</span>
+              <span className="helper-close-label"><span aria-hidden="true">▲</span> Hide</span>
+            </span>
+          </summary>
+          <div style={{ display: 'grid', gap: 7, padding: '0 10px 10px' }}>
+            <LearningCell title="Concept" text={helper.concept} tone="concept" />
+            <LearningCell title="Piping" text={helper.piping} tone="piping" />
+            <LearningCell title="B31.3 map" text={helper.b313} tone="code" />
+            <LearningCell title="Mistake" text={helper.mistake} tone="mistake" />
+            <LearningCell title="Next" text={helper.next} tone="next" />
+          </div>
+        </details>)}
+      </div>
     </div>
-  </section>;
+  </details>;
 }
 
 function LearningCell({ title, text, tone }: { title: string; text: string; tone: Tone }) {
