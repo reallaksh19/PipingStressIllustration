@@ -1,5 +1,5 @@
 export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe'
-  | 'loads' | 'expansion' | 'combined' | 'challenge';
+  | 'loads' | 'expansion' | 'bourdon' | 'combined' | 'challenge';
 export type LoadCategory = 'weight' | 'pressure' | 'event' | 'thermal' | 'settlement';
 export type LoadDuration = 'always' | 'short' | 'cycle';
 export type LoadRestraint = 'free' | 'guided' | 'restrained';
@@ -7,6 +7,8 @@ export type Material = 'ductile' | 'brittle';
 export type StaticDemand = 'tension' | 'compression';
 export type StressComponentView = 'normal' | 'shear' | 'combined';
 export type PipeStressView = 'pressure' | 'bending' | 'torsion' | 'combined';
+export type BourdonBendAngle = '45' | '90' | '180';
+export type BourdonEndCondition = 'free' | 'guided' | 'restrained';
 
 export type LabState = {
   mode: Mode;
@@ -39,6 +41,10 @@ export type LabState = {
   expPressure: number;
   expRestrained: boolean;
   expShowBourdon: boolean;
+  bourdonPressure: number;
+  bourdonBendAngle: BourdonBendAngle;
+  bourdonFlexibility: number;
+  bourdonEndCondition: BourdonEndCondition;
   csH: number;
   csL: number;
   csLSign: 'tension' | 'compression';
@@ -76,6 +82,13 @@ export type ExpansionState = {
   pressure: number;
   restrained: boolean;
   showBourdon: boolean;
+};
+
+export type BourdonState = {
+  pressure: number;
+  bendAngle: BourdonBendAngle;
+  flexibility: number;
+  endCondition: BourdonEndCondition;
 };
 
 export type CombinedStressState = {
