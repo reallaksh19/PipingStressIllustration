@@ -244,9 +244,20 @@
         return String(label || '').trim() || DEFAULT_TAB;
       }
 
+      let lastRenderedKey = null;
+      let observer = null;
+
       function renderLearning(tabLabel) {
         const key = normalizeTabLabel(tabLabel);
+        // Guard: only touch the DOM when the active tab actually changed.
+        // renderLearning writes into the body subtree, so without this guard
+        // the MutationObserver below would re-fire on its own writes and spin
+        // in an infinite loop that freezes the page.
+        if (key === lastRenderedKey) return;
+        lastRenderedKey = key;
         const content = LEARNING_BY_TAB[key] || LEARNING_BY_TAB[DEFAULT_TAB];
+        // Pause the observer while we mutate so our own writes can't re-trigger it.
+        if (observer) observer.disconnect();
         titleEl.textContent = content.title;
         subtitleEl.textContent = content.subtitle;
         gridEl.innerHTML = content.cells.map(([icon, heading, text]) => `
@@ -255,6 +266,7 @@
             <p>${escapeHtml(text)}</p>
           </div>
         `).join('');
+        if (observer) observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], childList: true });
       }
 
       function activeTabLabel() {
@@ -268,7 +280,7 @@
         if (label) requestAnimationFrame(() => renderLearning(label));
       });
 
-      const observer = new MutationObserver(() => renderLearning(activeTabLabel()));
+      observer = new MutationObserver(() => renderLearning(activeTabLabel()));
       observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], childList: true });
       renderLearning(DEFAULT_TAB);
     </script>
