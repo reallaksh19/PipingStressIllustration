@@ -61,6 +61,103 @@ const presentationOverride = `
   .forceArrow { display: none !important; }
   marker[id^="tickArrow"] path { display: none !important; }
 
+  .appHeader {
+    padding: 18px 22px !important;
+    gap: 16px !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+  .brandRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .appIcon {
+    flex: 0 0 54px;
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    color: var(--cyan);
+    background: radial-gradient(circle at 34% 26%, rgba(82,240,223,.30), transparent 43%), linear-gradient(135deg, rgba(85,184,255,.20), rgba(184,132,255,.12));
+    border: 1px solid rgba(82,240,223,.62);
+    box-shadow: inset 0 0 30px rgba(82,240,223,.10), 0 10px 28px rgba(0,0,0,.28);
+    font-size: 27px;
+    font-weight: 950;
+    letter-spacing: -.05em;
+  }
+  .eyebrow {
+    margin-bottom: 4px;
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  .appHeader h1 {
+    font-size: clamp(29px, 2.45vw, 40px) !important;
+    letter-spacing: -.045em !important;
+  }
+  .appHeader .subtitle {
+    margin-top: 8px !important;
+    max-width: 1040px !important;
+    font-size: 14px !important;
+  }
+  .statusStack {
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+  }
+  .modeMini {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .lesson-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 8px !important;
+    padding: 12px 14px !important;
+    overflow: visible !important;
+  }
+  .lesson-tabs .tab {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 11px !important;
+    border-radius: 18px !important;
+    font-size: 13px;
+  }
+  .tabIcon {
+    flex: 0 0 25px;
+    width: 25px;
+    height: 25px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: #dcfffb;
+    border: 1px solid rgba(216,237,255,.20);
+    background: rgba(255,255,255,.06);
+    font-size: 12px;
+    font-weight: 950;
+    line-height: 1;
+  }
+  .tab.active .tabIcon {
+    color: #06101d;
+    background: var(--cyan);
+    border-color: var(--cyan);
+    box-shadow: 0 0 18px rgba(82,240,223,.34);
+  }
+  .tabLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* Stress-components labels: keep the generic 5A SVG as direct text only. */
   .stress-grid svg rect[fill="#071525"] { display: none !important; }
   .stress-grid svg rect[width="4"][rx="2"] { display: none !important; }
@@ -99,13 +196,72 @@ const presentationOverride = `
   .pipe-grid .panel:nth-child(2) .pb { min-height: 315px !important; display: flex; align-items: center; justify-content: center; }
 
   @media (max-width: 860px) {
+    .appHeader { grid-template-columns: 1fr !important; }
+    .statusStack { justify-items: start; }
+    .brandRow { align-items: flex-start; }
+    .appIcon { width: 46px; height: 46px; flex-basis: 46px; border-radius: 15px; }
+    .lesson-tabs { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
     .analysis-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "local" "curve" "interp" !important; }
     .pipe-grid { grid-template-columns: 1fr !important; grid-template-areas: "side" "section" "map" "note" !important; }
   }
 `;
 
+type Mode = LabState['mode'];
+
+const modeTabs: Array<{ mode: Mode; icon: string; label: string; title: string }> = [
+  { mode: 'static', icon: 'σ', label: 'Static', title: 'Static Loading · stress–strain' },
+  { mode: 'fatigue', icon: 'N', label: 'Fatigue', title: 'Fatigue Loading · S–N' },
+  { mode: 'stress', icon: 'τ', label: 'Stress Pt', title: 'Stress Components at a Point' },
+  { mode: 'pipe', icon: 'θ', label: 'Pipe Stress', title: 'Pipe Stress · σθ σL τ' },
+  { mode: 'loads', icon: 'P/S', label: 'Loads', title: 'Load Types · source route' },
+  { mode: 'expansion', icon: 'ΔL', label: 'Expansion', title: 'Pipe Expansion · ΔL' },
+  { mode: 'bourdon', icon: 'B', label: 'Bourdon', title: 'Bourdon Effect · bend straightening' },
+  { mode: 'combined', icon: 'VM', label: 'Combined', title: 'Combined Stress · VM/Tresca' },
+  { mode: 'challenge', icon: '?', label: 'Review', title: 'Quick Challenge' },
+];
+
+function activeMode(mode: Mode) {
+  return modeTabs.find(item => item.mode === mode) ?? modeTabs[0];
+}
+
+function modeTitle(mode: Mode) {
+  if (mode === 'static') return 'Static Loading';
+  if (mode === 'fatigue') return 'Fatigue Loading';
+  if (mode === 'stress') return 'Stress Components at a Point';
+  if (mode === 'pipe') return 'Pipe Stress Components';
+  if (mode === 'loads') return 'Load Types';
+  if (mode === 'expansion') return 'Pipe Expansion';
+  if (mode === 'bourdon') return 'Bourdon Effect';
+  if (mode === 'combined') return 'Combined Stress';
+  return 'Quick Challenge';
+}
+
+function modeCopy(state: LabState) {
+  if (state.mode === 'static') return 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.';
+  if (state.mode === 'fatigue') return `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.`;
+  if (state.mode === 'stress') return 'Generic Cartesian stress components before pipe notation, Mohr circle, or failure theory.';
+  if (state.mode === 'pipe') return 'Pipe-specific sliders for hoop, axial, bending ovalisation, and torsional shear. Concept-level, not a code check.';
+  if (state.mode === 'loads') return 'Classification dashboard: identify the physical source, behavior, and stress route.';
+  if (state.mode === 'expansion') return 'Free or restrained thermal expansion and straight-pipe pressure elongation.';
+  if (state.mode === 'bourdon') return 'Pressure-induced bend straightening, end displacement, and nozzle/support reaction relevance.';
+  if (state.mode === 'combined') return 'Compare Von Mises and Tresca checks for hoop and longitudinal stress.';
+  return 'Review mode.';
+}
+
+function modeChip(state: LabState) {
+  if (state.mode === 'fatigue') return 'ductile metal · Δσ + N';
+  if (state.mode === 'stress') return 'σx · σy · τxy';
+  if (state.mode === 'pipe') return 'σθ · σL · M · τt';
+  if (state.mode === 'loads') return 'source · behavior · route';
+  if (state.mode === 'expansion') return 'ΔL · αLΔT';
+  if (state.mode === 'bourdon') return 'pressure-driven opening';
+  if (state.mode === 'combined') return 'σH · σL · VM/Tresca';
+  return 'σ = F/A · ε = σ/E';
+}
+
 function App() {
   const [state, setState] = useState<LabState>(initialState);
+  const active = activeMode(state.mode);
   const status = useMemo(() => state.mode === 'fatigue'
     ? fatigueStatus(state)
     : state.mode === 'static'
@@ -133,19 +289,27 @@ function App() {
 
   return <div className="app">
     <style>{presentationOverride}</style>
-    <header>
+    <header className="appHeader">
       <div>
-        <div className="tabs" style={{ padding: 0, borderBottom: 0, background: 'transparent', marginBottom: 8 }} aria-label="Page tab">
-          <button className="tab active" type="button">Failure & Strength Lab</button>
+        <div className="brandRow">
+          <div className="appIcon" aria-hidden="true">σ</div>
+          <div>
+            <div className="eyebrow">Interactive Piping Stress Visual Lab</div>
+            <h1>Failure & Strength Lab</h1>
+          </div>
         </div>
-        <h1>Failure & Strength Lab</h1>
-        <p className="subtitle">Visual demonstration of stress demand, material response, generic stress components, pipe stress components, load categories, pipe expansion, Bourdon effect, combined stress, and failure interpretation. Static uses σ–ε; fatigue uses S–N for ductile metallic piping only.</p>
+        <p className="subtitle">Piping stress concepts from load source to stress components, expansion, Bourdon bend opening, combined stress, and failure interpretation.</p>
       </div>
-      <div className="pill" style={{ color: status.color }}>{status.badge}</div>
+      <div className="statusStack">
+        <div className="pill" style={{ color: status.color }}>{status.badge}</div>
+        <div className="modeMini">{active.title}</div>
+      </div>
     </header>
 
-    <nav className="tabs" aria-label="Lesson mode">
-      {(['static', 'fatigue', 'stress', 'pipe', 'loads', 'expansion', 'bourdon', 'combined', 'challenge'] as const).map(mode => <button key={mode} className={`tab ${state.mode === mode ? 'active' : ''}`} onClick={() => update({ mode })}>{mode === 'static' ? 'Static Loading · σ–ε' : mode === 'fatigue' ? 'Fatigue · S–N' : mode === 'stress' ? 'Stress Components' : mode === 'pipe' ? 'Pipe Stress · σθ σL τ' : mode === 'loads' ? 'Load Types · source route' : mode === 'expansion' ? 'Pipe Expansion · ΔL' : mode === 'bourdon' ? 'Bourdon Effect · bend straightening' : mode === 'combined' ? 'Combined Stress · VM' : 'Quick Challenge'}</button>)}
+    <nav className="tabs lesson-tabs" aria-label="Lesson mode">
+      {modeTabs.map(item => <button key={item.mode} title={item.title} className={`tab ${state.mode === item.mode ? 'active' : ''}`} onClick={() => update({ mode: item.mode })}>
+        <span className="tabIcon">{item.icon}</span><span className="tabLabel">{item.label}</span>
+      </button>)}
     </nav>
 
     <div className="content">
@@ -231,8 +395,8 @@ function App() {
 
       <main>
         <section className="title-row">
-          <div><h2>{state.mode === 'static' ? 'Static Loading' : state.mode === 'fatigue' ? 'Fatigue Loading' : state.mode === 'stress' ? 'Stress Components at a Point' : state.mode === 'pipe' ? 'Pipe Stress Components' : state.mode === 'loads' ? 'Load Types' : state.mode === 'expansion' ? 'Pipe Expansion' : state.mode === 'bourdon' ? 'Bourdon Effect' : state.mode === 'combined' ? 'Combined Stress' : 'Quick Challenge'}</h2><p>{state.mode === 'static' ? 'Side view is stacked above pipe-wall cross-section; curve and interpretation are stacked at right.' : state.mode === 'fatigue' ? `Ductile metallic S-N view: log10(N) = ${logCycles(state.fatigueCyclesSlider).toFixed(2)}. Cross-section stays below side view.` : state.mode === 'stress' ? 'Move only the visible generic stress sliders: normal view resizes, shear view skews, combined view does both. Pipe stress has been moved to its own tab.' : state.mode === 'pipe' ? 'Use pipe-specific sliders for σθ hoop, σL axial membrane, bending ovalisation, and τt torsion shear. This is still concept-level, not a code check.' : state.mode === 'loads' ? 'Classification dashboard: identify the physical source, classify force/displacement behavior, then choose the stress route.' : state.mode === 'expansion' ? 'Show free or restrained thermal expansion and pressure elongation. Bourdon bend straightening is now separated.' : state.mode === 'bourdon' ? 'Show pressure-induced bend straightening, end displacement, and nozzle/support reaction relevance for curved pipe components. The opening response is pressure-driven, not an independent flexibility slider.' : state.mode === 'combined' ? 'Compare Von Mises and Tresca combined-stress checks for hoop and longitudinal stress.' : 'Review mode.'}</p></div>
-          <div className="chip">{state.mode === 'fatigue' ? 'ductile metal · Δσ + N · S-N curve' : state.mode === 'stress' ? 'σx · σy · τxy · generic stress point' : state.mode === 'pipe' ? 'σθ · σL · M · τt · pipe notation' : state.mode === 'loads' ? 'source · behavior · route' : state.mode === 'expansion' ? 'ΔL · αLΔT · pressure elong.' : state.mode === 'bourdon' ? 'pressure-driven bend opening' : state.mode === 'combined' ? 'σH · σL · VM/Tresca' : 'σ = F/A · ε = σ/E'}</div>
+          <div><h2>{modeTitle(state.mode)}</h2><p>{modeCopy(state)}</p></div>
+          <div className="chip">{modeChip(state)}</div>
         </section>
 
         {(state.mode === 'static' || state.mode === 'fatigue') && <section className="grid analysis-grid">
