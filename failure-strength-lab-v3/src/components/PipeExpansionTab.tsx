@@ -26,65 +26,73 @@ function pressureElongationPct(pressure: number) {
 export function PipeExpansionSideSvg({ state }: { state: ExpansionState }) {
   const tFrac = state.deltaT / 100;
   const pFrac = state.pressure / 100;
-  const maxElong = 64;
+  const maxElong = 58;
   const thermalElong = tFrac * maxElong;
   const pressElong = pFrac * maxElong * 0.35;
 
-  const anchorX = 90;
-  const freeEndX = 420;
+  const anchorX = 92;
+  const freeEndX = 414;
+  const pipeStart = anchorX + 24;
   const elongatedX = state.restrained ? freeEndX : freeEndX + thermalElong + pressElong;
 
   const thermalSt = thermalStressPct(state.deltaT);
   const stressColor = thermalSt > 72 ? COLORS.red : thermalSt > 44 ? COLORS.orange : COLORS.green;
   const pressurePct = pressureElongationPct(state.pressure);
+  const noteLine1 = 'Straight pipe: thermal ΔL plus pressure elongation cue.';
+  const noteLine2 = 'Bourdon bend straightening is handled in its own tab.';
 
-  return <svg viewBox="0 0 640 370" role="img" aria-label="Pipe thermal expansion and pressure elongation">
+  return <svg viewBox="0 0 640 330" role="img" aria-label="Pipe thermal expansion and pressure elongation">
     <SvgDefs />
-    <rect x="14" y="18" width="612" height="330" rx="30" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
-    <path d="M52 116H588 M52 210H588 M52 304H588 M160 48V334 M320 48V334 M480 48V334" stroke="rgba(216,237,255,.06)" />
+    <rect x="14" y="16" width="612" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
+    <path d="M52 96H588 M52 184H588 M52 272H588 M160 48V296 M320 48V296 M480 48V296" stroke="rgba(216,237,255,.06)" />
 
-    <text x="320" y="42" textAnchor="middle" className="label" fill={COLORS.cyan}>{state.restrained ? 'Restrained pipe — thermal stress builds up' : 'Unrestrained pipe — free to elongate'}</text>
-    <text x="320" y="62" textAnchor="middle" className="muted">ΔL = α·L·ΔT{state.pressure > 10 ? ' + 0.5·SH·L/E pressure elongation' : ''}</text>
+    <text x="320" y="40" textAnchor="middle" className="label" fill={COLORS.cyan}>{state.restrained ? 'Restrained straight pipe — thermal stress builds up' : 'Unrestrained straight pipe — free to elongate'}</text>
+    <text x="320" y="61" textAnchor="middle" className="muted">ΔL = α·L·ΔT{state.pressure > 10 ? ' + 0.5·SH·L/E pressure elongation cue' : ''}</text>
 
-    <path d={`M${anchorX + 20} 180 H${freeEndX}`} stroke="rgba(216,237,255,.18)" strokeWidth="36" strokeLinecap="round" strokeDasharray="10 14" />
-    <text x={(anchorX + freeEndX) / 2} y="148" textAnchor="middle" className="muted">cold/installed position</text>
+    <path d={`M${pipeStart} 160 H${freeEndX}`} stroke="rgba(216,237,255,.18)" strokeWidth="34" strokeLinecap="round" strokeDasharray="10 14" />
+    <text x={(pipeStart + freeEndX) / 2} y="126" textAnchor="middle" className="muted">cold / installed position</text>
 
-    <path d={`M${anchorX + 20} 210 H${elongatedX}`} stroke="#020813" strokeWidth="44" strokeLinecap="round" opacity=".88" />
-    <path d={`M${anchorX + 20} 210 H${elongatedX}`} stroke={state.restrained ? stressColor : 'url(#pipeStroke)'} strokeWidth="30" strokeLinecap="round" opacity={state.restrained ? 0.78 : 1} />
-    <path d={`M${anchorX + 20} 210 H${elongatedX}`} stroke="#06101d" strokeWidth="11" strokeLinecap="round" opacity=".72" strokeDasharray="17 12" />
+    <path d={`M${pipeStart} 190 H${elongatedX}`} stroke="#020813" strokeWidth="44" strokeLinecap="round" opacity=".88" />
+    <path d={`M${pipeStart} 190 H${elongatedX}`} stroke={state.restrained ? stressColor : 'url(#pipeStroke)'} strokeWidth="30" strokeLinecap="round" opacity={state.restrained ? 0.78 : 1} />
+    <path d={`M${pipeStart} 190 H${elongatedX}`} stroke="#06101d" strokeWidth="10" strokeLinecap="round" opacity=".72" strokeDasharray="17 12" />
 
-    <rect x={anchorX - 12} y="178" width="22" height="64" rx="6" fill="rgba(216,231,242,.22)" stroke="rgba(216,231,242,.72)" strokeWidth="2.5" />
-    <path d={`M${anchorX - 20} 242 H${anchorX + 10}`} stroke="rgba(216,231,242,.55)" strokeWidth="3" strokeLinecap="round" />
-    {[0, 1, 2, 3].map(i => <path key={i} d={`M${anchorX - 20 + i * 10} 242 L${anchorX - 26 + i * 10} 254`} stroke="rgba(216,231,242,.38)" strokeWidth="2" strokeLinecap="round" />)}
-    <text x={anchorX} y="164" textAnchor="middle" className="muted">anchor</text>
-
-    {state.restrained ? <>
-      <rect x={freeEndX} y="174" width="18" height="72" rx="6" fill="rgba(216,231,242,.28)" stroke="rgba(216,231,242,.72)" strokeWidth="3" />
-      <text x={freeEndX + 9} y="162" textAnchor="middle" className="muted">wall/anchor</text>
-      <path d={`M${freeEndX + 38} 210 L${freeEndX + 18} 210`} stroke={COLORS.orange} strokeWidth="5" strokeLinecap="round" markerEnd="url(#arrowOrange)" />
-      <text x={freeEndX + 58} y="214" fill={COLORS.orange} fontSize="11" fontWeight="900">reaction</text>
-      <rect x={anchorX + 22} y="246" width={clamp(thermalElong + pressElong * 0.5, 0, freeEndX - anchorX - 24)} height="12" rx="6" fill={`${stressColor}55`} stroke={stressColor} strokeWidth="1.8" />
-      <text x={(anchorX + freeEndX) / 2} y="272" textAnchor="middle" fill={stressColor} fontSize="12" fontWeight="900">ST = E·α·ΔT ≈ {thermalSt.toFixed(0)}% of yield concept</text>
-    </> : <>
-      {(thermalElong + pressElong) > 4 && <>
-        <path d={`M${freeEndX} 170 L${elongatedX} 170`} stroke={COLORS.cyan} strokeWidth="2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-        <text x={(freeEndX + elongatedX) / 2} y="162" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">ΔL total</text>
-        {state.pressure > 10 && <>
-          <path d={`M${freeEndX} 244 L${freeEndX + pressElong} 244`} stroke={COLORS.blue} strokeWidth="2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-          <text x={freeEndX + pressElong / 2} y="258" textAnchor="middle" fill={COLORS.blue} fontSize="10" fontWeight="900">pressure elong.</text>
-        </>}
-      </>}
-      <text x={(anchorX + freeEndX) / 2} y="272" textAnchor="middle" fill={COLORS.green} fontSize="12" fontWeight="900">Unrestrained: displacement occurs, thermal stress = 0</text>
-    </>}
-
-    <g transform="translate(474 238)">
-      <rect x="0" y="0" width="152" height="86" rx="16" fill="rgba(6,16,29,.72)" stroke="rgba(190,220,255,.22)" strokeWidth="1.5" />
-      <text x="76" y="22" textAnchor="middle" fill={COLORS.yellow} fontSize="10" fontWeight="950">PRESSURE ELONGATION</text>
-      <text x="76" y="48" textAnchor="middle" className="muted" fontSize="9">0.5·SH·L/E cue</text>
-      <text x="76" y="68" textAnchor="middle" fill={COLORS.blue} fontSize="12" fontWeight="900">{pressurePct.toFixed(0)}% of span</text>
+    <g aria-label="left anchor">
+      <rect x={anchorX - 12} y="158" width="22" height="64" rx="6" fill="rgba(216,231,242,.22)" stroke="rgba(216,231,242,.72)" strokeWidth="2.5" />
+      <path d={`M${anchorX - 20} 222 H${anchorX + 10}`} stroke="rgba(216,231,242,.55)" strokeWidth="3" strokeLinecap="round" />
+      {[0, 1, 2, 3].map(i => <path key={i} d={`M${anchorX - 20 + i * 10} 222 L${anchorX - 26 + i * 10} 234`} stroke="rgba(216,231,242,.38)" strokeWidth="2" strokeLinecap="round" />)}
+      <text x={anchorX} y="145" textAnchor="middle" className="muted">anchor</text>
     </g>
 
-    {state.pressure > 20 && <text x="320" y="310" textAnchor="middle" className="muted">Pressure elongation and Poisson diameter effects are straight-pipe concepts; bend straightening is now in the Bourdon Effect tab.</text>}
+    {state.restrained ? <>
+      <rect x={freeEndX} y="154" width="18" height="72" rx="6" fill="rgba(216,231,242,.28)" stroke="rgba(216,231,242,.72)" strokeWidth="3" />
+      <text x={freeEndX + 9} y="142" textAnchor="middle" className="muted">wall / anchor</text>
+      <path d={`M${freeEndX + 36} 190 L${freeEndX + 18} 190`} stroke={COLORS.orange} strokeWidth="5" strokeLinecap="round" markerEnd="url(#arrowOrange)" />
+      <text x={freeEndX + 54} y="194" fill={COLORS.orange} fontSize="11" fontWeight="900">reaction</text>
+      <rect x={pipeStart} y="232" width={clamp(thermalElong + pressElong * 0.5, 0, freeEndX - pipeStart - 8)} height="12" rx="6" fill={`${stressColor}55`} stroke={stressColor} strokeWidth="1.8" />
+      <text x="290" y="259" textAnchor="middle" fill={stressColor} fontSize="12" fontWeight="900">ST ≈ {thermalSt.toFixed(0)}% of yield concept</text>
+    </> : <>
+      {(thermalElong + pressElong) > 4 && <>
+        <path d={`M${freeEndX} 145 L${elongatedX} 145`} stroke={COLORS.cyan} strokeWidth="2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+        <text x={(freeEndX + elongatedX) / 2} y="136" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">ΔL total</text>
+        {state.pressure > 10 && <>
+          <path d={`M${freeEndX} 224 L${freeEndX + pressElong} 224`} stroke={COLORS.blue} strokeWidth="2" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
+          <text x={freeEndX + pressElong / 2} y="239" textAnchor="middle" fill={COLORS.blue} fontSize="10" fontWeight="900">pressure elong.</text>
+        </>}
+      </>}
+      <text x="294" y="259" textAnchor="middle" fill={COLORS.green} fontSize="12" fontWeight="900">Unrestrained: displacement occurs; thermal stress ≈ 0</text>
+    </>}
+
+    <g transform="translate(462 224)">
+      <rect x="0" y="0" width="150" height="72" rx="15" fill="rgba(6,16,29,.72)" stroke="rgba(190,220,255,.22)" strokeWidth="1.5" />
+      <text x="75" y="20" textAnchor="middle" fill={COLORS.yellow} fontSize="10" fontWeight="950">PRESSURE ELONGATION</text>
+      <text x="75" y="43" textAnchor="middle" className="muted" fontSize="9">0.5·SH·L/E cue</text>
+      <text x="75" y="61" textAnchor="middle" fill={COLORS.blue} fontSize="12" fontWeight="900">{pressurePct.toFixed(0)}% of span</text>
+    </g>
+
+    {state.pressure > 20 && <>
+      <text x="320" y="302" textAnchor="middle" className="muted">{noteLine1}</text>
+      <text x="320" y="317" textAnchor="middle" className="muted">{noteLine2}</text>
+    </>}
   </svg>;
 }
 
