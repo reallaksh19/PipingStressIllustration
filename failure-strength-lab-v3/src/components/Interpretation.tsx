@@ -3,11 +3,26 @@ import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fat
 
 type Item = { label: string; value: string };
 type Step = { title: string; text: string };
-type Readout = { headline: string; principle: string; items: Item[]; steps: Step[]; watch: string; caution: string };
-type LearningHelper = { title: string; route: string; concept: string; piping: string; b313: string; mistake: string; next: string };
+type Readout = {
+  headline: string;
+  principle: string;
+  items: Item[];
+  steps: Step[];
+  watch: string;
+  caution: string;
+};
+type LearningHelper = {
+  title: string;
+  route: string;
+  concept: string;
+  piping: string;
+  b313: string;
+  mistake: string;
+  next: string;
+};
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
-  const r = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
+  const readout = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
 
   return <div
     className="interp failure-readout"
@@ -19,24 +34,24 @@ export function Interpretation({ state, status }: { state: LabState; status: Sta
     }}
   >
     <span className="badge" style={{ color: status.color }}>{status.badge}</span>
-    <h3 className="result-title">{r.headline}</h3>
-    <p className="copy">{r.principle}</p>
+    <h3 className="result-title">{readout.headline}</h3>
+    <p className="copy">{readout.principle}</p>
 
     <div className="table">
-      {r.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
+      {readout.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
     </div>
 
     <div style={{ display: 'grid', gap: 8 }}>
-      {r.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
+      {readout.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
         <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
         <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
       </div>)}
     </div>
 
-    <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
-    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
+    <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{readout.watch}</span></div>
+    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{readout.caution}</span></div>
 
-    {state.mode === 'static' && <LearningCenter label="Tab 1 Learning Center" helpers={staticHelpers(state)} />}
+    {state.mode === 'static' && <LearningCenter label="Tab 1 Learning Center" helpers={staticLearningHelpers(state)} />}
   </div>;
 }
 
@@ -55,8 +70,8 @@ function LearningCenter({ label, helpers }: { label: string; helpers: LearningHe
     }}
   >
     <div style={{ color: '#52f0df', fontWeight: 950, letterSpacing: '.08em', textTransform: 'uppercase', fontSize: 11 }}>ⓘ {label}</div>
-    {helpers.map((helper, index) => <details key={helper.title} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 14, background: 'rgba(255,255,255,.035)', overflow: 'hidden' }}>
-      <summary style={{ cursor: 'pointer', padding: '9px 10px', color: '#d8edff', fontWeight: 950, fontSize: 12 }}>{shortFor(helper.title)} · {helper.route}</summary>
+    {helpers.map((helper, index) => <details key={`${helper.title}-${helper.route}`} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 14, background: 'rgba(255,255,255,.035)', overflow: 'hidden' }}>
+      <summary style={{ cursor: 'pointer', padding: '9px 10px', color: '#d8edff', fontWeight: 950, fontSize: 12 }}>{helper.title} · {helper.route}</summary>
       <div style={{ display: 'grid', gap: 7, padding: '0 10px 10px' }}>
         <LearningCell title="Concept" text={helper.concept} color="#52f0df" />
         <LearningCell title="Piping" text={helper.piping} color="#55b8ff" />
@@ -68,20 +83,6 @@ function LearningCenter({ label, helpers }: { label: string; helpers: LearningHe
   </section>;
 }
 
-function shortFor(title: string) {
-  return title
-    .replace('B31.3 lens for Tab 1', 'B31.3')
-    .replace('B31.3 lens for Tab 2', 'B31.3')
-    .replace('Static demand visual', 'Demand')
-    .replace('Pipe-wall section', 'Wall')
-    .replace('Stress–strain curve', 'Curve')
-    .replace('Material response', 'Material')
-    .replace('Stress range Δσ', 'Stress range')
-    .replace('Cycles N', 'Cycles')
-    .replace('Hotspot / weld toe', 'Hotspot')
-    .replace('S-N curve', 'S-N curve');
-}
-
 function LearningCell({ title, text, color }: { title: string; text: string; color: string }) {
   return <div style={{ minWidth: 0, display: 'grid', gap: 3, padding: '8px 9px', borderRadius: 12, border: '1px solid rgba(190,220,255,.12)', background: 'rgba(6,16,29,.42)' }}>
     <b style={{ color, fontSize: 10, letterSpacing: '.07em', textTransform: 'uppercase' }}>{title}</b>
@@ -89,7 +90,7 @@ function LearningCell({ title, text, color }: { title: string; text: string; col
   </div>;
 }
 
-function staticHelpers(state: LabState): LearningHelper[] {
+function staticLearningHelpers(state: LabState): LearningHelper[] {
   const ductile = state.material === 'ductile';
   const tension = state.staticDemand === 'tension';
   const demand = tension ? 'axial tension' : 'axial compression';
@@ -153,63 +154,6 @@ function staticHelpers(state: LabState): LearningHelper[] {
   ];
 }
 
-function fatigueHelpers(state: LabState): LearningHelper[] {
-  const logN = logCycles(state.fatigueCyclesSlider);
-  const boundary = allowableStressRangePercent(logN);
-  const nearBoundary = state.fatigueStressRange / Math.max(boundary, 1) > 0.82;
-  const hotspotText = state.notchEnabled ? 'weld/notch hotspot is active' : 'smooth detail is selected';
-
-  return [
-    {
-      title: 'Stress range Δσ',
-      route: 'cyclic range',
-      concept: `Fatigue is controlled by repeated stress range, not one static peak. Current Δσ is ${state.fatigueStressRange}% in this normalized teaching view.`,
-      piping: 'For piping, repeated stress range can come from thermal cycling, vibration, pressure pulsation, startup/shutdown, slugging, relief events, or cyclic equipment movement.',
-      b313: 'Map cyclic displacement-type behavior to the displacement stress-range / flexibility route: 302.3.5(d) and 319 / 319.4.4 family. Severe cyclic service may require deeper project-specific fatigue assessment.',
-      mistake: 'Do not judge fatigue only from maximum stress. A lower stress repeated many times can be more damaging than a single high static event.',
-      next: 'Use Load Types to classify the source, then use Pipe Expansion or Combined Stress only after the stress-range route is clear.',
-    },
-    {
-      title: 'Cycles N',
-      route: 'life axis',
-      concept: `The S-N axis is logarithmic: the current display is about ${cycleLabel(state.fatigueCyclesSlider)} cycles. Higher cycle count reduces the acceptable stress-range cue.`,
-      piping: 'Start/stop cycles, batch operation, compressor/pump pulsation, flow-induced vibration, and thermal swing count can dominate fatigue risk even when sustained stress looks acceptable.',
-      b313: 'Use B31.3 expansion-stress-range and cycle-factor interpretation for displacement cycles. For vibration or pulsation, treat this app panel as screening and move to project-specific dynamic/fatigue evaluation.',
-      mistake: 'Do not combine “always present” sustained stress and cyclic stress range into one generic slider. The number of reversals/cycles matters.',
-      next: 'Review Fatigue hotspot and S-N curve helpers before using the Failure interpretation readout.',
-    },
-    {
-      title: 'Hotspot / weld toe',
-      route: hotspotText,
-      concept: state.notchEnabled
-        ? 'A local discontinuity concentrates cyclic stress. The weld toe/notch is the likely crack-initiation point in the teaching visual.'
-        : 'A smooth detail lowers local concentration, but fatigue can still occur if stress range and cycles are high enough.',
-      piping: 'Real piping fatigue often initiates at weld toes, branch connections, attachments, socket welds, small-bore connections, clamps, or local geometry changes.',
-      b313: 'Map local geometry effects to flexibility/SIF logic where applicable: 319 and Appendix D / B31J-type interpretation. Exact stress intensification treatment depends on component and project method.',
-      mistake: 'Do not assume nominal pipe span stress alone captures the weld-toe or branch-connection fatigue hotspot.',
-      next: 'Use the local/cross-section panel to track initiation, growth, beach marks, and final fracture cue.',
-    },
-    {
-      title: 'S-N curve',
-      route: nearBoundary ? 'near/above boundary' : 'below boundary',
-      concept: `The curve is a teaching boundary. Current approximate boundary is ${boundary.toFixed(0)}%, so the point is ${nearBoundary ? 'near/above' : 'below'} the fatigue warning line.`,
-      piping: 'The app shows the S-N idea because it explains why fatigue can occur below yield. Real piping fatigue needs detail class, environment, weld quality, mean stress, temperature, inspection data, and load history.',
-      b313: 'Do not treat this as the actual B31.3 equation. B31.3 normally routes cyclic displacement through expansion stress range; crack-like conditions may need fracture mechanics outside this simple view.',
-      mistake: 'Do not call the displayed S-N point “B31.3 pass/fail.” It is normalized and educational, not a code-certified fatigue calculation.',
-      next: 'After S-N, move to Combined Stress only for educational combination; for code work, first choose sustained/occasional/displacement route.',
-    },
-    {
-      title: 'B31.3 lens for Tab 2',
-      route: 'fatigue map',
-      concept: 'Tab 2 teaches cyclic damage: initiation at a stress raiser, cycle-by-cycle crack growth, and final fracture after enough repetitions.',
-      piping: 'A pipe stress engineer should connect fatigue to load source, stress range, local SIF/detail, supports/restraints, vibration, thermal cycles, and inspection/monitoring strategy.',
-      b313: 'Initial map: displacement stress range 302.3.5(d), flexibility analysis 319, expansion stress range 319.4.4 family, occasional/dynamic cases 302.3.6 family, and SIF/flexibility via Appendix D / B31J where applicable. Educational paragraph map only.',
-      mistake: 'Do not use a generic material S-N curve as a substitute for project fatigue requirements, code stress-range equations, dynamic analysis, or fracture assessment.',
-      next: 'Next tab helper rollout should move to Stress Components so users separate σx/σy/τxy notation from pipe hoop/axial notation.',
-    },
-  ];
-}
-
 function staticReadout(state: LabState): Readout {
   const ductile = state.material === 'ductile';
   const tension = state.staticDemand === 'tension';
@@ -231,7 +175,7 @@ function staticReadout(state: LabState): Readout {
         { title: 'Plastic deformation', text: 'After yield, permanent strain spreads along the specimen before the neck forms.' },
         { title: 'Necking and rupture', text: 'At high demand plastic strain localizes, area reduces, and final separation occurs after the necking stage.' },
       ],
-      watch: 'Side view now separates broad plastic deformation, later necking, and final rupture to match the σ–ε curve sequence.',
+      watch: 'Side view separates broad plastic deformation, later necking, and final rupture to match the σ–ε curve sequence.',
       caution: 'This is a teaching visualization. It is not an allowable-stress or code compliance check.',
     };
   }
