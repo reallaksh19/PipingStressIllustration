@@ -1,5 +1,7 @@
+import { createPortal } from 'react-dom';
 import { LabState, Status } from '../model/types';
 import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
+import { LearningCenterPanel } from './LearningCenterPanel';
 
 type Item = { label: string; value: string };
 type Step = { title: string; text: string };
@@ -14,34 +16,38 @@ type Readout = {
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
   const readout = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
+  const showLearning = state.mode === 'static' || state.mode === 'fatigue';
 
-  return <div
-    className="interp failure-readout"
-    style={{
-      gap: 10,
-      maxHeight: 300,
-      overflowY: 'auto',
-      paddingRight: 6,
-    }}
-  >
-    <span className="badge" style={{ color: status.color }}>{status.badge}</span>
-    <h3 className="result-title">{readout.headline}</h3>
-    <p className="copy">{readout.principle}</p>
+  return <>
+    {showLearning && typeof document !== 'undefined' && createPortal(<LearningCenterPanel state={state} />, document.body)}
+    <div
+      className="interp failure-readout"
+      style={{
+        gap: 10,
+        maxHeight: 300,
+        overflowY: 'auto',
+        paddingRight: 6,
+      }}
+    >
+      <span className="badge" style={{ color: status.color }}>{status.badge}</span>
+      <h3 className="result-title">{readout.headline}</h3>
+      <p className="copy">{readout.principle}</p>
 
-    <div className="table">
-      {readout.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
+      <div className="table">
+        {readout.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
+      </div>
+
+      <div style={{ display: 'grid', gap: 8 }}>
+        {readout.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
+          <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
+          <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
+        </div>)}
+      </div>
+
+      <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{readout.watch}</span></div>
+      <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{readout.caution}</span></div>
     </div>
-
-    <div style={{ display: 'grid', gap: 8 }}>
-      {readout.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
-        <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
-        <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
-      </div>)}
-    </div>
-
-    <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{readout.watch}</span></div>
-    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{readout.caution}</span></div>
-  </div>;
+  </>;
 }
 
 function staticReadout(state: LabState): Readout {
