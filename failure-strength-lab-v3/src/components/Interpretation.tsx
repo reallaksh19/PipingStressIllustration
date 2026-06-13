@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { LabState, Status } from '../model/types';
 import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
 
@@ -9,119 +8,73 @@ type LearningHelper = { title: string; route: string; concept: string; piping: s
 
 export function Interpretation({ state, status }: { state: LabState; status: Status }) {
   const r = state.mode === 'fatigue' ? fatigueReadout(state) : staticReadout(state);
-  return <>
-    <div
-      className="interp failure-readout"
-      style={{
-        gap: 10,
-        maxHeight: 236,
-        overflowY: 'auto',
-        paddingRight: 6,
-        overscrollBehavior: 'contain',
-        scrollbarGutter: 'stable',
-      }}
-    >
-      <span className="badge" style={{ color: status.color }}>{status.badge}</span>
-      <h3 className="result-title">{r.headline}</h3>
-      <p className="copy">{r.principle}</p>
-
-      <div className="table">
-        {r.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
-      </div>
-
-      <div style={{ display: 'grid', gap: 8 }}>
-        {r.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
-          <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
-          <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
-        </div>)}
-      </div>
-
-      <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
-      <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
-    </div>
-
-    {state.mode === 'static' && <LearningBar label="Tab 1 learning layer" helpers={staticHelpers(state)} defaultCollapsed />}
-    {state.mode === 'fatigue' && <LearningBar label="Tab 2 learning layer" helpers={fatigueHelpers(state)} />}
-  </>;
-}
-
-function LearningBar({ label, helpers, defaultCollapsed = false }: { label: string; helpers: LearningHelper[]; defaultCollapsed?: boolean }) {
-  const [active, setActive] = useState<string>(helpers[0]?.title ?? label);
-  const [collapsed, setCollapsed] = useState<boolean>(defaultCollapsed);
-  const selected = helpers.find(helper => helper.title === active) ?? helpers[0];
 
   return <div
-    aria-label={`${label} status bar`}
+    className="interp failure-readout"
     style={{
-      position: 'fixed',
-      left: 24,
-      right: 24,
-      bottom: 18,
-      zIndex: 30,
-      display: 'grid',
-      gap: collapsed ? 0 : 9,
-      padding: collapsed ? '9px 12px' : '12px 14px',
-      borderRadius: collapsed ? 999 : 22,
-      border: '1px solid rgba(82,240,223,.28)',
-      background: 'linear-gradient(180deg,rgba(9,20,36,.94),rgba(6,16,29,.97))',
-      boxShadow: '0 -14px 38px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06)',
-      backdropFilter: 'blur(14px)',
-      maxHeight: collapsed ? 58 : '34vh',
-      overflowY: collapsed ? 'hidden' : 'auto',
+      gap: 10,
+      maxHeight: state.mode === 'static' ? 430 : 236,
+      overflowY: 'auto',
+      paddingRight: 6,
     }}
   >
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, paddingRight: 6, color: '#52f0df', fontWeight: 950, letterSpacing: '.08em', textTransform: 'uppercase', fontSize: 11 }}>ⓘ {label}</span>
-      {collapsed && <span className="copy" style={{ fontSize: 12 }}>Collapsed · open for concept, piping use, B31.3 map, mistake, and next step.</span>}
-      {!collapsed && helpers.map(helper => {
-        const activeButton = selected?.title === helper.title;
-        return <button
-          key={helper.title}
-          type="button"
-          onClick={() => setActive(helper.title)}
-          title={`ⓘ ${helper.title}`}
-          style={{
-            border: `1px solid ${activeButton ? 'rgba(82,240,223,.82)' : 'rgba(190,220,255,.20)'}`,
-            borderRadius: 999,
-            background: activeButton ? 'linear-gradient(135deg,rgba(85,184,255,.25),rgba(82,240,223,.10))' : 'rgba(255,255,255,.045)',
-            color: activeButton ? '#dcfffb' : '#d8edff',
-            padding: '7px 10px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            cursor: 'pointer',
-            fontWeight: 950,
-            fontSize: 12,
-          }}
-        >
-          <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: 'rgba(6,16,29,.72)', color: '#52f0df', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{iconFor(helper.title)}</span>
-          <span>{shortFor(helper.title)}</span>
-        </button>;
-      })}
-      <button
-        type="button"
-        onClick={() => setCollapsed(value => !value)}
-        style={{ marginLeft: 'auto', border: '1px solid rgba(82,240,223,.42)', borderRadius: 999, background: collapsed ? 'rgba(82,240,223,.12)' : 'rgba(255,255,255,.045)', color: '#dcfffb', padding: '8px 12px', fontWeight: 950, cursor: 'pointer' }}
-      >
-        {collapsed ? 'Open learning layer ↑' : 'Collapse to bottom ↓'}
-      </button>
-      {!collapsed && <button
-        type="button"
-        onClick={() => document.querySelector('.failure-readout')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-        style={{ border: '1px solid rgba(255,215,91,.30)', borderRadius: 999, background: 'rgba(255,215,91,.08)', color: '#ffd75b', padding: '8px 11px', fontWeight: 950, cursor: 'pointer' }}
-      >
-        Failure interpretation ↑
-      </button>}
+    <span className="badge" style={{ color: status.color }}>{status.badge}</span>
+    <h3 className="result-title">{r.headline}</h3>
+    <p className="copy">{r.principle}</p>
+
+    <div className="table">
+      {r.items.map(item => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}
     </div>
 
-    {!collapsed && selected && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8, alignItems: 'stretch' }}>
-      <LearningCell title={`Concept · ${selected.route}`} text={selected.concept} color="#52f0df" />
-      <LearningCell title="Piping" text={selected.piping} color="#55b8ff" />
-      <LearningCell title="B31.3 map" text={selected.b313} color="#ffd75b" />
-      <LearningCell title="Mistake" text={selected.mistake} color="#ff4b64" />
-      <LearningCell title="Next" text={selected.next} color="#b884ff" />
-    </div>}
+    <div style={{ display: 'grid', gap: 8 }}>
+      {r.steps.map((step, index) => <div className="card" key={step.title} style={{ gridTemplateColumns: '32px 1fr', alignItems: 'start' }}>
+        <b style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, border: '1px solid rgba(82,240,223,.35)', color: '#dcfffb' }}>{index + 1}</b>
+        <span><b>{step.title}</b><br/><span className="copy">{step.text}</span></span>
+      </div>)}
+    </div>
+
+    <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}><b>Watch in the graphics</b><span className="copy">{r.watch}</span></div>
+    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}><b>Boundary</b><span className="copy">{r.caution}</span></div>
+
+    {state.mode === 'static' && <LearningCenter label="Tab 1 Learning Center" helpers={staticHelpers(state)} />}
   </div>;
+}
+
+function LearningCenter({ label, helpers }: { label: string; helpers: LearningHelper[] }) {
+  return <section
+    aria-label={`${label} helper content`}
+    style={{
+      display: 'grid',
+      gap: 8,
+      marginTop: 2,
+      padding: '11px 12px',
+      borderRadius: 18,
+      border: '1px solid rgba(82,240,223,.28)',
+      background: 'linear-gradient(180deg,rgba(9,20,36,.78),rgba(6,16,29,.92))',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)',
+    }}
+  >
+    <div style={{ color: '#52f0df', fontWeight: 950, letterSpacing: '.08em', textTransform: 'uppercase', fontSize: 11 }}>ⓘ {label}</div>
+    {helpers.map((helper, index) => <details key={helper.title} open={index === 0 || helper.title.includes('B31.3')} style={{ border: '1px solid rgba(190,220,255,.16)', borderRadius: 14, background: 'rgba(255,255,255,.035)', overflow: 'hidden' }}>
+      <summary style={{ cursor: 'pointer', padding: '9px 10px', color: '#d8edff', fontWeight: 950, fontSize: 12 }}>{shortFor(helper.title)} · {helper.route}</summary>
+      <div style={{ display: 'grid', gap: 7, padding: '0 10px 10px' }}>
+        <LearningCell title="Concept" text={helper.concept} color="#52f0df" />
+        <LearningCell title="Piping" text={helper.piping} color="#55b8ff" />
+        <LearningCell title="B31.3 map" text={helper.b313} color="#ffd75b" />
+        <LearningCell title="Mistake" text={helper.mistake} color="#ff4b64" />
+        <LearningCell title="Next" text={helper.next} color="#b884ff" />
+      </div>
+    </details>)}
+  </section>;
+}
+
+function shortFor(title: string) {
+  return title
+    .replace('B31.3 lens for Tab 1', 'B31.3')
+    .replace('Static demand visual', 'Demand')
+    .replace('Pipe-wall section', 'Wall')
+    .replace('Stress–strain curve', 'Curve')
+    .replace('Material response', 'Material');
 }
 
 function iconFor(title: string) {
@@ -151,8 +104,8 @@ function shortFor(title: string) {
 }
 
 function LearningCell({ title, text, color }: { title: string; text: string; color: string }) {
-  return <div style={{ minWidth: 0, display: 'grid', gap: 3, padding: '9px 10px', borderRadius: 16, border: '1px solid rgba(190,220,255,.14)', background: 'rgba(255,255,255,.035)' }}>
-    <b style={{ color, fontSize: 11, letterSpacing: '.07em', textTransform: 'uppercase' }}>{title}</b>
+  return <div style={{ minWidth: 0, display: 'grid', gap: 3, padding: '8px 9px', borderRadius: 12, border: '1px solid rgba(190,220,255,.12)', background: 'rgba(6,16,29,.42)' }}>
+    <b style={{ color, fontSize: 10, letterSpacing: '.07em', textTransform: 'uppercase' }}>{title}</b>
     <span className="copy" style={{ fontSize: 12, lineHeight: 1.32 }}>{text}</span>
   </div>;
 }
