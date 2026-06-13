@@ -84,19 +84,6 @@ const LOAD_META: Record<LoadCategory, LoadMeta> = {
     mistake: 'Settlement is a sustained force.',
     correction: 'Settlement is imposed movement. The pipe develops stress because it must fit the new support position.',
   },
-  nozzle: {
-    label: 'Nozzle movement',
-    short: 'equipment movement',
-    color: COLORS.purple,
-    behavior: 'displacement-controlled',
-    category: 'secondary / imposed displacement',
-    route: 'Equipment displacement / secondary route',
-    concern: 'nozzle load, flexibility, and displacement compatibility',
-    next: 'Pipe Expansion · ΔL',
-    examples: 'pump nozzle growth, vessel nozzle movement, anchor displacement',
-    mistake: 'Nozzle displacement is just a point force.',
-    correction: 'A nozzle movement is imposed displacement. The force is a reaction after the pipe is forced to follow the equipment movement.',
-  },
 };
 
 function pct(value: number) {
@@ -125,21 +112,26 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
   const meta = activeMeta(state);
   const level = state.activeLoad === 'thermal' ? state.thermalDelta : state.intensity;
   const pipeY = 190;
-  const eventBow = state.activeLoad === 'event' ? 8 + level * 0.24 : 0;
-  const settlementDrop = state.activeLoad === 'settlement' ? 12 + level * 0.34 : 0;
-  const nozzleMove = state.activeLoad === 'nozzle' ? 12 + level * 0.32 : 0;
-  const thermalGrowth = state.activeLoad === 'thermal' ? 18 + state.thermalDelta * 0.42 : 0;
-  const restrained = state.restraint === 'restrained';
-
   const leftX = 90;
   const rightX = 550;
+  const restrained = state.restraint === 'restrained';
+  const guided = state.restraint === 'guided';
+
+  const weightSag = state.activeLoad === 'weight' ? 4 + level * 0.24 : 0;
+  const pressureBulge = state.activeLoad === 'pressure' ? 6 + level * 0.24 : 0;
+  const pressureEndForce = state.activeLoad === 'pressure' ? 18 + level * 0.38 : 0;
+  const eventBow = state.activeLoad === 'event' ? 7 + level * 0.36 : 0;
+  const eventArrow = state.activeLoad === 'event' ? 34 + level * 0.44 : 0;
+  const settlementDrop = state.activeLoad === 'settlement' ? 6 + level * 0.58 : 0;
+  const thermalGrowth = state.activeLoad === 'thermal' ? 12 + state.thermalDelta * 0.50 : 0;
   const rightSupportY = 224 + settlementDrop;
-  const pipePath = state.activeLoad === 'event'
-    ? `M${leftX} ${pipeY} C205 ${pipeY - eventBow}, 340 ${pipeY + eventBow * .6}, ${rightX} ${pipeY}`
-    : state.activeLoad === 'settlement'
-      ? `M${leftX} ${pipeY} C210 ${pipeY - 8}, 410 ${pipeY + settlementDrop * .55}, ${rightX} ${pipeY + settlementDrop}`
-      : state.activeLoad === 'nozzle'
-        ? `M${leftX} ${pipeY} C220 ${pipeY}, 420 ${pipeY + nozzleMove * .38}, ${rightX} ${pipeY + nozzleMove}`
+
+  const pipePath = state.activeLoad === 'weight'
+    ? `M${leftX} ${pipeY} C210 ${pipeY + weightSag}, 430 ${pipeY + weightSag}, ${rightX} ${pipeY}`
+    : state.activeLoad === 'event'
+      ? `M${leftX} ${pipeY} C205 ${pipeY - eventBow}, 340 ${pipeY + eventBow * .68}, ${rightX} ${pipeY}`
+      : state.activeLoad === 'settlement'
+        ? `M${leftX} ${pipeY} C210 ${pipeY - 6}, 410 ${pipeY + settlementDrop * .52}, ${rightX} ${pipeY + settlementDrop}`
         : `M${leftX} ${pipeY} H${rightX}`;
 
   return <svg viewBox="0 0 640 370" role="img" aria-label="Load type physical visual">
@@ -149,67 +141,68 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
     <path d="M52 116H588 M52 210H588 M52 304H588 M160 48V334 M320 48V334 M480 48V334" stroke="rgba(216,237,255,.06)" />
 
     <text x="320" y="42" textAnchor="middle" className="label" fill={meta.color}>{meta.label}: physical load source</text>
-    <text x="320" y="64" textAnchor="middle" className="muted">first identify the source, then classify the stress route</text>
+    <text x="320" y="64" textAnchor="middle" className="muted">slider response is intentionally exaggerated for teaching</text>
 
     {state.activeLoad === 'thermal' && <>
       <path d={`M${leftX} 138 H${rightX}`} stroke="rgba(216,237,255,.28)" strokeWidth="7" strokeLinecap="round" />
       <text x="320" y="124" textAnchor="middle" className="muted">cold / reference length</text>
       <path d={`M${leftX} 164 H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="7" strokeLinecap="round" />
       <path d={`M${rightX} 164 H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="4" markerEnd="url(#loadArrowCyan)" />
-      <text x={rightX + thermalGrowth / 2} y="152" textAnchor="middle" fill={COLORS.cyan} fontSize="12" fontWeight="900">free ΔL</text>
-      {restrained && <>
+      <text x={rightX + thermalGrowth / 2} y="152" textAnchor="middle" fill={COLORS.cyan} fontSize="12" fontWeight="900">free ΔL = {tempLabel(state.thermalDelta)}</text>
+      {(restrained || guided) && <>
         <rect x="76" y="146" width="24" height="88" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
         <rect x="540" y="146" width="24" height="88" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
-        <path d="M132 246 H92" stroke={COLORS.orange} strokeWidth="4" markerEnd="url(#loadArrowOrange)" />
-        <path d="M508 246 H548" stroke={COLORS.orange} strokeWidth="4" markerEnd="url(#loadArrowOrange)" />
-        <text x="320" y="265" textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">restrained growth creates anchor reactions</text>
+        <path d="M132 246 H92" stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
+        <path d="M508 246 H548" stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
+        <text x="320" y="265" textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">{restrained ? 'restrained growth creates anchor reactions' : 'guided growth: reaction depends on restraint direction'}</text>
       </>}
     </>}
 
     {state.activeLoad !== 'thermal' && <>
       <path d="M90 190 H550" stroke="rgba(216,237,255,.18)" strokeWidth="42" strokeLinecap="round" strokeDasharray="9 11" />
       <path d={pipePath} stroke="#020813" strokeWidth="50" strokeLinecap="round" fill="none" opacity=".9" />
-      <path d={pipePath} stroke="url(#pipeStroke)" strokeWidth="34" strokeLinecap="round" fill="none" />
+      <path d={pipePath} stroke="url(#pipeStroke)" strokeWidth={state.activeLoad === 'pressure' ? 34 + level * 0.045 : 34} strokeLinecap="round" fill="none" />
       <path d={pipePath} stroke="#06101d" strokeWidth="13" strokeLinecap="round" fill="none" opacity=".78" strokeDasharray="18 12" />
       <Support x={88} y={224} label="support" />
       <Support x={548} y={rightSupportY} label={state.activeLoad === 'settlement' ? 'settled support' : 'support'} />
     </>}
 
     {state.activeLoad === 'weight' && <>
-      {[170, 250, 330, 410, 490].map(x => <path key={x} d={`M${x} 96 V150`} stroke={COLORS.orange} strokeWidth="4" strokeLinecap="round" markerEnd="url(#loadArrowOrange)" />)}
-      <text x="320" y="92" textAnchor="middle" className="label" fill={COLORS.orange}>distributed weight, contents, insulation, valves</text>
+      {[150, 210, 270, 330, 390, 450, 510].map((x, i) => {
+        const active = i > 0 && i < 6;
+        const top = 100 - level * 0.10;
+        const bottom = 143 + level * 0.12;
+        return active && <path key={x} d={`M${x} ${top} V${bottom}`} stroke={COLORS.orange} strokeWidth={2.6 + level * 0.026} strokeLinecap="round" markerEnd="url(#loadArrowOrange)" />;
+      })}
+      <path d={`M112 ${pipeY + 33 + weightSag} C230 ${pipeY + 50 + weightSag * .35}, 410 ${pipeY + 50 + weightSag * .35}, 528 ${pipeY + 33 + weightSag}`} stroke="rgba(255,158,58,.40)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
+      <text x="320" y="92" textAnchor="middle" className="label" fill={COLORS.orange}>distributed weight demand {pct(level)}</text>
     </>}
 
     {state.activeLoad === 'pressure' && <>
-      <path d="M118 142 C210 120, 430 120, 522 142 M118 238 C210 260, 430 260, 522 238" stroke={COLORS.blue} strokeWidth="3" fill="none" strokeDasharray="8 7" />
-      <path d="M86 190 H48" stroke={COLORS.blue} strokeWidth="4" markerEnd="url(#loadArrowBlue)" />
-      <path d="M554 190 H592" stroke={COLORS.blue} strokeWidth="4" markerEnd="url(#loadArrowBlue)" />
-      <text x="320" y="106" textAnchor="middle" className="label" fill={COLORS.blue}>pressure expansion + axial end-force cue</text>
+      <path d={`M118 ${142 - pressureBulge} C210 ${120 - pressureBulge}, 430 ${120 - pressureBulge}, 522 ${142 - pressureBulge}`} stroke={COLORS.blue} strokeWidth={2.4 + level * 0.022} fill="none" strokeDasharray="8 7" />
+      <path d={`M118 ${238 + pressureBulge} C210 ${260 + pressureBulge}, 430 ${260 + pressureBulge}, 522 ${238 + pressureBulge}`} stroke={COLORS.blue} strokeWidth={2.4 + level * 0.022} fill="none" strokeDasharray="8 7" />
+      <path d={`M86 190 H${86 - pressureEndForce}`} stroke={COLORS.blue} strokeWidth={3 + level * 0.025} markerEnd="url(#loadArrowBlue)" />
+      <path d={`M554 190 H${554 + pressureEndForce}`} stroke={COLORS.blue} strokeWidth={3 + level * 0.025} markerEnd="url(#loadArrowBlue)" />
+      <text x="320" y="106" textAnchor="middle" className="label" fill={COLORS.blue}>pressure expansion + axial end force {pct(level)}</text>
     </>}
 
     {state.activeLoad === 'event' && <>
-      <path d="M85 102 C170 58, 265 58, 330 102 C410 154, 505 154, 585 102" stroke={COLORS.yellow} strokeWidth="3.2" fill="none" strokeDasharray="8 7" />
-      <path d="M102 132 H178" stroke={COLORS.yellow} strokeWidth="4" markerEnd="url(#loadArrowYellow)" />
-      <path d="M455 132 H532" stroke={COLORS.yellow} strokeWidth="4" markerEnd="url(#loadArrowYellow)" />
-      <text x="320" y="98" textAnchor="middle" className="label" fill={COLORS.yellow}>short event force: wind / seismic / relief</text>
+      <path d={`M85 ${102 - eventBow * .35} C170 ${58 - eventBow}, 265 ${58 - eventBow}, 330 ${102 - eventBow * .35} C410 ${154 + eventBow}, 505 ${154 + eventBow}, 585 ${102 + eventBow * .25}`} stroke={COLORS.yellow} strokeWidth={2.4 + level * 0.025} fill="none" strokeDasharray="8 7" />
+      <path d={`M102 132 H${102 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
+      <path d={`M455 132 H${455 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
+      <circle cx="320" cy="100" r={12 + level * 0.20} fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="6 7" />
+      <text x="320" y="98" textAnchor="middle" className="label" fill={COLORS.yellow}>short event force {pct(level)}: wind / seismic / relief</text>
     </>}
 
     {state.activeLoad === 'settlement' && <>
-      <path d={`M548 236 V${rightSupportY + 24}`} stroke={COLORS.purple} strokeWidth="4" markerEnd="url(#loadArrowPurple)" />
-      <text x="390" y="112" fill={COLORS.purple} fontSize="12" fontWeight="900">imposed support movement</text>
-      <text x="320" y="300" textAnchor="middle" className="caseLabel" fill={COLORS.purple}>pipe bends because one support moved</text>
+      <path d={`M548 236 V${rightSupportY + 24}`} stroke={COLORS.purple} strokeWidth={3 + level * 0.03} markerEnd="url(#loadArrowPurple)" />
+      <path d={`M386 225 C440 ${230 + settlementDrop * .2}, 510 ${240 + settlementDrop * .55}, 572 ${244 + settlementDrop}`} stroke="rgba(184,132,255,.42)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
+      <text x="390" y="112" fill={COLORS.purple} fontSize="12" fontWeight="900">support settlement {pct(level)}</text>
+      <text x="320" y="300" textAnchor="middle" className="caseLabel" fill={COLORS.purple}>pipe bends because one support moved down</text>
     </>}
 
-    {state.activeLoad === 'nozzle' && <>
-      <rect x="500" y={122 + nozzleMove} width="82" height="108" rx="18" fill="rgba(216,237,255,.08)" stroke="rgba(216,237,255,.42)" />
-      <text x="541" y={112 + nozzleMove} textAnchor="middle" className="muted">equipment</text>
-      <path d={`M500 ${pipeY + nozzleMove} H552`} stroke={COLORS.purple} strokeWidth="8" strokeLinecap="round" />
-      <path d={`M480 ${pipeY} C510 ${pipeY + nozzleMove * .3}, 520 ${pipeY + nozzleMove}, 550 ${pipeY + nozzleMove}`} stroke={COLORS.purple} strokeWidth="4" fill="none" markerEnd="url(#loadArrowPurple)" />
-      <text x="320" y="106" textAnchor="middle" className="label" fill={COLORS.purple}>equipment/nozzle movement forces pipe to follow</text>
-    </>}
-
-    <g transform="translate(72 318)">
-      <circle cx="0" cy="0" r="6" fill={meta.color} />
+    <g transform="translate(68 322)">
+      <circle cx="0" cy="0" r="6" fill={meta.color}/>
       <text x="14" y="4" className="muted">{meta.behavior}; {meta.category}; restraint = {state.restraint}; duration = {state.duration}</text>
     </g>
   </svg>;
@@ -225,7 +218,7 @@ function Support({ x, y, label }: { x: number; y: number; label: string }) {
 export function LoadsClassificationMap({ state }: { state: LoadsState }) {
   const meta = activeMeta(state);
   const forceLoads: LoadCategory[] = ['weight', 'pressure', 'event'];
-  const displacementLoads: LoadCategory[] = ['thermal', 'settlement', 'nozzle'];
+  const displacementLoads: LoadCategory[] = ['thermal', 'settlement'];
 
   const row = (load: LoadCategory) => {
     const m = LOAD_META[load];
