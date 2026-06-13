@@ -1,6 +1,8 @@
 export type Mode = 'static' | 'fatigue' | 'stress' | 'pipe'
   | 'loads' | 'expansion' | 'combined' | 'challenge';
-export type LoadCategory = 'sustained' | 'occasional' | 'thermal' | 'displacement';
+export type LoadCategory = 'weight' | 'pressure' | 'event' | 'thermal' | 'settlement' | 'nozzle';
+export type LoadDuration = 'always' | 'short' | 'cycle';
+export type LoadRestraint = 'free' | 'guided' | 'restrained';
 export type Material = 'ductile' | 'brittle';
 export type StaticDemand = 'tension' | 'compression';
 export type StressComponentView = 'normal' | 'shear' | 'combined';
@@ -31,7 +33,8 @@ export type LabState = {
   loadsActiveLoad: LoadCategory;
   loadsSustainedLevel: number;
   loadsThermalDelta: number;
-  loadsOccasionalOn: boolean;
+  loadsDuration: LoadDuration;
+  loadsRestraint: LoadRestraint;
   expDeltaT: number;
   expPressure: number;
   expRestrained: boolean;
@@ -62,9 +65,10 @@ export const COLORS = {
 
 export type LoadsState = {
   activeLoad: LoadCategory;
-  sustainedLevel: number;
+  intensity: number;
   thermalDelta: number;
-  occasionalOn: boolean;
+  duration: LoadDuration;
+  restraint: LoadRestraint;
 };
 
 export type ExpansionState = {
