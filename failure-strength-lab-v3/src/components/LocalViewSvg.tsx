@@ -20,20 +20,55 @@ export function LocalViewSvg({ state, status }: LocalProps) {
 
 function PipeSectionDuctileTension({ state, status }: LocalProps) {
   const p = state.staticLoad / 100;
-  const med = state.staticLoad >= 45;
-  const high = state.staticLoad >= 72;
+  // Keep the local cross-section stages locked to the side-view σ–ε stages.
+  const plastic = p >= 0.44;
+  const necking = p >= 0.76;
+  const rupture = p >= 0.93;
+  const neckProgress = clamp((p - 0.76) / 0.17);
+  const neckScale = 1 - 0.16 * neckProgress;
+  const neckRx = 96 - 18 * neckProgress;
+  const neckRy = 96 - 10 * neckProgress;
+  const wallThinningText = rupture
+    ? 'ruptured neck plane: separated thinned wall sectors'
+    : necking
+      ? 'necked local section: reduced annular area at the same stage as side view'
+      : plastic
+        ? 'plastic yield band spreads before visible necking'
+        : 'uniform axial tensile stress through annular pipe-wall area';
+
   return <LocalFrame label="Ductile tension pipe wall cross-section">
-    <text x="210" y="44" textAnchor="middle" className="muted">pipe wall cross-section · axial tensile demand through wall</text>
-    <PipeRing />
-    <StressTicks color="#55b8ff" mode="tension" />
-    {/* yield band: use a sensible arc range that scales with load */}
-    {med && <path d={annularArc(210, 182, 96, 52, -60, 240)} fill="rgba(255,158,58,.28)" stroke="#ff9e3a" strokeWidth="2" />}
-    {high && <>
-      <ellipse cx="210" cy="182" rx={Math.min(94, 82 + 8 * p)} ry={Math.max(68, 88 - 8 * p)} fill="none" stroke="rgba(255,158,58,.75)" strokeWidth="4" strokeDasharray="10 7" />
-      <path d="M134 154 C160 176 160 188 134 210 M286 154 C260 176 260 188 286 210" className="neckLine" />
+    <text x="210" y="38" textAnchor="middle" className="muted">local section at tensile gauge / neck plane</text>
+    <text x="210" y="54" textAnchor="middle" className="muted">cross-section stage is synced with side view: elastic → plastic → necking → rupture</text>
+
+    {!rupture && <>
+      {necking && <>
+        <PipeRingGhost />
+        <g transform={`translate(210 182) scale(${neckScale}) translate(-210 -182)`}>
+          <PipeRing />
+        </g>
+        <ellipse cx="210" cy="182" rx={neckRx} ry={neckRy} fill="none" stroke="rgba(255,75,100,.72)" strokeWidth="4" strokeDasharray="10 7" />
+        <path d="M146 126 C170 154 171 210 146 238 M274 126 C250 154 249 210 274 238" className="neckLine" />
+        <path d="M172 115 C194 132 226 132 248 115 M172 249 C194 232 226 232 248 249" stroke="rgba(255,75,100,.52)" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <text x="210" y="84" textAnchor="middle" fill="#ff4b64" fontSize="12" fontWeight="900">necking: local diameter / area reduces</text>
+      </>}
+      {!necking && <PipeRing />}
     </>}
-    <Legend y="273" color={status.color} text={high ? 'ductile wall yields and thins locally before rupture' : med ? 'yield band spreads in the pipe wall' : 'uniform axial tensile stress in pipe wall'} />
-    <text x="210" y="298" textAnchor="middle" className="muted">σ = F/A · axial stress acts through annular pipe-wall area</text>
+
+    {rupture && <>
+      <circle cx="210" cy="182" r="84" className="fractureFlash" />
+      <path d={annularArc(200, 182, 94, 57, 198, 342)} fill="url(#localDuctile)" stroke="rgba(235,247,255,.78)" strokeWidth="3" />
+      <path d={annularArc(220, 182, 94, 57, 18, 162)} fill="url(#localDuctile)" stroke="rgba(235,247,255,.78)" strokeWidth="3" />
+      <path d="M204 91 L190 118 L207 145 L193 174 L210 205 L195 235 L206 270" className="crack glow" />
+      <path d="M216 91 L232 118 L215 145 L229 174 L212 205 L227 235 L216 270" className="crack glow" />
+      <path d="M185 116 L156 96 L166 135 M235 248 L264 270 L254 232" className="fragment" />
+      <text x="210" y="84" textAnchor="middle" fill="#ff4b64" fontSize="12" fontWeight="900">rupture: separated thinned wall sectors</text>
+      <text x="210" y="187" textAnchor="middle" className="muted">bore</text>
+    </>}
+
+    <StressTicks color="#55b8ff" mode="tension" />
+    {plastic && !rupture && <path d={annularArc(210, 182, necking ? 88 : 96, necking ? 50 : 52, -60, 240)} fill="rgba(255,158,58,.24)" stroke="#ff9e3a" strokeWidth="2" />}
+    <Legend y="273" color={status.color} text={wallThinningText} />
+    <text x="210" y="298" textAnchor="middle" className="muted">σ = F/A · after necking, the displayed local A is reduced before final rupture</text>
   </LocalFrame>;
 }
 
@@ -156,6 +191,13 @@ function PipeRing({ brittle = false }: { brittle?: boolean }) {
     <circle cx="210" cy="182" r="54" fill="rgba(6,16,29,.92)" stroke="rgba(190,220,255,.18)" strokeWidth="2" />
     <circle cx="210" cy="182" r="100" fill="none" stroke="rgba(255,255,255,.20)" strokeWidth="2" />
     <text x="210" y="187" textAnchor="middle" className="muted">bore</text>
+  </g>;
+}
+
+function PipeRingGhost() {
+  return <g opacity="0.38">
+    <path d="M210 182 m -100 0 a100 100 0 1 0 200 0 a100 100 0 1 0 -200 0 M210 182 m -54 0 a54 54 0 1 1 108 0 a54 54 0 1 1 -108 0" fill="none" stroke="rgba(216,237,255,.42)" strokeWidth="2" strokeDasharray="7 7" />
+    <text x="210" y="116" textAnchor="middle" className="muted" fontSize="11">original section</text>
   </g>;
 }
 
