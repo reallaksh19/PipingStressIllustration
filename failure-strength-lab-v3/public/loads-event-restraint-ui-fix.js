@@ -17,6 +17,10 @@
     return value;
   }
 
+  function setText(node, text) {
+    if (node && node.textContent !== text) node.textContent = text;
+  }
+
   function patchEventRestraintBlock() {
     document.querySelectorAll('.block').forEach((block) => {
       const title = block.querySelector('.bt span:first-child');
@@ -24,21 +28,24 @@
       const titleText = String(title.textContent || '').trim();
       if (titleText !== 'Dynamic restraint' && titleText !== 'Event restraint condition') return;
 
-      title.textContent = 'Event restraint condition';
+      setText(title, 'Event restraint condition');
 
       const tag = block.querySelector('.bt span:nth-child(2)');
       if (tag) {
         const key = normaliseKey(tag.textContent);
-        if (LABELS[key]) tag.textContent = LABELS[key];
+        if (LABELS[key]) setText(tag, LABELS[key]);
       }
 
       block.querySelectorAll('.seg button').forEach((button) => {
-        const key = normaliseKey(button.textContent);
-        if (LABELS[key]) button.textContent = LABELS[key];
+        const storedKey = button.getAttribute('data-loads-restraint-key');
+        const key = storedKey || normaliseKey(button.textContent);
+        if (!LABELS[key]) return;
+        if (!storedKey) button.setAttribute('data-loads-restraint-key', key);
+        setText(button, LABELS[key]);
       });
 
       const copy = block.querySelector('p.copy');
-      if (copy && copy.textContent !== HELP_TEXT) copy.textContent = HELP_TEXT;
+      if (copy) setText(copy, HELP_TEXT);
     });
   }
 
@@ -49,7 +56,7 @@
       .replace('dynamic restraint free', 'event restraint Unrestrained')
       .replace('dynamic restraint guided', 'event restraint Guided')
       .replace('dynamic restraint restrained', 'event restraint Arrested');
-    if (patched !== tech.textContent) tech.textContent = patched;
+    setText(tech, patched);
   }
 
   function patchLoadsEventUi() {
@@ -57,9 +64,19 @@
     patchTechnicalBar();
   }
 
+  let queued = false;
+  function schedulePatch() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      patchLoadsEventUi();
+    });
+  }
+
   const root = document.getElementById('root') || document.body;
-  const observer = new MutationObserver(() => patchLoadsEventUi());
-  observer.observe(root, { childList: true, subtree: true, characterData: true });
+  const observer = new MutationObserver(schedulePatch);
+  observer.observe(root, { childList: true, subtree: true });
   window.addEventListener('load', patchLoadsEventUi);
   setTimeout(patchLoadsEventUi, 0);
   setTimeout(patchLoadsEventUi, 250);
