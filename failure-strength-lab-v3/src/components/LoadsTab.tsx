@@ -98,6 +98,16 @@ function activeMeta(state: LoadsState) {
   return LOAD_META[state.activeLoad];
 }
 
+function loadScaleLabel(state: LoadsState) {
+  return state.activeLoad === 'thermal'
+    ? `ΔT slider = ${tempLabel(state.thermalDelta)}`
+    : `load slider = ${pct(state.intensity)}`;
+}
+
+function activeSliderValue(state: LoadsState) {
+  return state.activeLoad === 'thermal' ? state.thermalDelta : state.intensity;
+}
+
 function applicabilityText(load: LoadCategory) {
   if (load === 'weight') return 'Applicability: sustained / always present';
   if (load === 'pressure') return 'Applicability: sustained pressure case';
@@ -128,28 +138,30 @@ function ArrowDefs() {
 
 export function LoadsSideSvg({ state }: { state: LoadsState }) {
   const meta = activeMeta(state);
-  const level = state.activeLoad === 'thermal' ? state.thermalDelta : state.intensity;
+  const level = activeSliderValue(state);
   const pipeY = 190;
-  const leftX = 90;
-  const rightX = 550;
+  const leftX = 96;
+  const rightX = 526;
+  const supportY = 224;
   const restrained = state.restraint === 'restrained';
   const guided = state.restraint === 'guided';
-  const eventRestraintFactor = state.restraint === 'free' ? 1 : state.restraint === 'guided' ? 0.74 : 0.52;
+  const hasRestraintControl = state.activeLoad === 'thermal' || state.activeLoad === 'event';
+  const eventRestraintFactor = state.restraint === 'free' ? 1 : state.restraint === 'guided' ? 0.68 : 0.42;
 
   const weightSag = state.activeLoad === 'weight' ? 4 + level * 0.24 : 0;
   const pressureBulge = state.activeLoad === 'pressure' ? 6 + level * 0.24 : 0;
   const pressureEndForce = state.activeLoad === 'pressure' ? 18 + level * 0.38 : 0;
-  const eventBow = state.activeLoad === 'event' ? (7 + level * 0.36) * eventRestraintFactor : 0;
-  const eventArrow = state.activeLoad === 'event' ? 34 + level * 0.44 : 0;
-  const eventReaction = state.activeLoad === 'event' && state.restraint !== 'free' ? 22 + level * 0.24 : 0;
+  const eventBow = state.activeLoad === 'event' ? (8 + level * 0.33) * eventRestraintFactor : 0;
+  const eventArrow = state.activeLoad === 'event' ? 36 + level * 0.42 : 0;
+  const eventReaction = state.activeLoad === 'event' && state.restraint !== 'free' ? 18 + level * 0.26 : 0;
   const settlementDrop = state.activeLoad === 'settlement' ? 6 + level * 0.58 : 0;
-  const thermalGrowth = state.activeLoad === 'thermal' ? 12 + state.thermalDelta * 0.50 : 0;
-  const rightSupportY = 224 + settlementDrop;
+  const thermalGrowth = state.activeLoad === 'thermal' ? 10 + state.thermalDelta * 0.48 : 0;
+  const rightSupportY = supportY + settlementDrop;
 
   const pipePath = state.activeLoad === 'weight'
-    ? `M${leftX} ${pipeY} C210 ${pipeY + weightSag}, 430 ${pipeY + weightSag}, ${rightX} ${pipeY}`
+    ? `M${leftX} ${pipeY} C210 ${pipeY + weightSag}, 410 ${pipeY + weightSag}, ${rightX} ${pipeY}`
     : state.activeLoad === 'event'
-      ? `M${leftX} ${pipeY} C205 ${pipeY - eventBow}, 340 ${pipeY + eventBow * .68}, ${rightX} ${pipeY}`
+      ? `M${leftX} ${pipeY} C205 ${pipeY - eventBow}, 335 ${pipeY + eventBow * .62}, ${rightX} ${pipeY}`
       : state.activeLoad === 'settlement'
         ? `M${leftX} ${pipeY} C210 ${pipeY - 6}, 410 ${pipeY + settlementDrop * .52}, ${rightX} ${pipeY + settlementDrop}`
         : `M${leftX} ${pipeY} H${rightX}`;
@@ -161,31 +173,33 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
     <path d="M52 116H588 M52 210H588 M52 304H588 M160 48V334 M320 48V334 M480 48V334" stroke="rgba(216,237,255,.06)" />
 
     <text x="320" y="42" textAnchor="middle" className="label" fill={meta.color}>{meta.label}: physical load source</text>
-    <text x="320" y="64" textAnchor="middle" className="muted">Only controls that physically apply to the selected source are shown</text>
+    <text x="320" y="64" textAnchor="middle" className="muted">{loadScaleLabel(state)}{hasRestraintControl ? ` · ${contextControlText(state)}` : ''}</text>
 
     {state.activeLoad === 'thermal' && <>
-      <path d={`M${leftX} 138 H${rightX}`} stroke="rgba(216,237,255,.28)" strokeWidth="7" strokeLinecap="round" />
-      <text x="320" y="124" textAnchor="middle" className="muted">cold / reference length</text>
-      <path d={`M${leftX} 164 H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="7" strokeLinecap="round" />
-      <path d={`M${rightX} 164 H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="4" markerEnd="url(#loadArrowCyan)" />
-      <text x={rightX + thermalGrowth / 2} y="152" textAnchor="middle" fill={COLORS.cyan} fontSize="12" fontWeight="900">free ΔL = {tempLabel(state.thermalDelta)}</text>
+      <Support x={leftX - 2} y={supportY} label={state.restraint === 'free' ? 'support' : guided ? 'guide' : 'anchor'} />
+      <Support x={rightX + 2} y={supportY} label={state.restraint === 'free' ? 'support' : guided ? 'guide' : 'anchor'} />
+      <path d={`M${leftX} ${pipeY - 24} H${rightX}`} stroke="rgba(216,237,255,.32)" strokeWidth="7" strokeLinecap="round" />
+      <text x="320" y={pipeY - 40} textAnchor="middle" className="muted">cold / reference length</text>
+      <path d={`M${leftX} ${pipeY + 6} H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="9" strokeLinecap="round" />
+      <path d={`M${rightX} ${pipeY + 6} H${rightX + thermalGrowth}`} stroke={COLORS.cyan} strokeWidth="4" markerEnd="url(#loadArrowCyan)" />
+      <text x={rightX + thermalGrowth / 2} y={pipeY - 4} textAnchor="middle" fill={COLORS.cyan} fontSize="12" fontWeight="900">free ΔL from {tempLabel(state.thermalDelta)}</text>
       {(restrained || guided) && <>
-        <rect x="76" y="146" width="24" height="88" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
-        <rect x="540" y="146" width="24" height="88" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
-        <path d="M132 246 H92" stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
-        <path d="M508 246 H548" stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
-        <text x="320" y="265" textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">{restrained ? 'restrained growth creates anchor reactions' : 'guided growth: reaction depends on restraint direction'}</text>
+        <rect x={leftX - 20} y={pipeY - 52} width="24" height="110" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
+        <rect x={rightX - 4} y={pipeY - 52} width="24" height="110" rx="7" fill="rgba(255,158,58,.12)" stroke="rgba(255,158,58,.62)" />
+        <path d={`M${leftX + 44} ${pipeY + 6} H${leftX - 6}`} stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
+        <path d={`M${rightX - 44} ${pipeY + 6} H${rightX + 12}`} stroke={COLORS.orange} strokeWidth={restrained ? 4.6 : 3.2} markerEnd="url(#loadArrowOrange)" />
+        <text x="320" y="280" textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">{restrained ? 'restrained: growth is blocked at pipe centerline and becomes anchor reaction' : 'guided: growth is directed; reaction shown on the same pipe line'}</text>
       </>}
-      {state.restraint === 'free' && <text x="320" y="265" textAnchor="middle" className="muted">free growth: large ΔL, no restraint reaction shown</text>}
+      {state.restraint === 'free' && <text x="320" y="280" textAnchor="middle" className="muted">free growth: the ΔT slider changes extension, not restraint reaction</text>}
     </>}
 
     {state.activeLoad !== 'thermal' && <>
-      <path d="M90 190 H550" stroke="rgba(216,237,255,.18)" strokeWidth="42" strokeLinecap="round" strokeDasharray="9 11" />
+      <path d={`M${leftX} ${pipeY} H${rightX}`} stroke="rgba(216,237,255,.18)" strokeWidth="42" strokeLinecap="round" strokeDasharray="9 11" />
       <path d={pipePath} stroke="#020813" strokeWidth="50" strokeLinecap="round" fill="none" opacity=".9" />
       <path d={pipePath} stroke="url(#pipeStroke)" strokeWidth={state.activeLoad === 'pressure' ? 34 + level * 0.045 : 34} strokeLinecap="round" fill="none" />
       <path d={pipePath} stroke="#06101d" strokeWidth="13" strokeLinecap="round" fill="none" opacity=".78" strokeDasharray="18 12" />
-      <Support x={88} y={224} label="support" />
-      <Support x={548} y={rightSupportY} label={state.activeLoad === 'settlement' ? 'settled support' : 'support'} />
+      <Support x={leftX - 2} y={supportY} label="support" />
+      <Support x={rightX + 2} y={rightSupportY} label={state.activeLoad === 'settlement' ? 'settled support' : 'support'} />
     </>}
 
     {state.activeLoad === 'weight' && <>
@@ -208,22 +222,21 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
     </>}
 
     {state.activeLoad === 'event' && <>
-      <path d={`M85 ${102 - eventBow * .35} C170 ${58 - eventBow}, 265 ${58 - eventBow}, 330 ${102 - eventBow * .35} C410 ${154 + eventBow}, 505 ${154 + eventBow}, 585 ${102 + eventBow * .25}`} stroke={COLORS.yellow} strokeWidth={2.4 + level * 0.025} fill="none" strokeDasharray="8 7" />
-      <path d={`M102 132 H${102 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
-      <path d={`M455 132 H${455 + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />
-      <circle cx="320" cy="100" r={12 + level * 0.20} fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="6 7" />
+      <path d={`M${leftX - 10} ${pipeY - 44} C190 ${pipeY - 68 - eventBow * .25}, 300 ${pipeY - 62 - eventBow * .2}, 405 ${pipeY - 44} C470 ${pipeY - 30 + eventBow * .22}, 525 ${pipeY - 30 + eventBow * .18}, ${rightX + 42} ${pipeY - 44}`} stroke={COLORS.yellow} strokeWidth={2.4 + level * 0.025} fill="none" strokeDasharray="8 7" />
+      {[112, 296, 452].map((x, i) => <path key={x} d={`M${x} ${pipeY - 30 + i * 30} H${x + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />)}
+      <circle cx="320" cy={pipeY} r={12 + level * 0.18} fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="6 7" />
       {state.restraint !== 'free' && <>
-        <rect x="84" y="162" width="16" height="88" rx="5" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
-        <rect x="540" y="162" width="16" height="88" rx="5" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
-        <path d={`M132 252 H${132 - eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
-        <path d={`M508 252 H${508 + eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
+        <rect x={leftX - 24} y={pipeY - 62} width="22" height="124" rx="6" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
+        <rect x={rightX + 2} y={pipeY - 62} width="22" height="124" rx="6" fill="rgba(255,215,91,.10)" stroke="rgba(255,215,91,.55)" />
+        <path d={`M${leftX + 42} ${pipeY} H${leftX - eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
+        <path d={`M${rightX - 42} ${pipeY} H${rightX + eventReaction}`} stroke={COLORS.yellow} strokeWidth={state.restraint === 'restrained' ? 4.4 : 3.2} markerEnd="url(#loadArrowYellow)" />
       </>}
-      <text x="320" y="98" textAnchor="middle" className="label" fill={COLORS.yellow}>short event force {pct(level)}: wind / seismic / relief</text>
-      <text x="320" y="286" textAnchor="middle" className="muted">{state.restraint === 'free' ? 'no dynamic restraint selected' : state.restraint === 'guided' ? 'guide/stop reduces lateral bow and adds reaction' : 'snubber/hard stop strongly limits event motion'}</text>
+      <text x="320" y="100" textAnchor="middle" className="label" fill={COLORS.yellow}>event intensity {pct(level)} acts at the same pipe station</text>
+      <text x="320" y="286" textAnchor="middle" className="muted">{state.restraint === 'free' ? 'free: load slider changes lateral motion; no stop reaction' : state.restraint === 'guided' ? 'guided: stop/guide is aligned with pipe centerline and adds reaction' : 'restrained: snubber/hard stop limits motion and creates centerline reaction'}</text>
     </>}
 
     {state.activeLoad === 'settlement' && <>
-      <path d={`M548 236 V${rightSupportY + 24}`} stroke={COLORS.purple} strokeWidth={3 + level * 0.03} markerEnd="url(#loadArrowPurple)" />
+      <path d={`M${rightX + 2} 236 V${rightSupportY + 24}`} stroke={COLORS.purple} strokeWidth={3 + level * 0.03} markerEnd="url(#loadArrowPurple)" />
       <path d={`M386 225 C440 ${230 + settlementDrop * .2}, 510 ${240 + settlementDrop * .55}, 572 ${244 + settlementDrop}`} stroke="rgba(184,132,255,.42)" strokeWidth="3" fill="none" strokeDasharray="7 7" />
       <text x="390" y="112" fill={COLORS.purple} fontSize="12" fontWeight="900">support settlement {pct(level)}</text>
       <text x="320" y="300" textAnchor="middle" className="caseLabel" fill={COLORS.purple}>pipe bends because one support moved down</text>
