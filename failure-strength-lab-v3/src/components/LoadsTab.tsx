@@ -54,9 +54,9 @@ const LOAD_META: Record<LoadCategory, LoadMeta> = {
     route: 'Occasional stress route',
     concern: 'short-duration force demand and support reaction',
     next: 'Combined Stress · VM',
-    examples: 'wind, seismic, water hammer, relief thrust, blast/event load',
-    mistake: 'Drawing occasional loads like permanent gravity loads.',
-    correction: 'Occasional loads are still force-controlled event loads. Guides limit selected directions; snubbers or hard stops arrest abnormal motion and transfer a larger dynamic reaction.',
+    examples: 'wind, seismic, water hammer, relief thrust, slug / blast event load',
+    mistake: 'Treating guides, stops, anchors, and snubbers as one generic restraint.',
+    correction: 'Occasional loads are force-controlled event loads. Unrestrained allows maximum motion; guided means side-guide gap/contact with medium reaction; arrested means event-direction motion is blocked by a rigid stop/strut or locked dynamic restraint with higher reaction.',
   },
   thermal: {
     label: 'Thermal ΔT',
@@ -116,14 +116,20 @@ function applicabilityText(load: LoadCategory) {
   return 'Applicability: imposed support movement; usually one-time unless movement repeats';
 }
 
+export function eventRestraintLabel(value: LoadsState['restraint']) {
+  if (value === 'free') return 'Unrestrained';
+  if (value === 'guided') return 'Guided';
+  return 'Arrested';
+}
+
 function contextControlText(state: LoadsState) {
   if (state.activeLoad === 'thermal') {
     return `thermal restraint = ${state.restraint}`;
   }
   if (state.activeLoad === 'event') {
-    if (state.restraint === 'free') return 'dynamic restraint = none';
-    if (state.restraint === 'guided') return 'dynamic restraint = guide / lateral stop; axial travel shown open';
-    return 'dynamic restraint = snubber / hard stop; abnormal motion arrested';
+    if (state.restraint === 'free') return 'event restraint = unrestrained in displayed direction';
+    if (state.restraint === 'guided') return 'event restraint = side guide with visible gap/contact';
+    return 'event restraint = arrested by rigid stop/strut; snubber only as locked impulse analogue';
   }
   return 'no duration/restraint knob for this load source';
 }
@@ -149,7 +155,9 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
   const guided = state.restraint === 'guided';
   const eventMode = state.activeLoad === 'event';
   const hasRestraintControl = state.activeLoad === 'thermal' || eventMode;
-  const eventRestraintFactor = state.restraint === 'free' ? 1 : guided ? 0.72 : 0.20;
+  const guidedContactRatio = eventMode && guided ? Math.max(0, Math.min(1, (level - 32) / 68)) : 0;
+  const guidedContact = guidedContactRatio > 0;
+  const eventRestraintFactor = state.restraint === 'free' ? 1 : guided ? 0.95 - guidedContactRatio * 0.35 : 0.16;
 
   const weightSag = state.activeLoad === 'weight' ? 4 + level * 0.24 : 0;
   const pressureBulge = state.activeLoad === 'pressure' ? 6 + level * 0.24 : 0;
@@ -157,7 +165,7 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
   const eventBow = eventMode ? (8 + level * 0.33) * eventRestraintFactor : 0;
   const eventArrow = eventMode ? 36 + level * 0.42 : 0;
   const eventReaction = eventMode && state.restraint !== 'free'
-    ? guided ? 14 + level * 0.18 : 34 + level * 0.40
+    ? guided ? guidedContactRatio === 0 ? 0 : 10 + guidedContactRatio * (16 + level * 0.18) : 38 + level * 0.46
     : 0;
   const settlementDrop = state.activeLoad === 'settlement' ? 6 + level * 0.58 : 0;
   const thermalGrowth = state.activeLoad === 'thermal' ? 10 + state.thermalDelta * 0.48 : 0;
@@ -203,8 +211,8 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
       <path d={pipePath} stroke="#020813" strokeWidth="50" strokeLinecap="round" fill="none" opacity=".9" />
       <path d={pipePath} stroke="url(#pipeStroke)" strokeWidth={state.activeLoad === 'pressure' ? 34 + level * 0.045 : 34} strokeLinecap="round" fill="none" />
       <path d={pipePath} stroke="#06101d" strokeWidth="13" strokeLinecap="round" fill="none" opacity=".78" strokeDasharray="18 12" />
-      <Support x={leftX - 2} y={supportY} label={eventMode && guided ? 'guide' : eventMode && restrained ? 'snubber base' : 'support'} />
-      <Support x={rightX + 2} y={rightSupportY} label={eventMode && guided ? 'guide' : eventMode && restrained ? 'snubber base' : state.activeLoad === 'settlement' ? 'settled support' : 'support'} />
+      <Support x={leftX - 2} y={supportY} label={eventMode && guided ? 'side guide' : eventMode && restrained ? 'rigid stop' : 'support'} />
+      <Support x={rightX + 2} y={rightSupportY} label={eventMode && guided ? 'side guide' : eventMode && restrained ? 'rigid strut' : state.activeLoad === 'settlement' ? 'settled support' : 'support'} />
     </>}
 
     {state.activeLoad === 'weight' && <>
@@ -231,29 +239,34 @@ export function LoadsSideSvg({ state }: { state: LoadsState }) {
       {[112, 296, 452].map((x, i) => <path key={x} d={`M${x} ${pipeY - 30 + i * 30} H${x + eventArrow}`} stroke={COLORS.yellow} strokeWidth={3 + level * 0.026} markerEnd="url(#loadArrowYellow)" />)}
       <circle cx="320" cy={pipeY} r={12 + level * 0.18} fill="none" stroke="rgba(255,215,91,.34)" strokeWidth="3" strokeDasharray="6 7" />
       {guided && <>
-        <path d={`M${leftX - 34} ${pipeY - 66} V${pipeY - 20} M${leftX - 34} ${pipeY + 20} V${pipeY + 66}`} stroke="rgba(255,215,91,.78)" strokeWidth="3" strokeLinecap="round" />
-        <path d={`M${rightX + 34} ${pipeY - 66} V${pipeY - 20} M${rightX + 34} ${pipeY + 20} V${pipeY + 66}`} stroke="rgba(255,215,91,.78)" strokeWidth="3" strokeLinecap="round" />
-        <path d={`M${leftX - 34} ${pipeY - 66} H${leftX + 16} M${leftX - 34} ${pipeY + 66} H${leftX + 16}`} stroke="rgba(255,215,91,.38)" strokeWidth="2" strokeLinecap="round" />
-        <path d={`M${rightX + 34} ${pipeY - 66} H${rightX - 16} M${rightX + 34} ${pipeY + 66} H${rightX - 16}`} stroke="rgba(255,215,91,.38)" strokeWidth="2" strokeLinecap="round" />
-        <path d={`M${leftX + 38} ${pipeY} H${leftX - eventReaction}`} stroke={COLORS.yellow} strokeWidth="3.2" markerEnd="url(#loadArrowYellow)" />
-        <path d={`M${rightX - 38} ${pipeY} H${rightX + eventReaction}`} stroke={COLORS.yellow} strokeWidth="3.2" markerEnd="url(#loadArrowYellow)" />
-        <text x="320" y="286" textAnchor="middle" className="muted">guided: line stops limit lateral event motion; axial/normal travel remains shown open</text>
+        <rect x={leftX - 54} y={pipeY - 72} width="18" height="144" rx="5" fill="rgba(255,215,91,.08)" stroke="rgba(255,215,91,.55)" />
+        <rect x={rightX + 36} y={pipeY - 72} width="18" height="144" rx="5" fill="rgba(255,215,91,.08)" stroke="rgba(255,215,91,.55)" />
+        <path d={`M${leftX - 32} ${pipeY - 70} V${pipeY + 70} M${rightX + 32} ${pipeY - 70} V${pipeY + 70}`} stroke="rgba(255,215,91,.34)" strokeWidth="2" strokeDasharray="6 6" />
+        <text x={leftX - 45} y={pipeY - 84} textAnchor="middle" fill={COLORS.yellow} fontSize="10" fontWeight="900">gap</text>
+        <text x={rightX + 45} y={pipeY - 84} textAnchor="middle" fill={COLORS.yellow} fontSize="10" fontWeight="900">gap</text>
+        {guidedContact ? <>
+          <circle cx={leftX - 36} cy={pipeY} r="6" fill={COLORS.yellow} />
+          <circle cx={rightX + 36} cy={pipeY} r="6" fill={COLORS.yellow} />
+          <path d={`M${leftX + 38} ${pipeY} H${leftX - eventReaction}`} stroke={COLORS.yellow} strokeWidth="3.2" markerEnd="url(#loadArrowYellow)" />
+          <path d={`M${rightX - 38} ${pipeY} H${rightX + eventReaction}`} stroke={COLORS.yellow} strokeWidth="3.2" markerEnd="url(#loadArrowYellow)" />
+        </> : <text x="320" y="262" textAnchor="middle" className="muted">guide gap still open: motion occurs before contact reaction</text>}
+        <text x="320" y="286" textAnchor="middle" className="muted">guided: side-guide gap/contact; axial sliding not represented as stopped</text>
       </>}
       {restrained && <>
-        <rect x={leftX - 34} y={pipeY - 78} width="32" height="156" rx="6" fill="rgba(255,215,91,.18)" stroke="rgba(255,215,91,.88)" />
-        <rect x={rightX + 2} y={pipeY - 78} width="32" height="156" rx="6" fill="rgba(255,215,91,.18)" stroke="rgba(255,215,91,.88)" />
-        <path d={`M${leftX - 80} ${pipeY + 84} L${leftX + 26} ${pipeY + 12}`} stroke="rgba(255,215,91,.78)" strokeWidth="5" strokeLinecap="round" />
-        <path d={`M${rightX + 80} ${pipeY + 84} L${rightX - 26} ${pipeY + 12}`} stroke="rgba(255,215,91,.78)" strokeWidth="5" strokeLinecap="round" />
-        <path d={`M${leftX - 78} ${pipeY + 76} L${leftX + 18} ${pipeY - 12}`} stroke="rgba(255,215,91,.38)" strokeWidth="2" strokeLinecap="round" strokeDasharray="7 6" />
-        <path d={`M${rightX + 78} ${pipeY + 76} L${rightX - 18} ${pipeY - 12}`} stroke="rgba(255,215,91,.38)" strokeWidth="2" strokeLinecap="round" strokeDasharray="7 6" />
-        <circle cx={leftX + 26} cy={pipeY + 12} r="6" fill={COLORS.yellow} />
-        <circle cx={rightX - 26} cy={pipeY + 12} r="6" fill={COLORS.yellow} />
-        <path d={`M${leftX + 48} ${pipeY} H${leftX - eventReaction}`} stroke={COLORS.yellow} strokeWidth="4.9" markerEnd="url(#loadArrowYellow)" />
-        <path d={`M${rightX - 48} ${pipeY} H${rightX + eventReaction}`} stroke={COLORS.yellow} strokeWidth="4.9" markerEnd="url(#loadArrowYellow)" />
-        <text x="320" y="286" textAnchor="middle" className="muted">restrained: snubber / hard stop arrests abnormal event motion; larger reaction, smaller bow</text>
+        <rect x={leftX - 40} y={pipeY - 80} width="30" height="160" rx="6" fill="rgba(255,215,91,.20)" stroke="rgba(255,215,91,.88)" />
+        <rect x={rightX + 10} y={pipeY - 80} width="30" height="160" rx="6" fill="rgba(255,215,91,.20)" stroke="rgba(255,215,91,.88)" />
+        <path d={`M${leftX - 84} ${pipeY + 86} L${leftX + 24} ${pipeY + 12}`} stroke="rgba(255,215,91,.80)" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M${rightX + 84} ${pipeY + 86} L${rightX - 24} ${pipeY + 12}`} stroke="rgba(255,215,91,.80)" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M${leftX - 84} ${pipeY + 66} L${leftX + 24} ${pipeY - 12}`} stroke="rgba(255,215,91,.42)" strokeWidth="3" strokeLinecap="round" />
+        <path d={`M${rightX + 84} ${pipeY + 66} L${rightX - 24} ${pipeY - 12}`} stroke="rgba(255,215,91,.42)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx={leftX + 24} cy={pipeY + 12} r="6" fill={COLORS.yellow} />
+        <circle cx={rightX - 24} cy={pipeY + 12} r="6" fill={COLORS.yellow} />
+        <path d={`M${leftX + 48} ${pipeY} H${leftX - eventReaction}`} stroke={COLORS.yellow} strokeWidth="5" markerEnd="url(#loadArrowYellow)" />
+        <path d={`M${rightX - 48} ${pipeY} H${rightX + eventReaction}`} stroke={COLORS.yellow} strokeWidth="5" markerEnd="url(#loadArrowYellow)" />
+        <text x="320" y="286" textAnchor="middle" className="muted">arrested: rigid stop/strut blocks event-direction motion; locked snubber is impulse-only analogue</text>
       </>}
-      {state.restraint === 'free' && <text x="320" y="286" textAnchor="middle" className="muted">free: load slider changes lateral motion; no event stop or snubber reaction</text>}
-      <text x="320" y="100" textAnchor="middle" className="label" fill={COLORS.yellow}>event intensity {pct(level)}; guide and restraint are intentionally different</text>
+      {state.restraint === 'free' && <text x="320" y="286" textAnchor="middle" className="muted">unrestrained: load slider changes lateral motion; no local event stop reaction</text>}
+      <text x="320" y="100" textAnchor="middle" className="label" fill={COLORS.yellow}>generalized lateral event {pct(level)} · {eventRestraintLabel(state.restraint)}</text>
     </>}
 
     {state.activeLoad === 'settlement' && <>
@@ -328,6 +341,7 @@ export function LoadsReadout({ state }: { state: LoadsState }) {
       <div><span>{isThermal ? 'ΔT scale' : 'Intensity'}</span><b>{isThermal ? tempLabel(state.thermalDelta) : pct(state.intensity)}</b></div>
       {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Context control</span><b>{contextControlText(state)}</b></div>}
     </div>
+    {state.activeLoad === 'event' && <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.42)' }}><b>Event restraint meaning</b><span className="copy">Unrestrained = no local event stop. Guided = side-guide gap/contact with medium reaction after contact. Arrested = rigid stop/strut blocks event-direction motion; snubber is only a locked impulse analogue, not a hard stop.</span></div>}
     <div className="bucket" style={{ borderColor: `${meta.color}66` }}><b>Teaching boundary</b><span className="copy">This tab classifies the load. It does not replace sustained, occasional, expansion, or displacement-stress code checks.</span></div>
   </div>;
 }
@@ -339,6 +353,7 @@ export function LoadsMistakePanel({ state }: { state: LoadsState }) {
     <h3 className="result-title">Correct the load concept first</h3>
     <div className="card wrong"><strong>Mistake</strong><span>{meta.mistake}</span></div>
     <div className="card correct"><strong>Correction</strong><span>{meta.correction}</span></div>
+    {state.activeLoad === 'event' && <div className="card correct"><strong>Terminology fix</strong><span>Guide ≠ line stop, snubber ≠ hard stop, anchor ≠ event-only restraint. The SVG uses Unrestrained / Guided / Arrested as event-direction states.</span></div>}
     <div className="table">
       <div><span>Applicability</span><b>{applicabilityText(state.activeLoad).replace('Applicability: ', '')}</b></div>
       {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Responsive context</span><b>{contextControlText(state)}</b></div>}
