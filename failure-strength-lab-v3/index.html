@@ -13,6 +13,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <link rel="stylesheet" href="./static-tab-engineering-patch.css" />
 
     <details class="fallback-learning-panel" id="fallback-learning-panel" hidden>
       <summary>
@@ -20,7 +21,7 @@
           <div class="fallback-learning-kicker">ⓘ Learning Center</div>
           <div class="fallback-learning-title" id="fallback-learning-title">Learning Center</div>
         </div>
-        <span class="fallback-learning-action"><span class="open-label">▼ Open panel</span><span class="close-label">▲ Collapse to bottom</span></span>
+        <span class="fallback-learning-action"><span class="open-label">▼ Open teaching panel</span><span class="close-label">▲ Collapse panel</span></span>
       </summary>
       <div class="fallback-learning-body">
         <div class="fallback-learning-head">
@@ -28,7 +29,7 @@
             <h3 id="fallback-learning-heading">Learning Center</h3>
             <p id="fallback-learning-subtitle">Focused concept, piping, B31.3 map, and source guidance.</p>
           </div>
-          <span class="fallback-route">wide bottom panel</span>
+          <span class="fallback-route">right-side panel</span>
         </div>
         <div class="fallback-helper-grid" id="fallback-learning-grid"></div>
       </div>
@@ -36,5 +37,6 @@
     <script src="./learning-center-fallback.js" defer></script>
     <script src="./learning-center-enrichment.js" defer></script>
     <script src="./loads-event-restraint-ui-fix.js" defer></script>
+    <script src="./static-tab-engineering-patch.js" defer></script>
   </body>
 </html>
