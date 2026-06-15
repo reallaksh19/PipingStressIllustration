@@ -1,6 +1,7 @@
 (function () {
-  var VERSION = 'static-crisp-2026-06-15-v1';
+  window.STATIC_CRISP_LEARNING_ENABLED = true;
 
+  var VERSION = 'static-crisp-2026-06-15-stable-v2';
   var title = 'Tab 1 · Static Engineering Key Points';
   var subtitle = 'Behavior only: classify the piping load source and B31.3 route before any acceptance judgment.';
 
@@ -120,6 +121,8 @@
     var grid = document.getElementById('fallback-learning-grid');
     if (!panel || !panelTitle || !heading || !panelSubtitle || !grid) return;
 
+    var alreadyStable = grid.getAttribute('data-crisp-version') === VERSION && grid.querySelector('.fallback-keycard');
+
     panel.hidden = false;
     panel.setAttribute('data-crisp-static', 'true');
     panelTitle.textContent = title;
@@ -133,10 +136,11 @@
     var closeLabel = panel.querySelector('.close-label');
     if (closeLabel) closeLabel.textContent = '▲ Collapse panel';
 
-    if (grid.getAttribute('data-crisp-version') === VERSION && grid.querySelector('.fallback-keycard')) return;
+    if (alreadyStable) return;
 
     grid.className = 'fallback-helper-grid fallback-keypoint-grid';
     grid.setAttribute('data-crisp-version', VERSION);
+    grid.removeAttribute('data-fallback-version');
     grid.innerHTML = keyCards.map(function (card) {
       return '<section class="fallback-keycard ' + escapeText(card.cls) + '">' +
         '<div class="fallback-keycard-title"><b>' + escapeText(card.title) + '</b><span>' + escapeText(card.route) + '</span></div>' +
@@ -145,22 +149,34 @@
     }).join('');
   }
 
-  function scheduleRender() {
-    setTimeout(renderKeyCards, 90);
+  var scheduled = false;
+  function scheduleRender(delay) {
+    if (delay) {
+      setTimeout(scheduleRender, delay);
+      return;
+    }
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(function () {
+      scheduled = false;
+      renderKeyCards();
+    });
   }
 
   function install() {
     overrideStaticData();
     scheduleRender();
+    scheduleRender(140);
+
     document.addEventListener('click', function (event) {
-      if (event.target.closest('.lesson-tabs .tab') || event.target.closest('#fallback-learning-panel')) scheduleRender();
+      if (event.target.closest('.lesson-tabs .tab')) {
+        scheduleRender();
+        scheduleRender(160);
+      }
     });
-    document.addEventListener('input', scheduleRender);
-    var root = document.getElementById('root');
-    if (root) {
-      new MutationObserver(scheduleRender).observe(root, { childList: true, subtree: true, attributes: true });
-    }
-    setInterval(renderKeyCards, 1200);
+
+    // Static key points do not depend on slider/input changes. Avoid observing the
+    // React root or polling; both caused the panel to fight the generic fallback renderer.
   }
 
   if (document.readyState === 'loading') {
