@@ -137,7 +137,7 @@ const KEY_POINT_SETS = {
     label: 'Tab 3 · Stress Point Engineering Key Points',
     subtitle: 'Mechanics only: define local σ/τ components and derived values before pipe notation or B31.3 acceptance.',
     route: 'plane stress key points',
-    version: 'stress-point-single-owner-v1',
+    version: 'stress-point-single-owner-v2',
     attrs: { 'data-crisp-stress': 'true', 'data-stress-owner': 'fallback-single-owner' },
     cards: [
       {
@@ -177,7 +177,7 @@ const KEY_POINT_SETS = {
         points: [
           'Pressure design → 304; sustained/displacement categories → 302.3.5 family; occasional → 302.3.6.',
           'Flexibility/displacement range → 319; supports/materials/allowables → 321, 323, Appendix A.',
-          'Use licensed project edition and owner criteria before mapping any stress component to acceptance.'
+          'Use relevant code edition and Client criteria before evaluating/reporting any stress components.'
         ]
       },
       {
