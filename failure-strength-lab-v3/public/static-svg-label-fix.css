@@ -1,0 +1,38 @@
+/* Static SVG label cleanup
+   Fixes bottom text collisions in the Static side-view and local cross-section panels. */
+
+/* Side view: the stage strip already explains the active phase; remove the extra
+   bottom caption that overlaps the stage labels at laptop height. */
+.analysis-grid .panel:nth-child(1) svg text[y="328"] {
+  display: none !important;
+}
+
+/* Keep side-view stage labels compact and legible. */
+.analysis-grid .panel:nth-child(1) svg text[y="321"] {
+  font-size: 10px !important;
+  font-weight: 850 !important;
+}
+
+/* Local / cross-section: move the long status line below the ring and give it
+   a dark text stroke so it remains readable near stress ticks. */
+.analysis-grid .panel:nth-child(2) svg text[y="273"] {
+  transform: translateY(32px);
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  paint-order: stroke fill;
+  stroke: rgba(6,16,29,.96);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* The direct axial formula is now shown in the compact engineering boundary
+   bar, so suppress the duplicate bottom SVG sentence in the local view. */
+.analysis-grid .panel:nth-child(2) svg text[y="298"] {
+  display: none !important;
+}
+
+/* Slightly reduce local-view header text so the two-line header stays clear. */
+.analysis-grid .panel:nth-child(2) svg text[y="38"],
+.analysis-grid .panel:nth-child(2) svg text[y="54"] {
+  font-size: 11px !important;
+}
