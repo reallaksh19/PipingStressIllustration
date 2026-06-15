@@ -1,5 +1,6 @@
 (function () {
   var layerKey = 'failureStrengthLab.staticTeachingLayer';
+  var collapsedKey = 'failureStrengthLab.staticEngineeringCollapsed';
   var content = {
     title: 'Static boundary: material response ≠ pipe-code check',
     intro: 'Use this tab to learn behavior, then route the pipe problem by load source and stress category.',
@@ -19,6 +20,15 @@
     try { return localStorage.getItem(layerKey) || 'engineer'; } catch (e) { return 'engineer'; }
   }
 
+  function savedCollapsed() {
+    try {
+      var saved = localStorage.getItem(collapsedKey);
+      return saved === null ? true : saved !== 'false';
+    } catch (e) {
+      return true;
+    }
+  }
+
   function applyLayer(layer) {
     try { localStorage.setItem(layerKey, layer); } catch (e) {}
     if (document.body.getAttribute('data-static-layer') !== layer) document.body.setAttribute('data-static-layer', layer);
@@ -28,6 +38,20 @@
       var pressed = selected ? 'true' : 'false';
       if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
     });
+  }
+
+  function applyCollapsed(panel, collapsed, persist) {
+    if (!panel) return;
+    panel.classList.toggle('is-collapsed', collapsed);
+    panel.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+    var toggle = panel.querySelector('.static-engineering-toggle');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      toggle.textContent = collapsed ? 'Show key points' : 'Hide key points';
+    }
+    if (persist) {
+      try { localStorage.setItem(collapsedKey, collapsed ? 'true' : 'false'); } catch (e) {}
+    }
   }
 
   function addText(parent, tag, className, text) {
@@ -50,6 +74,20 @@
     var panel = document.createElement('section');
     panel.className = 'static-engineering-panel';
     panel.setAttribute('aria-label', 'Static loading engineering boundary');
+
+    var formula = document.createElement('div');
+    formula.className = 'static-formula-boundary';
+    addText(formula, 'code', '', 'σ = F/A');
+    addText(formula, 'span', '', content.formula);
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'static-engineering-toggle';
+    toggle.setAttribute('aria-controls', 'static-engineering-key-points');
+    toggle.addEventListener('click', function () {
+      applyCollapsed(panel, !panel.classList.contains('is-collapsed'), true);
+    });
+    formula.appendChild(toggle);
+    panel.appendChild(formula);
 
     var head = document.createElement('div');
     head.className = 'static-engineering-head';
@@ -74,19 +112,15 @@
     head.appendChild(switcher);
     panel.appendChild(head);
 
-    var formula = document.createElement('div');
-    formula.className = 'static-formula-boundary';
-    addText(formula, 'code', '', 'σ = F/A');
-    addText(formula, 'span', '', content.formula);
-    panel.appendChild(formula);
-
     var grid = document.createElement('div');
+    grid.id = 'static-engineering-key-points';
     grid.className = 'static-engineering-grid';
     addCard(grid, 'concept', 'Concept', content.concept);
     addCard(grid, 'piping', 'Piping', content.piping);
     addCard(grid, 'b313', 'B31.3 map', content.b313);
     addCard(grid, 'sources', 'Sources', content.sources);
     panel.appendChild(grid);
+    applyCollapsed(panel, savedCollapsed(), false);
     return panel;
   }
 
@@ -108,7 +142,11 @@
     var next = 'Material behavior first. Pipe-stress acceptance comes later through pressure, sustained, occasional, and displacement/flexibility routes.';
     if (paragraph && paragraph.textContent !== next) paragraph.textContent = next;
 
-    if (!existing) titleRow.insertAdjacentElement('afterend', buildPanel());
+    if (!existing) {
+      titleRow.insertAdjacentElement('afterend', buildPanel());
+    } else {
+      applyCollapsed(existing, savedCollapsed(), false);
+    }
     applyLayer(savedLayer());
   }
 
