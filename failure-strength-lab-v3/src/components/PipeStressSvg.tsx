@@ -15,6 +15,26 @@ function activeTorsion(state: LabState) {
   return state.pipeStressView === 'torsion' || state.pipeStressView === 'combined';
 }
 
+type LegendItem = { color: string; label: string; value: string };
+
+function PipeLegend({ items, y = 266 }: { items: LegendItem[]; y?: number }) {
+  const safeItems = items.slice(0, 4);
+  const colWidth = safeItems.length >= 4 ? 88 : 112;
+  const startX = 230 - ((safeItems.length - 1) * colWidth) / 2;
+
+  return <g className="pipe-svg-legend">
+    <rect x="38" y={y - 19} width="384" height="48" rx="13" fill="rgba(6,16,29,.70)" stroke="rgba(190,220,255,.14)" />
+    {safeItems.map((item, index) => {
+      const x = startX + index * colWidth;
+      return <g key={`${item.label}-${index}`}>
+        <circle cx={x - 32} cy={y - 2} r="4.6" fill={item.color} />
+        <text x={x - 22} y={y + 1} fill={item.color} fontSize="10.5" fontWeight="950">{item.label}</text>
+        <text x={x - 22} y={y + 17} fill="rgba(216,237,255,.88)" fontSize="10" fontWeight="850">{item.value}</text>
+      </g>;
+    })}
+  </g>;
+}
+
 type PipeStressSummary = {
   badge: string;
   color: string;
@@ -92,7 +112,6 @@ export function PipeStressSideSvg({ state }: { state: LabState }) {
 
   const x1 = 68 - axial * 0.18;
   const x2 = 390 + axial * 0.18;
-  const mid = (x1 + x2) / 2;
   const y = 156;
   // Cap sag so the bezier never folds back through the pipe body.
   const sag = Math.min(bending * 0.22, 22);
@@ -104,18 +123,20 @@ export function PipeStressSideSvg({ state }: { state: LabState }) {
   const bendColor = bending >= 67 ? COLORS.orange : COLORS.yellow;
   const torsionColor = torsion >= 67 ? COLORS.purple : COLORS.cyan;
 
-  // Label y-positions spread out to avoid overlap in combined view.
-  const hoopLabelY = 89;
-  const axialLabelY = 269;
-  const bendLabelY = bendingOn && pressureOn ? 285 : 269;
-  const torsionLabelY = torsionOn && (pressureOn || bendingOn) ? (pressureOn && bendingOn ? 307 : 289) : 307;
+  const legendItems: LegendItem[] = [];
+  if (pressureOn) {
+    legendItems.push({ color: COLORS.blue, label: 'σθ pressure', value: pct(hoop) });
+    legendItems.push({ color: axialColor, label: 'σL axial', value: pct(axial) });
+  }
+  if (bendingOn) legendItems.push({ color: bendColor, label: 'M/Z bend', value: pct(bending) });
+  if (torsionOn) legendItems.push({ color: torsionColor, label: 'τt torsion', value: pct(torsion) });
 
-  return <svg viewBox="0 0 460 340" role="img" aria-label="Pipe stress side view using pipe notation">
+  return <svg className="pipe-svg pipe-side-svg" viewBox="0 0 460 340" role="img" aria-label="Pipe stress side view using pipe notation">
     <SvgDefs />
     <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
     <path d="M54 92H406 M54 220H406 M116 54V260 M230 54V260 M344 54V260" stroke="rgba(216,237,255,.07)" />
-    <text x="230" y="42" textAnchor="middle" className="label" fill={COLORS.cyan}>Pipe stress components — side/elevation view</text>
-    <text x="230" y="63" textAnchor="middle" className="muted">Pipe-local notation: σL axial/bending, σθ hoop, τt torsion</text>
+    <text x="230" y="42" textAnchor="middle" className="label" fill={COLORS.cyan}>Pipe stress components — side view</text>
+    <text x="230" y="63" textAnchor="middle" className="muted">Pipe-local axes: σθ hoop, σL axial/bending, τt torsion</text>
 
     <path d={refPath} stroke="rgba(216,237,255,.24)" strokeWidth="44" strokeLinecap="round" strokeDasharray="9 11" />
     <path d={pipePath} stroke="#020813" strokeWidth="50" strokeLinecap="round" fill="none" opacity=".88" />
@@ -126,24 +147,20 @@ export function PipeStressSideSvg({ state }: { state: LabState }) {
       <path d={`M${x1 + 12} 106 C${x1 + 78} ${86 - hoop * .06}, ${x2 - 78} ${86 - hoop * .06}, ${x2 - 12} 106`} stroke="rgba(85,184,255,.58)" strokeWidth="3" fill="none" strokeDasharray="8 7" />
       <path d={`M${x1 + 12} 206 C${x1 + 78} ${226 + hoop * .04}, ${x2 - 78} ${226 + hoop * .04}, ${x2 - 12} 206`} stroke="rgba(85,184,255,.36)" strokeWidth="3" fill="none" strokeDasharray="8 7" />
       <path d={`M${x1 + 12} 246 H${x2 - 12}`} stroke={axialColor} strokeWidth="2.8" strokeLinecap="round" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
-      <text x={mid} y={axialLabelY} textAnchor="middle" fill={axialColor} fontSize="12" fontWeight="900">σL membrane {pct(axial)} — length / end-load cue</text>
-      <text x={mid} y={hoopLabelY} textAnchor="middle" fill={COLORS.blue} fontSize="12" fontWeight="900">pressure creates hoop σθ in pipe wall</text>
     </>}
 
     {bendingOn && <>
       <path d={pipePath} stroke={bendColor} strokeWidth="3.4" strokeLinecap="round" fill="none" strokeDasharray="10 9" />
-      <text x="92" y="108" fill={bendColor} fontSize="12" fontWeight="900">bending: σL tension side</text>
-      <text x="292" y={pressureOn ? 225 : 218} fill={bendColor} fontSize="12" fontWeight="900">σL compression opposite</text>
       <path d={`M105 118 C170 ${100 - sag * .15}, 290 ${210 + sag * .12}, 356 202`} stroke={bendColor} strokeWidth="2" fill="none" strokeDasharray="5 7" opacity=".72" />
-      <text x={mid} y={bendLabelY} textAnchor="middle" fill={bendColor} fontSize="12" fontWeight="900">M/Z bending {pct(bending)} — ovalisation cue</text>
     </>}
 
     {torsionOn && <>
       <path d={`M${x1 + 28} 190 L${x1 + 80} 114 M${x1 + 92} 190 L${x1 + 144} 114 M${x2 - 144} 190 L${x2 - 92} 114 M${x2 - 80} 190 L${x2 - 28} 114`} stroke={torsionColor} strokeWidth="3.1" strokeLinecap="round" opacity=".9" />
       <path d={`M${x1 + 6} 77 C${x1 + 42} 58, ${x1 + 88} 58, ${x1 + 124} 77`} stroke={torsionColor} strokeWidth="2.8" fill="none" markerEnd="url(#arrow)" />
       <path d={`M${x2 - 6} 235 C${x2 - 42} 254, ${x2 - 88} 254, ${x2 - 124} 235`} stroke={torsionColor} strokeWidth="2.8" fill="none" markerEnd="url(#arrow)" />
-      <text x={mid} y={torsionLabelY} textAnchor="middle" fill={torsionColor} fontSize="12" fontWeight="900">τt torsional shear {pct(torsion)} — helical bands</text>
     </>}
+
+    <PipeLegend items={legendItems} y={272} />
   </svg>;
 }
 
@@ -165,20 +182,20 @@ export function PipeStressSectionSvg({ state }: { state: LabState }) {
   const innerRy = Math.max(20, ry - 28);
   const ruptureCue = pressureOn && hoop >= 72;
   const cx = 230;
-  const cy = 153;
+  const cy = 148;
   const torsionColor = torsion >= 67 ? COLORS.purple : COLORS.cyan;
 
-  // Spread label y-positions to prevent overlap when multiple components are active.
-  const hoopLabelY = 268;
-  const bendLabelY = pressureOn ? 284 : 268;
-  const torsionLabelY = (pressureOn && bendingOn) ? 300 : (pressureOn || bendingOn) ? 284 : 268;
+  const legendItems: LegendItem[] = [];
+  if (pressureOn) legendItems.push({ color: COLORS.blue, label: 'σθ hoop', value: pct(hoop) });
+  if (bendingOn) legendItems.push({ color: COLORS.orange, label: 'ovalise', value: pct(bending) });
+  if (torsionOn) legendItems.push({ color: torsionColor, label: 'τt torsion', value: pct(torsion) });
 
-  return <svg viewBox="0 0 460 340" role="img" aria-label="Pipe stress cross-section with hoop, ovalisation, torsion and rupture cues">
+  return <svg className="pipe-svg pipe-section-svg" viewBox="0 0 460 340" role="img" aria-label="Pipe stress cross-section with hoop, ovalisation, torsion and rupture cues">
     <SvgDefs />
     <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
     <path d="M55 84H405 M55 222H405 M115 50V268 M230 50V268 M345 50V268" stroke="rgba(216,237,255,.07)" />
     <text x="230" y="42" textAnchor="middle" className="label" fill={COLORS.cyan}>Pipe wall cross-section</text>
-    <text x="230" y="63" textAnchor="middle" className="muted">Hoop, ovalisation, and torsion are shown as separate cues</text>
+    <text x="230" y="63" textAnchor="middle" className="muted">Hoop, ovalisation, and torsion are separate cues</text>
 
     <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="rgba(85,184,255,.14)" stroke="rgba(220,245,255,.88)" strokeWidth="4" />
     <ellipse cx={cx} cy={cy} rx={innerRx} ry={innerRy} fill="rgba(6,16,29,.88)" stroke="rgba(220,245,255,.42)" strokeWidth="2.2" />
@@ -188,24 +205,21 @@ export function PipeStressSectionSvg({ state }: { state: LabState }) {
       <path d={`M${cx - rx - 20} ${cy} C${cx - rx - 8} ${cy - 22}, ${cx - rx - 8} ${cy + 22}, ${cx - rx - 20} ${cy}`} stroke={COLORS.blue} strokeWidth="2.6" fill="none" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
       <path d={`M${cx + rx + 20} ${cy} C${cx + rx + 8} ${cy - 22}, ${cx + rx + 8} ${cy + 22}, ${cx + rx + 20} ${cy}`} stroke={COLORS.blue} strokeWidth="2.6" fill="none" markerStart="url(#arrowStart)" markerEnd="url(#arrow)" />
       <path d={`M${cx} ${cy - ry - 20} C${cx - 24} ${cy - ry - 8}, ${cx + 24} ${cy - ry - 8}, ${cx} ${cy - ry - 20}`} stroke={COLORS.blue} strokeWidth="2.6" fill="none" markerEnd="url(#arrow)" />
-      <text x={cx} y={hoopLabelY} textAnchor="middle" fill={COLORS.blue} fontSize="12" fontWeight="900">σθ hoop / circumferential membrane {pct(hoop)}</text>
     </>}
 
     {bendingOn && <>
       <path d={`M${cx - rx + 10} ${cy - ry - 13} C${cx - rx * .45} ${cy - ry - 26}, ${cx + rx * .45} ${cy - ry - 26}, ${cx + rx - 10} ${cy - ry - 13}`} stroke={COLORS.orange} strokeWidth="3.2" fill="none" strokeLinecap="round" />
       <path d={`M${cx - rx + 10} ${cy + ry + 13} C${cx - rx * .45} ${cy + ry + 26}, ${cx + rx * .45} ${cy + ry + 26}, ${cx + rx - 10} ${cy + ry + 13}`} stroke={COLORS.orange} strokeWidth="3.2" fill="none" strokeLinecap="round" />
-      <text x={cx} y={bendLabelY} textAnchor="middle" fill={COLORS.orange} fontSize="12" fontWeight="900">bending ovalisation / Brazier cue {pct(bending)}</text>
     </>}
 
-    {torsionOn && <>
-      <path d={`M${cx - rx + 16} ${cy + 20} L${cx - 20} ${cy - ry + 16} M${cx - 20} ${cy + ry - 16} L${cx + rx - 16} ${cy - 20}`} stroke={torsionColor} strokeWidth="3" strokeLinecap="round" opacity=".72" />
-      <text x={cx} y={torsionLabelY} textAnchor="middle" fill={torsionColor} fontSize="12" fontWeight="900">τt torsional shear bands {pct(torsion)}</text>
-    </>}
+    {torsionOn && <path d={`M${cx - rx + 16} ${cy + 20} L${cx - 20} ${cy - ry + 16} M${cx - 20} ${cy + ry - 16} L${cx + rx - 16} ${cy - 20}`} stroke={torsionColor} strokeWidth="3" strokeLinecap="round" opacity=".72" />}
 
     {ruptureCue && <>
       <path className="crack glow" d={`M${cx + rx - 3} ${cy - ry + 7} C${cx + rx + 16} ${cy - 31}, ${cx + rx - 9} ${cy + 26}, ${cx + rx + 9} ${cy + ry - 9}`} />
-      <text x={cx + 2} y="84" textAnchor="middle" fill={COLORS.red} fontSize="12" fontWeight="900">rupture cue: high hoop stress can drive longitudinal split</text>
+      <text x={cx + 2} y="91" textAnchor="middle" fill={COLORS.red} fontSize="11" fontWeight="900">high hoop cue: possible longitudinal split</text>
     </>}
+
+    <PipeLegend items={legendItems} y={276} />
   </svg>;
 }
 
