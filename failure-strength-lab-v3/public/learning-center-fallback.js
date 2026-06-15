@@ -1,9 +1,9 @@
 /* Learning Center fallback renderer
    Stable owner rules:
    - This file owns the visible Learning Center for all tabs.
-   - Static and Fatigue use flat engineering key-point cards, not expandable helper cards.
+   - Static, Fatigue, and Stress Pt use flat engineering key-point cards, not expandable helper cards.
    - Other tabs use ENRICHED_LEARNING when available, with a small fallback set below.
-*/
+ */
 const FALLBACK_LEARNING = {
   Static: {
     label: 'Tab 1 · Static Engineering Key Points',
@@ -132,6 +132,65 @@ const KEY_POINT_SETS = {
         ]
       }
     ]
+  },
+  'Stress Pt': {
+    label: 'Tab 3 · Stress Point Engineering Key Points',
+    subtitle: 'Mechanics only: define local σ/τ components and derived values before pipe notation or B31.3 acceptance.',
+    route: 'plane stress key points',
+    version: 'stress-point-single-owner-v1',
+    attrs: { 'data-crisp-stress': 'true', 'data-stress-owner': 'fallback-single-owner' },
+    cards: [
+      {
+        cls: 'formula',
+        title: 'Boundary',
+        route: 'local tensor only',
+        points: [
+          'σx and σy are normal stresses on Cartesian faces; τxy is shear on the x-face in the y-direction.',
+          'Derived σ1, σ2, τmax, and VM are mechanics values on the teaching scale only.',
+          'Do not read this tab as pipe hoop/longitudinal stress or a code pass/fail result.'
+        ]
+      },
+      {
+        cls: 'concept',
+        title: 'Concept',
+        route: 'transform before judge',
+        points: [
+          'Principal stresses occur on rotated planes where in-plane shear is zero.',
+          'τmax is the Mohr-circle radius for this 2D teaching state.',
+          'The exaggerated shape cue is not a calculated strain or failure deformation.'
+        ]
+      },
+      {
+        cls: 'piping',
+        title: 'Piping',
+        route: 'coordinate matters',
+        points: [
+          'A pipe result must identify coordinate system, cut plane, load case, and physical source.',
+          'Hoop σθ, longitudinal σL, bending M/Z, torsion τt, SIFs, supports, and nozzles are handled in later tabs.',
+          'A local tensor can support interpretation, but pipe-stress review is category and detail driven.'
+        ]
+      },
+      {
+        cls: 'b313',
+        title: 'B31.3 map',
+        route: 'route before equation',
+        points: [
+          'Pressure design → 304; sustained/displacement categories → 302.3.5 family; occasional → 302.3.6.',
+          'Flexibility/displacement range → 319; supports/materials/allowables → 321, 323, Appendix A.',
+          'Use licensed project edition and owner criteria before mapping any stress component to acceptance.'
+        ]
+      },
+      {
+        cls: 'sources',
+        title: 'Sources',
+        route: 'authority hierarchy',
+        points: [
+          'Mechanics background: plane stress transformation, Mohr circle, principal stress, and equivalent stress references.',
+          'Final authority: licensed ASME B31.3 project edition and project specifications.',
+          'SIF/flexibility/local-detail basis may require B31J, project notes, or validated software documentation.'
+        ]
+      }
+    ]
   }
 };
 
@@ -157,12 +216,25 @@ function learningDataFor(label) {
   return FALLBACK_LEARNING[label];
 }
 
+function keyAttrStem(label) {
+  return String(label || 'tab').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tab';
+}
+
 function applyPanelChrome(layer, title, heading, subtitle, routeEl, data) {
   layer.hidden = false;
   title.textContent = data.label;
   heading.textContent = data.label;
   subtitle.textContent = data.subtitle;
   if (routeEl) routeEl.textContent = data.route || 'compact key points';
+}
+
+function clearCrispAttrs(layer) {
+  layer.removeAttribute('data-crisp-static');
+  layer.removeAttribute('data-static-owner');
+  layer.removeAttribute('data-crisp-fatigue');
+  layer.removeAttribute('data-fatigue-owner');
+  layer.removeAttribute('data-crisp-stress');
+  layer.removeAttribute('data-stress-owner');
 }
 
 function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
@@ -172,10 +244,7 @@ function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
   const routeEl = layer.querySelector('.fallback-route');
   applyPanelChrome(layer, title, heading, subtitle, routeEl, keyPointSet);
 
-  layer.removeAttribute('data-crisp-static');
-  layer.removeAttribute('data-static-owner');
-  layer.removeAttribute('data-crisp-fatigue');
-  layer.removeAttribute('data-fatigue-owner');
+  clearCrispAttrs(layer);
   Object.entries(keyPointSet.attrs || {}).forEach(([name, value]) => layer.setAttribute(name, value));
 
   const openLabel = layer.querySelector('.open-label');
@@ -184,7 +253,7 @@ function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
   if (closeLabel) closeLabel.textContent = '▲ Collapse panel';
 
   const fingerprint = `${keyPointSet.version}|${keyPointSet.cards.length}`;
-  const versionAttr = `data-${label.toLowerCase()}-version`;
+  const versionAttr = `data-${keyAttrStem(label)}-version`;
   const alreadyStable = grid.getAttribute(versionAttr) === fingerprint &&
     grid.querySelectorAll('.fallback-keycard').length === keyPointSet.cards.length &&
     !grid.querySelector('.fallback-helper');
@@ -195,6 +264,7 @@ function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
   grid.removeAttribute('data-crisp-version');
   grid.removeAttribute('data-static-version');
   grid.removeAttribute('data-fatigue-version');
+  grid.removeAttribute('data-stress-pt-version');
   grid.setAttribute(versionAttr, fingerprint);
   grid.innerHTML = keyPointSet.cards.map(card => {
     return `<section class="fallback-keycard ${escapeLearningText(card.cls)}">
@@ -239,14 +309,12 @@ function renderFallbackLearning() {
     subtitle: data.subtitle,
     route: 'compact key points'
   });
-  layer.removeAttribute('data-crisp-static');
-  layer.removeAttribute('data-static-owner');
-  layer.removeAttribute('data-crisp-fatigue');
-  layer.removeAttribute('data-fatigue-owner');
+  clearCrispAttrs(layer);
   grid.className = 'fallback-helper-grid';
   grid.removeAttribute('data-crisp-version');
   grid.removeAttribute('data-static-version');
   grid.removeAttribute('data-fatigue-version');
+  grid.removeAttribute('data-stress-pt-version');
   grid.setAttribute('data-fallback-version', fingerprint);
   grid.innerHTML = data.helpers.map((helper, index) => {
     const [hTitle, route, concept, piping, b313, sources] = helper.map(escapeLearningText);
