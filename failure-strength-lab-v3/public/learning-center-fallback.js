@@ -1,107 +1,40 @@
+/* Learning Center fallback renderer
+   Stable owner rules:
+   - Static tab is owned by static-learning-center-crisp.js to avoid render races.
+   - Other tabs use ENRICHED_LEARNING when available, with a small fallback set below.
+*/
 const FALLBACK_LEARNING = {
   Static: {
-    label: 'Tab 1 · Static Learning Center',
-    subtitle: 'Material response, static demand, pipe-wall behavior, stress-strain limits, and B31.3 route.',
+    label: 'Tab 1 · Static Engineering Key Points',
+    subtitle: 'Behavior only: classify the piping load source and B31.3 route before any acceptance judgment.',
     helpers: [
-      ['Material response', 'ductile / brittle', 'Ductile material gives deformation warning through elastic strain, yield, plasticity, and necking. Low-ductility behavior can remain visually elastic until a flaw becomes critical.', 'Most metallic process piping is checked through allowable stress and stress-category routes, but ductility matters for warning, redistribution, impact testing, and low-temperature service.', 'Map to material suitability and allowable-stress basis: Chapter III / para. 323 family and Appendix A allowable tables. Verify the licensed project edition.', ''],
-      ['Static demand visual', 'force / displacement', 'Tension or compression in the visual is not enough to classify the code route. First identify whether the source is force-controlled or displacement-controlled.', 'Axial tension/compression may come from pressure, equipment pull, restraint, anchor movement, settlement, or installation fit-up.', 'Sustained force-origin loading maps to the 302.3.5 family. Imposed displacement maps to the displacement/flexibility route.', ''],
-      ['B31.3 lens for Tab 1', 'paragraph map', 'Tab 1 is behavior background before pressure design, sustained stress, occasional stress, and displacement range.', 'A pipe stress engineer checks routing, supports, nozzle loads, operating/test/occasional cases, and material/temperature limits.', 'Initial map: 301, 304, 302.3.5, 302.3.6, 319, 321, 323, Appendix A. Educational paragraph map only.', '']
-    ]
-  },
-  Fatigue: {
-    label: 'Tab 2 · Fatigue Learning Center',
-    subtitle: 'Stress range, cycles, hotspot detail, S-N limitation, and B31.3 fatigue route.',
-    helpers: [
-      ['Stress range Δσ', 'cyclic range', 'Fatigue is controlled by repeated stress range, not one static peak.', 'Startup/shutdown, vibration, pressure pulsation, slugging, thermal cycles, relief events, or cyclic support movement can dominate fatigue risk.', 'Map displacement-type cycles to 302.3.5(d), 319, and 319.4.4 family. Severe cyclic service may need project fatigue assessment.', ''],
-      ['Hotspot / weld toe', 'local detail', 'A discontinuity concentrates cyclic stress and can start a crack.', 'Weld toes, branch connections, SBCs, socket welds, clamps, shoes, and attachments are common initiation locations.', 'Map geometry effects to flexibility/SIF logic where applicable: 319 and Appendix D / B31J-type interpretation.', ''],
-      ['B31.3 lens for Tab 2', 'fatigue map', 'Tab 2 teaches cyclic damage: initiation, growth, and final fracture after repetitions.', 'Connect fatigue to load source, stress range, local detail, supports/restraints, vibration, and inspection strategy.', 'Initial map: displacement stress range, flexibility analysis, expansion stress range, occasional/dynamic route, and SIF/flexibility paragraph families.', '']
-    ]
-  },
-  'Stress Pt': {
-    label: 'Tab 3 · Stress Components Learning Center',
-    subtitle: 'Enriched: Cartesian stress notation, tensor/sign convention, pipe-coordinate translation, and B31.3 theory-only boundary.',
-    helpers: [
-      ['Cartesian stress state', 'theory only', 'A stress element is a local bookkeeping device: the component name only has meaning after the face normal and component direction are declared. LibreTexts shows the Cauchy traction relation, where the stress tensor maps a surface normal to traction on that surface; a rotated coordinate system can describe the same stress state with different component values.', 'In piping, this prevents mixing plant global directions, local pipe axes, and nozzle-load sign conventions. A pipe model may be built from centerline elements, but the stress result still has to be translated into a physical local meaning before it is called hoop, longitudinal, bending, or torsion.', 'B31.3 does not normally ask for a raw Cartesian tensor as a routine piping acceptance input. Use this card as theory support before routing the real physical component to pressure design, sustained, occasional, or displacement/flexibility paragraph families such as 304, 302.3.5, 302.3.6, and 319. Exact wording remains licensed-code verification.', 'Sources: LibreTexts stress tensor; Little P.Eng stress categories; WhatIsPiping pipe stress analysis basics; ASME public B31.3 scope page.'],
-      ['Normal stress σx / σy', 'normal stress', 'σx and σy are normal stresses acting perpendicular to their corresponding Cartesian cut faces. Their physical meaning depends on the selected axes; the same stress state can be represented differently after coordinate rotation.', 'A vertical-looking component on the screen is not automatically hoop stress. In pipe work, hoop is circumferential pipe-local stress, and longitudinal is along the pipe axis. The learner must first state whether the sketch is a generic square stress element or a pipe cylindrical element.', 'For B31.3 teaching, translate the physical component before selecting a paragraph family. Pressure containment routes to 304; force-origin longitudinal behavior routes to sustained/occasional families; restrained movement routes to flexibility/displacement logic. Generic σx/σy is theory-only until that translation is made.', 'Sources: LibreTexts stress tensor and coordinate transformation; Little P.Eng stress-category route discussion; ASME B31.3 public scope.'],
-      ['Shear stress τxy', 'shear / torsion bridge', 'τxy is shear traction: it acts tangentially on a face, not normally through the face. Stress-tensor subscripts identify the plane and traction direction, and the paired shear components are part of equilibrium under ordinary continuum assumptions.', 'In piping, the practical bridge is torsion and local interaction. Twisted short spools, eccentric branch loads, skewed restraints, and compact equipment connections can create torsional or shear-related behavior that is easy to miss when the analyst focuses only on pressure and vertical bending.', 'B31.3 does not use classroom τxy as a stand-alone pass/fail variable. The analyst identifies whether the physical effect is pipe torsion, branch local behavior, sustained/occasional contribution, or flexibility detail, then follows the relevant route. Vendor/software treatment of torsion and B31J/SIF details should be checked against the project edition and software basis.', 'Sources: LibreTexts stress tensor, shear, symmetry, and sign convention; WhatIsPiping basics of pipe stress analysis; Little P.Eng pipe stress types; vendor B31J/torsion notes should be verified before over-specific software claims.'],
-      ['Tensor and sign convention', 'axis discipline', 'The stress tensor is an organized set of directional tractions. Sign convention matters because tension, compression, and opposite-sense shear pairs can be misread when positive directions are not stated. LibreTexts explicitly links sign to the chosen coordinate system and explains subscript meaning.', 'Good sign discipline prevents confusion between global model loads, local elbow axes, support settlement directions, and nozzle-load tables. Elbows and offsets rotate local meaning along the centerline, so a result can be correct but misinterpreted if the axis convention is not visible.', 'This is a theory bridge, not a code acceptance step. B31.3 equations and routes assume the engineer has correctly identified the physical direction of pressure, axial force, bending, torsion, and imposed movement. Wrong axis mapping can send a real problem to the wrong route.', 'Sources: LibreTexts stress tensor sign convention and subscript meaning; WhatIsPiping model/result interpretation context; Little P.Eng B31.3 stress-category discussion.'],
-      ['B31.3 theory-only lens', 'mechanics → code route', 'Mechanics describes the stress state; B31.3 design work starts after that stress state is translated into pipe-relevant components and load categories. The app should show a funnel: tensor/element theory at the top and pressure, sustained, occasional, and displacement routes below.', 'A useful piping habit is to ask: what physical component is this, what created it, and which code route should it enter? Circumferential pressure stress belongs with pressure design thinking; longitudinal force/bending may belong to sustained or occasional routes; restrained thermal movement belongs to displacement/flexibility logic.', 'Use this card as the B31.3 boundary for Tab 3: it is paragraph-family navigation only. ASME publicly describes B31.3 as process-piping requirements covering materials/components, design, fabrication, assembly, erection, examination, inspection, and testing; detailed clause wording and limits must be verified in the licensed project edition.', 'Sources: ASME public B31.3 scope page; Little P.Eng stress categories and limits; WhatIsPiping basics; LibreTexts stress tensor for the theory foundation.']
-    ]
-  },
-  'Pipe Stress': {
-    label: 'Tab 4 · Pipe Stress Learning Center',
-    subtitle: 'Enriched: pipe cylindrical coordinates, hoop pressure stress, longitudinal stress and bending, torsional shear, and B31.3 route selection.',
-    helpers: [
-      ['Pipe cylindrical coordinates', 'σθ / σL / σr / τt', 'A pipe wall is most naturally taught in cylindrical coordinates: circumferential or hoop stress σθ, longitudinal pipe-axis stress σL, radial through-wall stress σr, and torsional shear τt. Thin-wall teaching often treats σr as small compared with hoop and axial stresses, but that simplification must be labeled as a teaching assumption rather than a universal design rule.', 'Pipe stress work switches constantly between a centerline beam model and local pipe-wall meaning. Pressure creates shell-type stress components, while weight, supports, imposed movement, and external moments create longitudinal bending, axial force, and torsion through the line system. This card should help the learner stop using generic x/y labels once the object is a pipe.', 'Use cylindrical coordinates as the translation layer before choosing the B31.3 route. Pressure containment belongs with the 304 family, force-origin longitudinal behavior with sustained or occasional paragraph families, and imposed movement with flexibility/displacement logic such as 319. Exact code wording and equations remain licensed-edition verification.', 'Sources: pressure-vessel thin-wall mechanics references for hoop/axial/radial stress; WhatIsPiping basics for practical pipe-stress context; Little P.Eng pipe-stress categories; ASME public B31.3 scope page.'],
-      ['Hoop stress σθ', 'pressure design', 'Hoop stress is circumferential membrane tension caused by internal pressure. In first-pass thin-wall cylinder teaching, σθ is commonly approximated as P·D/2t or P·r/t, and it is larger than the closed-end axial pressure stress. This explains why wall thickness and pressure rating are central to pressure containment.', 'In process piping, hoop stress is mainly managed by pressure design, selected wall thickness, corrosion allowance, component pressure rating, material allowable stress, and temperature basis. Moving a support does not remove hoop stress, although support changes can reduce other stresses and reactions. This card should separate pressure containment from span bending and flexibility issues.', 'Map hoop-type pressure containment primarily to the B31.3 304 pressure-design family. Do not present the thin-wall teaching formula as the licensed B31.3 equation for every component. The real check needs pressure, diameter, selected/corroded thickness, material allowable at temperature, component type, allowances, and the project edition.', 'Sources: pressure-vessel thin-wall stress references for hoop and axial formulas; Little P.Eng pressure-design discussion; ASME public B31.3 scope page.'],
-      ['Longitudinal stress σL + bending', 'sustained / occasional / range', 'Longitudinal stress is the pipe-axis stress family. It can include closed-end pressure axial stress, direct axial force, and bending stress from moments. The physical direction may be the same, but the code route changes depending on whether the source is pressure, weight, event load, terminal load, settlement, or restrained thermal movement.', 'This is where supports, valve weights, contents, insulation, wind/seismic cases, nozzle stiffness, and thermal restraint become visible to the stress engineer. A line can be thick enough for pressure and still fail a sustained span or nozzle-reaction review. The card should show pressure end effect, sagging between supports, and outer-fiber bending as different contributors to the same longitudinal family.', 'Map force-origin longitudinal effects to sustained or occasional stress paragraph families such as 302.3.5 and 302.3.6. Keep pressure wall design separate under 304. If longitudinal bending is caused by restrained thermal movement, route it to displacement/flexibility logic such as 319 and expansion-stress-range interpretation. Verify exact formula form and software treatment in the licensed edition and project basis.', 'Sources: pressure-vessel thin-wall axial-stress references; WhatIsPiping basics for weight/support/nozzle context; Little P.Eng sustained and occasional route discussions; ASME public B31.3 scope page.'],
-      ['Torsional shear τt', 'twisting / shear', 'Torsional shear is wall shear caused by twisting moment around the pipe axis. It is not hoop tension and it is not longitudinal normal bending stress. It deserves its own visual cue because a short stiff spool can have meaningful twist even when pressure and vertical bending look simple.', 'Torsion can come from eccentric loads, branch geometry, skewed restraints, constrained rotations, and compact equipment connections. In practical reviews, it is easy to miss if the analyst only looks for vertical sag or pressure containment. The learner should ask where the torque comes from and whether the model load path makes physical sense.', 'Treat this as a physical-meaning and routing card, not a universal torsion acceptance formula. Depending on source and edition/software implementation, torsion may affect sustained, occasional, or combined interpretations, and branch/detail behavior may require SIF/flexibility data such as B31J or legacy Appendix D context. Verify the exact project-code and software basis before making a compliance statement.', 'Sources: WhatIsPiping basics for pipe stress analysis context; Little P.Eng pipe-stress category discussion; vendor B31J/torsion implementation notes should be verified against the project software/version before over-specific claims.'],
-      ['B31.3 pipe-stress lens', 'route map', 'A pipe section can carry hoop, longitudinal, bending, radial, and torsional components at the same time. B31.3 teaching should not collapse all of that into one generic equivalent-stress rule before the source and category are known. The correct learning step is to identify the physical component, identify what created it, and then select the route.', 'In real work, different mitigations solve different routes: more wall for pressure design, better supports for sustained bending, more flexibility for thermal displacement, and local detail review for branch or nozzle hotspots. This card should strongly discourage one-number thinking and encourage route-by-route interpretation.', 'High-level map: 304 for pressure design, 302.3.5 family for sustained and displacement-stress logic, 302.3.6 family for occasional effects, 319 for flexibility analysis, and B31J or legacy Appendix D context where SIF/flexibility detail realism is needed. This is educational paragraph-family navigation only; use licensed code and project specifications for final checks.', 'Sources: Little P.Eng stress categories and pipe-stress types; WhatIsPiping basics of pipe stress analysis; ASME public B31.3 scope page; vendor B31J guidance requires project/software verification.']
-    ]
-  },
-  Loads: {
-    label: 'Tab 5 · Load Types Learning Center',
-    subtitle: 'Enriched: classify the physical source first, then route pressure, sustained force, occasional event, thermal movement, or settlement correctly.',
-    helpers: [
-      ['Load-source first', 'route gateway', 'The first question is not which formula to use. The first question is what creates the load: a steady force, pressure boundary, short-duration event, or imposed movement. That source determines the likely failure mode and the B31.3 route.', 'A real piping model may contain dead weight, fluid and insulation weight, internal pressure, thermal growth, wind, seismic, relief thrust, water hammer, slug force, tank settlement, equipment movement, and vibration. Treating all of them as one generic load hides the engineering story and creates wrong-route decisions.', 'High-level B31.3 map: pressure containment to 304, steady force-origin stress to sustained logic in the 302.3.5 family, event effects to 302.3.6 family, imposed movement to flexibility/displacement logic in 319, and support/restraint meaning to 321 or project support criteria. This is paragraph-family navigation only.', 'Sources: WhatIsPiping primary versus secondary load discussion; WhatIsPiping load-case creation notes; ASME public B31.3 scope page. Exact paragraph wording needs licensed-code verification.'],
-      ['Weight and pressure', 'sustained / pressure', 'Weight and pressure are both steady effects, but they do not enter the engineering route in the same way. Weight is an equilibrium load that creates support reactions and bending. Pressure first raises a pressure-boundary/wall-containment question and can also contribute to longitudinal or end-load behavior.', 'Pipe, contents, insulation, valves, and inline items can dominate sustained bending even on low-pressure services. A compact high-pressure spool can be mainly a pressure-thickness problem with little span sensitivity. The card should help learners separate carrying the line from containing the pressure.', 'Route pressure-boundary adequacy to the 304 family and route weight-driven longitudinal stress to sustained-stress logic in 302.3.5 family. If pressure-related axial effects or terminal reactions matter, keep the pressure-source story visible and verify the project software basis and licensed edition.', 'Sources: WhatIsPiping load cases identifies weight plus pressure as sustained; ASME public B31.3 scope page; practical pipe-support/load references. Licensed code and project load basis control final acceptance.'],
-      ['Thermal expansion', 'displacement', 'Thermal expansion is movement first. Free thermal growth produces displacement; restraint converts that displacement into stress range and reaction. That is why thermal expansion is the classic displacement-controlled piping load.', 'Guides, anchors, line stops, spring supports, friction, support gaps, and equipment nozzles decide whether thermal growth is absorbed flexibly or pushed into nozzles and structures. A hot system can be acceptable by wall stress but still have poor terminal or support loads.', 'Route restrained thermal movement to 319 flexibility analysis and displacement/expansion stress-range logic in the 302.3.5 family. Do not move it to the sustained route just because it occurs during operation. Verify exact expansion-stress wording and any owner nozzle/support criteria in the licensed project basis.', 'Sources: WhatIsPiping primary/secondary load discussion for displacement-driven loads; WhatIsPiping load cases for expansion cases; ASME public B31.3 scope page.'],
-      ['Event and settlement', 'occasional / imposed', 'Wind, seismic, relief thrust, water hammer, slug force, and similar short-duration actions are event loads. Settlement, tank movement, support movement, and terminal movement are imposed boundary displacements. Abnormal does not automatically mean occasional; the source still matters.', 'An outdoor rack line can need wind or seismic occasional checks, while a tank nozzle connection can be governed by slow settlement with no large new force applied. Relief and hammer cases may need dynamic or equivalent-static treatment by project basis. The practical decision test is: did the source push the pipe, or did the boundary move the pipe?', 'Map force-type events to occasional-stress logic in the 302.3.6 family. Map settlement/support/equipment movement to movement and flexibility interpretation, commonly through 301.8/319-style paragraph families plus project support/nozzle criteria. Dynamic amplification and owner procedures may govern.', 'Sources: WhatIsPiping load cases for wind, seismic, occasional and expansion cases; WhatIsPiping primary/secondary load discussion; ASME public B31.3 scope page. Dynamic and settlement treatment need project verification.'],
-      ['B31.3 load-classification lens', 'classification map', 'B31.3 teaching should be source- and failure-mode-based. The same numerical stress can mean different things if one case comes from weight, another from restrained thermal growth, and another from a short event. Category selection must precede equation selection.', 'This is the main routing discipline used in real stress reviews. The engineer builds separate pressure, sustained, operating, displacement/expansion, occasional, test, support movement, and terminal/nozzle views, then reviews each for the correct decision. The largest displayed number is not automatically the controlling engineering fact.', 'Summary map: 301 design conditions and load identification, 304 pressure design, 302.3.5 sustained and displacement families, 302.3.6 occasional family, 319 flexibility, 321 supports, Appendix A allowable data, and B31J or legacy Appendix D where SIF/flexibility detail realism is required. Educational only; verify licensed edition.', 'Sources: ASME public B31.3 scope page; WhatIsPiping load cases and primary/secondary categories; practical stress-analysis references. Owner standards may define extra dynamic, nozzle-load, settlement, and support criteria.']
-    ]
-  },
-  Expansion: {
-    label: 'Tab 6 · Pipe Expansion Learning Center',
-    subtitle: 'Free thermal growth, restrained reaction, pressure elongation boundary, flexibility route, and B31.3 expansion-stress interpretation.',
-    helpers: [
-      ['Free thermal growth ΔL', 'free displacement', 'A hot pipe wants to change length approximately by ΔL = α·L·ΔT. If it can move freely, the important output is movement, not large thermal stress.', 'Real pipe runs use loops, offsets, flexible routing, spring supports, guides, and anchor locations to absorb thermal movement without overloading nozzles or supports.', 'Map the need to accommodate expansion to the 319 flexibility-analysis family and expansion-stress-range interpretation. This app is educational only; verify licensed B31.3 edition.', ''],
-      ['Restrained expansion', 'secondary stress', 'When anchors, guides, equipment nozzles, or stops restrain thermal growth, displacement is converted into reaction and secondary stress range.', 'A hot line between anchors, near a pump nozzle, or at a tight guide may show high reaction even though the source is temperature change, not added dead weight.', 'Map restrained thermal behavior to displacement/flexibility and expansion stress range: 302.3.5(d)-type interpretation and 319 / 319.4.4 family. Final checks require actual geometry and allowables.', ''],
-      ['Guides, anchors, and springs', 'support movement', 'Supports decide whether expansion is allowed, guided, resisted, or converted into nozzle/support reaction. A spring support can carry weight while allowing vertical thermal travel.', 'Good piping layout separates weight support from thermal flexibility: rests, guides, line stops, anchors, and springs must be selected for both cold and hot positions.', 'Map support and restraint interpretation to 319 flexibility and 321 support/restraint families, with project support standards and manufacturer data as required.', ''],
-      ['Pressure elongation boundary', 'pressure ≠ ΔT', 'Straight-pipe pressure elongation or pressure end-load effects are not the same as thermal expansion. The Expansion tab may show a pressure-related cue only as a boundary reminder.', 'Pressure affects hoop stress, axial end load, and sometimes terminal reaction; thermal expansion is driven by temperature change and restraint layout.', 'Pressure wall design belongs to 304 family; thermal displacement range belongs to 319 / expansion-stress-route interpretation. Keep these routes separate.', ''],
-      ['B31.3 lens for Tab 6', 'expansion route', 'Tab 6 is a displacement-controlled lesson: movement is acceptable if flexibility and terminal loads are acceptable; restraint converts movement into stress range and reaction.', 'A practical stress model checks operating displacement, anchor/nozzle loads, support hot/cold loads, guide gaps, loop flexibility, and expansion stress range separately from sustained weight stress.', 'Initial map: 301 design conditions, 302.3.5 displacement stress-range family, 319 flexibility analysis, 319.4.4 expansion stress-range family, 321 supports, Appendix D/B31J where applicable. Educational paragraph map only.', '']
-    ]
-  },
-  Bourdon: {
-    label: 'Tab 7 · Bourdon Effect Learning Center',
-    subtitle: 'Pressure-driven bend opening, end condition, support/nozzle reaction, and B31.3 pressure/flexibility boundary.',
-    helpers: [
-      ['Pressure-driven opening', 'pressure + curvature', 'The Bourdon visual teaches that internal pressure in a curved bend can create a bend-opening cue. Pressure is the driver; there is no separate elbow-flexibility slider.', 'In piping, this is a useful analogy for pressure-induced displacement/reaction sensitivity in curved components, elbows, bends, and nearby terminals.', 'Pressure boundary design belongs to the 304 family; flexibility/reaction interpretation belongs to 319/support modelling. This tab is qualitative only.', ''],
-      ['End condition', 'free / guided / restrained', 'A free end mostly moves. A guided or restrained end can convert opening movement into reaction load at a support, anchor, or equipment nozzle.', 'Nozzle load checks and support reactions depend on boundary stiffness, guide gaps, anchors, line stops, friction, and connected equipment flexibility.', 'Map terminal/reaction interpretation to flexibility analysis, support/restraint modelling, and project nozzle-load criteria; verify against licensed B31.3 and project specs.', ''],
-      ['Bend geometry', '45 / 90 / 180', 'Bend angle changes the visible movement path and reaction sensitivity. A 45°, 90°, and 180° bend should not be interpreted as the same mechanism scale.', 'Curved geometry, ovalisation, wall thickness, bend radius, pressure, connected straight legs, and restraint layout all affect the real response.', 'Detailed elbow/bend treatment is model-dependent and may require flexibility/SIF factors, Appendix D/B31J-type interpretation, and software/project method.', ''],
-      ['B31.3 lens for Tab 7', 'pressure/flexibility boundary', 'Tab 7 separates pressure-driven bend opening from thermal ΔL and from generic load classification.', 'A practical workflow checks pressure design, flexibility, support/nozzle reactions, operating cases, and occasional cases separately.', 'Initial map: 304 pressure design, 319 flexibility, 321 supports/restraints, 302.3.5 stress categories, and Appendix D/B31J where applicable. Educational paragraph map only.', '']
-    ]
-  },
-  Combined: {
-    label: 'Tab 8 · Combined Stress Learning Center',
-    subtitle: 'Combine pipe stress components only after selecting the correct load route: sustained, occasional, displacement range, or educational VM/Tresca screening.',
-    helpers: [
-      ['Route before combination', 'category first', 'Combined stress is meaningful only after the load source and stress category are known. Pressure, sustained weight, occasional events, and displacement ranges do not all use the same pass/fail rule.', 'A practical model keeps pressure design, sustained load cases, operating/displacement cases, occasional event cases, and terminal/nozzle reactions separated before reviewing combinations.', 'Initial map: 304 pressure design, 302.3.5 sustained/displacement families, 302.3.6 occasional family, 319 flexibility, and project load combinations. Educational paragraph map only.', ''],
-      ['Hoop + longitudinal components', 'σθ + σL', 'Internal pressure creates hoop stress while pressure end load, weight bending, thermal restraint, settlement, and events can affect longitudinal stress.', 'The same longitudinal stress component may belong to different code routes depending on whether it comes from sustained force, occasional event, or imposed displacement.', 'Pressure boundary checks map to 304; sustained longitudinal stress maps to 302.3.5 family; displacement range maps to 319 / expansion-stress interpretation.', ''],
-      ['Von Mises and Tresca', 'yield theories', 'Von Mises and Tresca are useful failure-theory visuals for ductile yielding, but the app view is screening/education unless a real code equation path is implemented.', 'They help explain why multiaxial stress can be more severe than a single component, especially where pressure, bending, and torsion coexist.', 'B31.3 does not reduce all piping checks to one universal VM/Tresca comparison. Stress categories, allowable limits, and equation forms must come from the licensed project code edition.', ''],
-      ['Allowable / screening warning', 'not code-certified', 'The displayed utilization or boundary is normalized. It does not know the material allowable, temperature, wall thickness, corrosion allowance, SIF, weld quality, or support model.', 'Real piping stress reports document load cases, allowables, SIF/flexibility, displacements, restraint loads, terminal loads, and code stress ratios separately.', 'Map final acceptance to the relevant B31.3 route and project criteria. Verify exact equation, edition, service category, and owner specification.', ''],
-      ['B31.3 lens for Tab 8', 'combined route map', 'Tab 8 is the decision checkpoint: it should teach that combined means different things for sustained, occasional, and displacement stress routes.', 'A practical stress engineer reports separate sustained, occasional, expansion/displacement range, operating displacement, support, and nozzle-load results instead of one single global stress answer.', 'Initial map: 301 design conditions, 302.3.5 sustained/displacement, 302.3.6 occasional, 304 pressure design, 319 flexibility, Appendix A allowables, Appendix D/B31J where applicable. Educational only.', '']
-    ]
-  },
-  Review: {
-    label: 'Tab 9 · Quick Challenge Learning Center',
-    subtitle: 'Review source classification, coordinate notation, stress route, cyclic risk, and B31.3 interpretation boundaries.',
-    helpers: [
-      ['Question strategy', 'source → route', 'For every challenge, first identify the physical source, then the stress component, then the code route. Do not jump straight to a pass/fail answer.', 'This mirrors practical piping work: separate pressure design, sustained cases, displacement/expansion cases, occasional cases, support reactions, and terminal/nozzle loads.', 'Initial map: 301 design conditions, 304 pressure design, 302.3.5 sustained/displacement families, 302.3.6 occasional, 319 flexibility, and 321 supports.', ''],
-      ['Coordinate check', 'σx vs σθ', 'A challenge may use Cartesian stress names or pipe stress names. Confirm whether the question is using σx/σy/τxy or σθ/σL/τt before answering.', 'This prevents mixing generic point-stress diagrams with cylindrical pipe behavior such as hoop stress, longitudinal stress, and torsional shear.', 'B31.3 acceptance routes are pipe-problem routes, not generic Cartesian labels. Translate notation before mapping to a paragraph family.', ''],
-      ['Load category check', 'sustained / occasional / displacement', 'Weight and pressure effects, thermal growth, settlement, and event loads belong to different categories. The challenge answer should state the route, not only the visible deformation.', 'Real stress reports keep sustained, operating/displacement, occasional, test, and terminal-load results separated.', 'Sustained routes map to 302.3.5 family, occasional to 302.3.6 family, displacement/flexibility to 319 and expansion-stress interpretation, and pressure boundary to 304.', ''],
-      ['Fatigue and cyclic warning', 'Δσ + N', 'For cyclic questions, look for repeated stress range and cycle count. A lower stress repeated many times can still be critical.', 'Thermal cycling, vibration, pressure pulsation, relief events, slugging, and equipment movement can all produce cyclic demand in piping.', 'Map cyclic displacement behavior to expansion stress-range/flexibility interpretation; severe vibration/fatigue may require project-specific assessment outside this teaching app.', ''],
-      ['B31.3 review boundary', 'educational only', 'The Review tab checks whether the learner can choose the right concept and paragraph family. It is not a code-certified calculation engine.', 'A real B31.3 calculation still needs line data, material allowables, temperature, pressure, thickness, corrosion allowance, SIF/flexibility, support model, and load cases.', 'Use the helper paragraph map as navigation only. Verify exact wording, equation, edition, service category, and owner specification in the licensed project code.', '']
+      ['Formula boundary', 'direct axial only', 'σ = F/A is useful for direct axial stress only.', 'Real pipe checks also need pressure design, bending M/Z, SIFs, supports, nozzles, and displacement range.', 'Do not read visible yield or necking as B31.3 acceptance.', 'Licensed ASME B31.3 and project specifications govern final checks.']
     ]
   }
 };
 
 function escapeLearningText(value) {
-  return String(value || '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+  return String(value || '').replace(/[&<>'"]/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[ch]));
 }
+
 function activeTabLabel() {
   const label = document.querySelector('.lesson-tabs .tab.active .tabLabel');
   return label ? label.textContent.trim() : 'Static';
 }
+
+function learningDataFor(label) {
+  try {
+    if (typeof ENRICHED_LEARNING !== 'undefined' && ENRICHED_LEARNING[label]) return ENRICHED_LEARNING[label];
+  } catch (e) {}
+  return FALLBACK_LEARNING[label];
+}
+
 function renderFallbackLearning() {
   const layer = document.getElementById('fallback-learning-panel');
   const title = document.getElementById('fallback-learning-title');
@@ -109,19 +42,38 @@ function renderFallbackLearning() {
   const subtitle = document.getElementById('fallback-learning-subtitle');
   const grid = document.getElementById('fallback-learning-grid');
   if (!layer || !title || !heading || !subtitle || !grid) return;
+
+  const active = activeTabLabel();
+
+  // Static has a dedicated crisp renderer. The old fallback renderer used to
+  // overwrite its cards during React root mutations, which caused visible flicker.
+  if (active === 'Static' && window.STATIC_CRISP_LEARNING_ENABLED) return;
+
   if (document.querySelector('.learning-center-panel')) {
     layer.hidden = true;
     return;
   }
-  const data = FALLBACK_LEARNING[activeTabLabel()];
+
+  const data = learningDataFor(active);
   if (!data) {
     layer.hidden = true;
     return;
   }
+
+  const fingerprint = active + '|' + data.label + '|' + data.subtitle + '|' + data.helpers.length;
+  if (grid.getAttribute('data-fallback-version') === fingerprint && grid.querySelector('.fallback-helper')) {
+    layer.hidden = false;
+    return;
+  }
+
   layer.hidden = false;
+  layer.removeAttribute('data-crisp-static');
   title.textContent = data.label;
   heading.textContent = data.label;
   subtitle.textContent = data.subtitle;
+  grid.className = 'fallback-helper-grid';
+  grid.removeAttribute('data-crisp-version');
+  grid.setAttribute('data-fallback-version', fingerprint);
   grid.innerHTML = data.helpers.map((helper, index) => {
     const [hTitle, route, concept, piping, b313, sources] = helper.map(escapeLearningText);
     return `<details class="fallback-helper" ${index === 0 || hTitle.includes('B31.3') ? 'open' : ''}>
@@ -135,11 +87,28 @@ function renderFallbackLearning() {
     </details>`;
   }).join('');
 }
+
+let fallbackRenderScheduled = false;
+function scheduleFallbackLearningRender() {
+  if (fallbackRenderScheduled) return;
+  fallbackRenderScheduled = true;
+  requestAnimationFrame(() => {
+    fallbackRenderScheduled = false;
+    renderFallbackLearning();
+  });
+}
+
+window.renderFallbackLearning = renderFallbackLearning;
+window.scheduleFallbackLearningRender = scheduleFallbackLearningRender;
+
 window.addEventListener('DOMContentLoaded', () => {
-  renderFallbackLearning();
+  scheduleFallbackLearningRender();
   document.addEventListener('click', event => {
-    if (event.target.closest('.lesson-tabs .tab')) setTimeout(renderFallbackLearning, 0);
+    if (event.target.closest('.lesson-tabs .tab')) {
+      scheduleFallbackLearningRender();
+      setTimeout(scheduleFallbackLearningRender, 120);
+    }
   });
   const root = document.getElementById('root');
-  if (root) new MutationObserver(renderFallbackLearning).observe(root, { childList: true, subtree: true, attributes: true });
+  if (root) new MutationObserver(scheduleFallbackLearningRender).observe(root, { childList: true, subtree: true });
 });
