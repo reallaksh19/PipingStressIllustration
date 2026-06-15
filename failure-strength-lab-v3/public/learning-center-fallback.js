@@ -1,7 +1,7 @@
 /* Learning Center fallback renderer
    Stable owner rules:
    - This file owns the visible Learning Center for all tabs.
-   - Static, Fatigue, Stress Pt, and Pipe Stress use flat engineering key-point cards, not expandable helper cards.
+   - Static, Fatigue, Stress Pt, Pipe Stress, and Expansion use flat engineering key-point cards, not expandable helper cards.
    - Other tabs use ENRICHED_LEARNING when available, with a small fallback set below.
  */
 const FALLBACK_LEARNING = {
@@ -250,6 +250,65 @@ const KEY_POINT_SETS = {
         ]
       }
     ]
+  },
+  Expansion: {
+    label: 'Tab 5 · Expansion Engineering Key Points',
+    subtitle: 'Route map only: separate free thermal movement, restraint reaction, pressure axial strain, and Bourdon bend opening before reporting.',
+    route: 'expansion key points',
+    version: 'expansion-single-owner-v1',
+    attrs: { 'data-crisp-expansion': 'true', 'data-expansion-owner': 'fallback-single-owner' },
+    cards: [
+      {
+        cls: 'formula',
+        title: 'Boundary',
+        route: 'movement ≠ stress',
+        points: [
+          'Free thermal growth is displacement: ΔL = α·L·ΔT.',
+          'Stress/reaction appears when anchors, guides, stops, friction, equipment, or supports restrain movement.',
+          'Do not treat ideal EαΔT as an automatic B31.3 expansion-stress report value.'
+        ]
+      },
+      {
+        cls: 'concept',
+        title: 'Concept',
+        route: 'restraint creates load',
+        points: [
+          'Thermal expansion is displacement-controlled and usually secondary/self-limiting in flexible piping.',
+          'A fully restrained straight member has an ideal stress cue ST = EαΔT, but real systems redistribute through flexibility.',
+          'Pressure elongation is a straight-pipe axial-strain cue; bend opening is kept in the Bourdon tab.'
+        ]
+      },
+      {
+        cls: 'piping',
+        title: 'Piping',
+        route: 'clearance + reactions',
+        points: [
+          'Check expansion loops, offsets, anchors, guides, support travel, spring cans, equipment nozzles, and adjacent steel clearances.',
+          'Settlement, thermal growth, equipment movement, and support displacement are movement-route problems, not ordinary weight-only stress.',
+          'Pressure containment remains a separate wall-thickness/design route even when pressure also creates small axial strain.'
+        ]
+      },
+      {
+        cls: 'b313',
+        title: 'B31.3 map',
+        route: '319 route first',
+        points: [
+          'Thermal, settlement, and equipment movement → 319 flexibility / displacement-stress-range route.',
+          'Pressure containment → 304; sustained weight/force → 302.3.5; occasional events → 302.3.6; supports → 321.',
+          'Use relevant code edition and Client criteria before evaluating/reporting expansion stresses, movements, reactions, or nozzle loads.'
+        ]
+      },
+      {
+        cls: 'sources',
+        title: 'Sources',
+        route: 'authority hierarchy',
+        points: [
+          'Final authority: relevant code edition, Client criteria, project specifications, and validated software basis.',
+          'Background: thermal strain, elastic restraint, thin-wall pressure strain, and piping flexibility references.',
+          'Practical interpretation aids must be verified before project evaluation or reporting.'
+        ]
+      }
+    ]
   }
 };
 
@@ -296,6 +355,8 @@ function clearCrispAttrs(layer) {
   layer.removeAttribute('data-stress-owner');
   layer.removeAttribute('data-crisp-pipe');
   layer.removeAttribute('data-pipe-owner');
+  layer.removeAttribute('data-crisp-expansion');
+  layer.removeAttribute('data-expansion-owner');
 }
 
 function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
@@ -327,6 +388,7 @@ function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
   grid.removeAttribute('data-fatigue-version');
   grid.removeAttribute('data-stress-pt-version');
   grid.removeAttribute('data-pipe-stress-version');
+  grid.removeAttribute('data-expansion-version');
   grid.setAttribute(versionAttr, fingerprint);
   grid.innerHTML = keyPointSet.cards.map(card => {
     return `<section class="fallback-keycard ${escapeLearningText(card.cls)}">
@@ -378,6 +440,7 @@ function renderFallbackLearning() {
   grid.removeAttribute('data-fatigue-version');
   grid.removeAttribute('data-stress-pt-version');
   grid.removeAttribute('data-pipe-stress-version');
+  grid.removeAttribute('data-expansion-version');
   grid.setAttribute('data-fallback-version', fingerprint);
   grid.innerHTML = data.helpers.map((helper, index) => {
     const [hTitle, route, concept, piping, b313, sources] = helper.map(escapeLearningText);
