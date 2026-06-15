@@ -133,7 +133,7 @@
     var closeLabel = panel.querySelector('.close-label');
     if (closeLabel) closeLabel.textContent = '▲ Collapse panel';
 
-    if (grid.getAttribute('data-crisp-version') === VERSION) return;
+    if (grid.getAttribute('data-crisp-version') === VERSION && grid.querySelector('.fallback-keycard')) return;
 
     grid.className = 'fallback-helper-grid fallback-keypoint-grid';
     grid.setAttribute('data-crisp-version', VERSION);
