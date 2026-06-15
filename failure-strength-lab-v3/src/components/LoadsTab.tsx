@@ -12,10 +12,10 @@ type LoadMeta = {
   category: Category;
   route: string;
   concern: string;
-  next: string;
   examples: string;
-  mistake: string;
-  correction: string;
+  componentRoute: string;
+  b313Map: string;
+  reportBoundary: string;
 };
 
 const LOAD_META: Record<LoadCategory, LoadMeta> = {
@@ -26,11 +26,11 @@ const LOAD_META: Record<LoadCategory, LoadMeta> = {
     behavior: 'force-controlled',
     category: 'primary / sustained',
     route: 'Sustained stress route',
-    concern: 'collapse / gross plasticity if the load cannot be carried',
-    next: 'Combined Stress · VM',
-    examples: 'pipe self-weight, contents, insulation, valves',
-    mistake: 'Treating dead weight like a self-relieving expansion strain.',
-    correction: 'Weight is a real force. The pipe and supports must carry it continuously; local yielding does not make the gravity load disappear.',
+    concern: 'support reaction, span bending, sag, and longitudinal sustained stress',
+    examples: 'pipe self-weight, contents, insulation, valves, strainers, inline items',
+    componentRoute: 'Weight mainly becomes vertical reactions and longitudinal bending stress; it is not self-relieving thermal strain.',
+    b313Map: 'Route weight-origin longitudinal force/bending to the sustained family, commonly 302.3.5 context, with support design routed to 321 / project criteria.',
+    reportBoundary: 'Check support model, span basis, sustained load case, hot/cold support status, and Client allowable criteria before reporting acceptance.',
   },
   pressure: {
     label: 'Pressure',
@@ -38,12 +38,12 @@ const LOAD_META: Record<LoadCategory, LoadMeta> = {
     color: COLORS.blue,
     behavior: 'force-controlled',
     category: 'primary / sustained',
-    route: 'Pressure / sustained stress route',
-    concern: 'hoop and longitudinal membrane stress',
-    next: 'Pipe Stress · σθ σL τ',
-    examples: 'design pressure, operating pressure, end-cap thrust',
-    mistake: 'Calling pressure hoop stress a generic σx or σy stress.',
-    correction: 'In pipe notation, pressure mainly creates σθ hoop stress and σL axial membrane stress. Use the pipe stress coordinate system.',
+    route: 'Pressure design + sustained route',
+    concern: 'pressure containment, hoop stress, longitudinal membrane, and pressure thrust',
+    examples: 'design pressure, operating pressure, test pressure, closed-end thrust',
+    componentRoute: 'Pressure first creates pipe-wall containment demand: hoop/circumferential stress and pressure-related longitudinal effects.',
+    b313Map: 'Route pressure-boundary adequacy to the 304 family; then treat pressure-related longitudinal/end-force effects in the relevant sustained or operating cases.',
+    reportBoundary: 'Do not replace pressure-design thickness/rating/material checks with a generic load-slider stress result.',
   },
   event: {
     label: 'Event / dynamic',
@@ -52,37 +52,37 @@ const LOAD_META: Record<LoadCategory, LoadMeta> = {
     behavior: 'force-controlled',
     category: 'primary / occasional',
     route: 'Occasional stress route',
-    concern: 'short-duration force demand and support reaction',
-    next: 'Combined Stress · VM',
-    examples: 'wind, seismic, water hammer, relief thrust, slug / blast event load',
-    mistake: 'Treating guides, stops, anchors, and snubbers as one generic restraint.',
-    correction: 'Occasional loads are force-controlled event loads. In this teaching view the left end is always the fixed anchor. Unrestrained means the right side has no lateral event stop and the left anchor carries the event shear/moment. Guided means a right-side lateral guide gap closes before a medium guide reaction shares the load. Arrested means a rigid stop/strut blocks right-side lateral motion and transfers a larger reaction.',
+    concern: 'short-duration force demand, support reaction, and dynamic amplification',
+    examples: 'wind, seismic, relief thrust, water hammer, slug force, blast/event load',
+    componentRoute: 'Event loads are force inputs with direction, duration, and restraint path. Guides, stops, anchors, and snubbers do not mean the same thing.',
+    b313Map: 'Route force-type short events to the occasional family, commonly 302.3.6 context, using project load-combination and dynamic criteria.',
+    reportBoundary: 'Confirm event definition, dynamic factor, restraint function, support gaps/contact, and Client occasional criteria before acceptance.',
   },
   thermal: {
     label: 'Thermal ΔT',
-    short: 'free growth',
+    short: 'free thermal growth',
     color: COLORS.cyan,
     behavior: 'displacement-controlled',
     category: 'secondary / expansion',
     route: 'Expansion stress range route',
-    concern: 'cyclic displacement strain range and flexibility',
-    next: 'Pipe Expansion · ΔL',
-    examples: 'temperature rise/fall, start-up/shutdown range',
-    mistake: 'Thermal expansion is just another applied force.',
-    correction: 'Thermal expansion first creates free growth ΔL. Stress appears when the system restrains that growth.',
+    concern: 'cold-to-hot displacement range, flexibility, reactions, and cycle tolerance',
+    examples: 'temperature rise/fall, startup/shutdown, operating temperature range',
+    componentRoute: 'Thermal expansion is movement first. Free ΔL becomes stress/reaction only when boundary conditions restrain it.',
+    b313Map: 'Route restrained thermal movement to flexibility and displacement stress-range logic, mainly the 319 family with 302.3.5 displacement-stress context.',
+    reportBoundary: 'Check cold/hot cases, range pair, support gaps, friction, nozzle loads, and Client flexibility criteria before reporting.',
   },
   settlement: {
     label: 'Settlement',
-    short: 'support drops',
+    short: 'support / terminal movement',
     color: COLORS.purple,
     behavior: 'displacement-controlled',
     category: 'secondary / imposed displacement',
-    route: 'Imposed displacement / secondary route',
-    concern: 'compatibility bending and displacement stress',
-    next: 'Pipe Expansion · ΔL',
-    examples: 'support settlement, anchor drift, structure movement',
-    mistake: 'Settlement is a sustained force.',
-    correction: 'Settlement is imposed movement. The pipe develops stress because it must fit the new support position.',
+    route: 'Imposed displacement / flexibility route',
+    concern: 'compatibility bending, nozzle/support load, and displacement stress',
+    examples: 'support settlement, tank/nozzle growth, anchor drift, structure movement',
+    componentRoute: 'Settlement moves a boundary; the pipe develops stress because it must remain geometrically compatible with the new support/nozzle position.',
+    b313Map: 'Route imposed support/equipment movement through 301.8 / 319-style flexibility logic plus support, nozzle, and Client movement criteria.',
+    reportBoundary: 'Classify one-time versus repeated movement and verify support/nozzle limits before treating the result as acceptable.',
   },
 };
 
@@ -110,10 +110,26 @@ function activeSliderValue(state: LoadsState) {
 
 function applicabilityText(load: LoadCategory) {
   if (load === 'weight') return 'Applicability: sustained / always present';
-  if (load === 'pressure') return 'Applicability: sustained pressure case';
+  if (load === 'pressure') return 'Applicability: pressure boundary plus sustained pressure case';
   if (load === 'event') return 'Applicability: occasional / short event';
   if (load === 'thermal') return 'Applicability: expansion range; cyclic if repeated operation';
-  return 'Applicability: imposed support movement; usually one-time unless movement repeats';
+  return 'Applicability: imposed support/equipment movement; one-time or repeated by case definition';
+}
+
+function routeFamilyText(load: LoadCategory) {
+  if (load === 'weight') return '302.3.5 sustained family + 321 support context';
+  if (load === 'pressure') return '304 pressure design family + sustained pressure effects';
+  if (load === 'event') return '302.3.6 occasional family + project dynamic criteria';
+  if (load === 'thermal') return '319 flexibility + displacement stress-range context';
+  return '301.8 / 319 movement-flexibility context + support/nozzle criteria';
+}
+
+function governingQuestion(load: LoadCategory) {
+  if (load === 'weight') return 'Can the pipe/support system continuously carry the force path?';
+  if (load === 'pressure') return 'Is pressure containment and pressure-related longitudinal response routed correctly?';
+  if (load === 'event') return 'Is the event direction, duration, restraint path, and combination basis defined?';
+  if (load === 'thermal') return 'Where does free growth go, and which restraints convert it into stress range/reaction?';
+  return 'Which boundary moved, how often, and which local equipment/support limits govern?';
 }
 
 export function eventRestraintLabel(value: LoadsState['restraint']) {
@@ -350,25 +366,26 @@ export function LoadsClassificationMap({ state }: { state: LoadsState }) {
     return <div className={active ? 'card correct' : 'card'} style={{ borderColor: active ? m.color : undefined }} key={load}>
       <strong style={{ color: m.color }}>{m.label}</strong>
       <span className="copy">{m.category}</span>
+      <span className="copy">{routeFamilyText(load)}</span>
     </div>;
   };
 
   return <div className="interp stress-readout">
     <span className="badge" style={{ color: meta.color }}>classification map</span>
-    <h3 className="result-title">Force-controlled vs displacement-controlled</h3>
+    <h3 className="result-title">Source → behavior → route</h3>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
       <div className="bucket" style={{ borderColor: 'rgba(255,158,58,.28)' }}>
         <b>FORCE-CONTROLLED</b>
-        <span className="copy">Primary / occasional route</span>
+        <span className="copy">Pressure, sustained, or occasional route</span>
         <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>{forceLoads.map(row)}</div>
       </div>
       <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}>
         <b>DISPLACEMENT-CONTROLLED</b>
-        <span className="copy">Secondary / expansion route</span>
+        <span className="copy">Movement/flexibility route</span>
         <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>{displacementLoads.map(row)}</div>
       </div>
     </div>
-    <p className="fb">Active: {meta.label} → {meta.behavior}</p>
+    <p className="fb">Active: {meta.label} → {meta.behavior}. Question: {governingQuestion(state.activeLoad)}</p>
   </div>;
 }
 
@@ -384,33 +401,33 @@ export function LoadsReadout({ state }: { state: LoadsState }) {
       <div><span>Load type</span><b>{meta.behavior}</b></div>
       <div><span>Category</span><b>{meta.category}</b></div>
       <div><span>Applicability</span><b>{applicabilityText(state.activeLoad).replace('Applicability: ', '')}</b></div>
-      <div><span>Route</span><b>{meta.route}</b></div>
+      <div><span>Route family</span><b>{routeFamilyText(state.activeLoad)}</b></div>
       <div><span>Main concern</span><b>{meta.concern}</b></div>
-      <div><span>Next tab</span><b>{meta.next}</b></div>
       <div><span>{isThermal ? 'ΔT scale' : 'Intensity'}</span><b>{isThermal ? tempLabel(state.thermalDelta) : pct(state.intensity)}</b></div>
       {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Context control</span><b>{contextControlText(state)}</b></div>}
     </div>
-    {state.activeLoad === 'event' && <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.42)' }}><b>Event restraint meaning</b><span className="copy">Left side is always the fixed anchor. Unrestrained = right side has no lateral stop, so left anchor reaction and motion are largest. Guided = right lateral guide gap/contact shares load only after contact. Arrested = right rigid stop/strut blocks lateral event-direction motion and takes dominant reaction; a snubber is only a locked impulse analogue, not a hard stop.</span></div>}
-    {state.activeLoad === 'thermal' && <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.38)' }}><b>Thermal restraint meaning</b><span className="copy">Left side is always the fixed datum. Unrestrained = right end grows freely. Guided = lateral guidance while axial thermal sliding remains visible. Arrested = left and right anchors block axial growth and create large anchor reactions.</span></div>}
-    <div className="bucket" style={{ borderColor: `${meta.color}66` }}><b>Teaching boundary</b><span className="copy">This tab classifies the load. It does not replace sustained, occasional, expansion, or displacement-stress code checks.</span></div>
+    <div className="bucket" style={{ borderColor: `${meta.color}66` }}><b>Component route</b><span className="copy">{meta.componentRoute}</span></div>
+    <div className="bucket" style={{ borderColor: `${meta.color}66` }}><b>B31.3 map</b><span className="copy">{meta.b313Map}</span></div>
+    <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.42)' }}><b>Reporting boundary</b><span className="copy">Use relevant code edition and Client criteria before evaluating/reporting any load-derived stress components. {meta.reportBoundary}</span></div>
   </div>;
 }
 
 export function LoadsMistakePanel({ state }: { state: LoadsState }) {
   const meta = activeMeta(state);
   return <div className="interp stress-readout">
-    <span className="badge" style={{ color: COLORS.red }}>common mistake</span>
-    <h3 className="result-title">Correct the load concept first</h3>
-    <div className="card wrong"><strong>Mistake</strong><span>{meta.mistake}</span></div>
-    <div className="card correct"><strong>Correction</strong><span>{meta.correction}</span></div>
-    {state.activeLoad === 'event' && <div className="card correct"><strong>Terminology fix</strong><span>Guide ≠ line stop, snubber ≠ hard stop, anchor ≠ event-only restraint. The SVG now uses a constant left anchor and changes only the right-side lateral event restraint: unrestrained, guided gap/contact, or arrested rigid stop.</span></div>}
-    {state.activeLoad === 'thermal' && <div className="card correct"><strong>Thermal fix</strong><span>A side guide should not look like an anchor. The left side is a fixed datum; guided thermal motion slides axially; arrested/anchored thermal growth becomes reaction between anchors.</span></div>}
+    <span className="badge" style={{ color: meta.color }}>concept boundary</span>
+    <h3 className="result-title">Classify before calculation</h3>
+    <div className="card correct"><strong>Concept</strong><span>{governingQuestion(state.activeLoad)}</span></div>
+    <div className="card correct"><strong>Piping</strong><span>{meta.componentRoute}</span></div>
+    <div className="card correct"><strong>B31.3 map</strong><span>{meta.b313Map}</span></div>
+    {state.activeLoad === 'event' && <div className="card correct"><strong>Restraint caution</strong><span>Guide, line stop, snubber, and anchor are different boundary functions. Model the actual event direction, gap/contact, and reaction path before judging the stress case.</span></div>}
+    {state.activeLoad === 'thermal' && <div className="card correct"><strong>Thermal caution</strong><span>A guide should not be treated as an anchor. Free axial growth, guided lateral control, and fully blocked thermal growth create different reactions.</span></div>}
     <div className="table">
       <div><span>Applicability</span><b>{applicabilityText(state.activeLoad).replace('Applicability: ', '')}</b></div>
       {(state.activeLoad === 'thermal' || state.activeLoad === 'event') && <div><span>Responsive context</span><b>{contextControlText(state)}</b></div>}
-      <div><span>Classification</span><b>{meta.category}</b></div>
+      <div><span>Route family</span><b>{routeFamilyText(state.activeLoad)}</b></div>
     </div>
-    <p className="fb">Correct sequence: source → force/displacement behavior → stress route → detailed equation.</p>
+    <p className="fb">Correct sequence: physical source → force/displacement behavior → route family → equation/check → Client reporting criteria.</p>
   </div>;
 }
 
