@@ -1,5 +1,5 @@
 import { LabState, Status } from '../model/types';
-import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
+import { allowableStressRangePercent, cycleLabel, fatigueBoundaryPercent, logCycles } from '../model/fatigueModel';
 
 function clamp(n: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
@@ -14,16 +14,25 @@ export function SNCurve({ state, status }: { state: LabState; status: Status }) 
   const stressRange = state.fatigueStressRange;
   const x = x0 + ((logN - 2) / 5) * w;
   const y = y0 - clamp(stressRange, 0, 100) / 100 * h;
-  const allow = clamp(allowableStressRangePercent(logN), 12, 92);
+  const baseAllow = clamp(allowableStressRangePercent(logN), 12, 92);
+  const allow = clamp(fatigueBoundaryPercent(logN, state.notchEnabled), 10, 92);
   const yAllow = y0 - (allow / 100) * h;
   const ratio = stressRange / Math.max(allow, 1);
-  const pointLabel = ratio > 1 ? 'above boundary' : ratio > 0.82 ? 'near boundary' : 'below boundary';
+  const pointLabel = ratio > 1 ? 'above detail boundary' : ratio > 0.82 ? 'near detail boundary' : 'below detail boundary';
+
+  const baseBoundaryPoints = Array.from({ length: 42 }, (_, i) => {
+    const t = i / 41;
+    const lx = 2 + t * 5;
+    const ax = x0 + t * w;
+    const ay = y0 - (clamp(allowableStressRangePercent(lx), 12, 96) / 100) * h;
+    return `${ax.toFixed(1)},${ay.toFixed(1)}`;
+  }).join(' ');
 
   const boundaryPoints = Array.from({ length: 42 }, (_, i) => {
     const t = i / 41;
     const lx = 2 + t * 5;
     const ax = x0 + t * w;
-    const ay = y0 - (clamp(allowableStressRangePercent(lx), 12, 96) / 100) * h;
+    const ay = y0 - (clamp(fatigueBoundaryPercent(lx, state.notchEnabled), 10, 96) / 100) * h;
     return `${ax.toFixed(1)},${ay.toFixed(1)}`;
   }).join(' ');
 
@@ -46,8 +55,10 @@ export function SNCurve({ state, status }: { state: LabState; status: Status }) 
     <text x="52" y="61" className="muted">high</text>
     <text x="53" y="231" className="muted">low</text>
 
+    {state.notchEnabled && <polyline points={baseBoundaryPoints} fill="none" stroke="rgba(82,240,223,.28)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="7 8"/>}
     <polyline points={boundaryPoints} fill="none" stroke="#52f0df" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-    <text x="242" y="98" fill="#ffd75b" fontSize="12" fontWeight="900">conceptual S-N boundary</text>
+    <text x="226" y="98" fill="#ffd75b" fontSize="12" fontWeight="900">detail-adjusted S-N boundary</text>
+    {state.notchEnabled && <text x="246" y="116" className="muted">smooth-detail curve shown faint</text>}
     <text x="65" y="254" className="muted">10²</text>
     <text x="212" y="254" className="muted">10⁴.5</text>
     <text x="397" y="254" className="muted">10⁷</text>
@@ -57,16 +68,15 @@ export function SNCurve({ state, status }: { state: LabState; status: Status }) 
     <circle cx={x} cy={yAllow} r="5" fill="#52f0df" stroke="#06101d" strokeWidth="2"/>
     <path d={`M${x - 20} ${yAllow}H${x + 20}`} stroke="rgba(82,240,223,.46)" strokeWidth="2"/>
     <path d={`M${x} ${yAllow - 20}V${yAllow + 20}`} stroke="rgba(82,240,223,.46)" strokeWidth="2"/>
-    <text x={Math.min(x + 13, 345)} y={Math.max(yAllow - 14, 30)} className="muted">boundary at this N</text>
+    <text x={Math.min(x + 13, 340)} y={Math.max(yAllow - 14, 30)} className="muted">boundary at this N</text>
 
     <circle className="point" cx={x} cy={y} r="9" fill={status.color}/>
     <circle cx={x} cy={y} r="16" fill="none" stroke={status.color} strokeOpacity=".45" strokeWidth="3"/>
-    {/* keep labels away from each other and away from the boundary label */}
     <text x={Math.min(x + 13, 372)} y={Math.max(y - 18, 30)} className="label">current</text>
     <text x={Math.min(x + 13, 336)} y={Math.min(Math.max(y + 22, yAllow + 30), 228)} className="muted">{pointLabel}</text>
 
     <text x="235" y="276" textAnchor="middle" className="muted">
-      current: Δσ {stressRange}% at N ≈ {cycleLabel(state.fatigueCyclesSlider)}; boundary ≈ {allow.toFixed(0)}%
+      current: Δσ {stressRange}% at N ≈ {cycleLabel(state.fatigueCyclesSlider)}; detail boundary ≈ {allow.toFixed(0)}%{state.notchEnabled ? ` (base ${baseAllow.toFixed(0)}%)` : ''}
     </text>
   </svg>;
 }
