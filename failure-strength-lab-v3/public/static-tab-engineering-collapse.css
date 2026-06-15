@@ -1,0 +1,51 @@
+.static-engineering-panel.is-collapsed {
+  border-color: rgba(255,215,91,.3);
+  border-radius: 18px;
+  background: rgba(255,215,91,.045);
+  padding: 0;
+  gap: 0;
+}
+
+.static-engineering-panel.is-collapsed .static-engineering-head,
+.static-engineering-panel.is-collapsed .static-engineering-grid {
+  display: none !important;
+}
+
+.static-engineering-panel .static-formula-boundary {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.static-engineering-panel.is-collapsed .static-formula-boundary {
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+}
+
+.static-engineering-toggle {
+  border: 1px solid rgba(255,215,91,.42);
+  border-radius: 999px;
+  background: rgba(6,16,29,.72);
+  color: #ffd75b;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 950;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.static-engineering-toggle:hover,
+.static-engineering-toggle:focus-visible {
+  border-color: rgba(82,240,223,.72);
+  color: #52f0df;
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .static-engineering-panel .static-formula-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .static-engineering-toggle {
+    width: 100%;
+  }
+}
