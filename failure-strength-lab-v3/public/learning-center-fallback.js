@@ -1,7 +1,7 @@
 /* Learning Center fallback renderer
    Stable owner rules:
    - This file owns the visible Learning Center for all tabs.
-   - Static, Fatigue, and Stress Pt use flat engineering key-point cards, not expandable helper cards.
+   - Static, Fatigue, Stress Pt, and Pipe Stress use flat engineering key-point cards, not expandable helper cards.
    - Other tabs use ENRICHED_LEARNING when available, with a small fallback set below.
  */
 const FALLBACK_LEARNING = {
@@ -191,6 +191,65 @@ const KEY_POINT_SETS = {
         ]
       }
     ]
+  },
+  'Pipe Stress': {
+    label: 'Tab 4 · Pipe Stress Engineering Key Points',
+    subtitle: 'Route map only: separate pipe-local components by source before pressure, sustained, occasional, or displacement/flexibility evaluation.',
+    route: 'pipe component key points',
+    version: 'pipe-stress-single-owner-v1',
+    attrs: { 'data-crisp-pipe': 'true', 'data-pipe-owner': 'fallback-single-owner' },
+    cards: [
+      {
+        cls: 'formula',
+        title: 'Boundary',
+        route: 'component ≠ acceptance',
+        points: [
+          'σθ is hoop/circumferential membrane stress; σL is longitudinal membrane or bending stress; τt is torsional shear.',
+          'M/Z, SIFs, wall thickness, corrosion allowance, and flexibility basis are separate checks, not one generic slider.',
+          'Do not collapse pipe components into a code pass/fail result before load source and category are known.'
+        ]
+      },
+      {
+        cls: 'concept',
+        title: 'Concept',
+        route: 'pipe-local axes',
+        points: [
+          'Pipe stress uses cylindrical/local axes, not generic Cartesian σx/σy labels.',
+          'Pressure mainly creates hoop stress and pressure-related longitudinal effects.',
+          'Weight, wind, seismic, terminal movement, and thermal restraint can all create longitudinal bending, but they route differently.'
+        ]
+      },
+      {
+        cls: 'piping',
+        title: 'Piping',
+        route: 'source + detail',
+        points: [
+          'Pressure containment is mostly thickness/rating/material basis; support moves do not remove hoop stress.',
+          'Sustained bending is driven by pipe, fluid, insulation, valves, supports, and span layout.',
+          'Local details such as bends, tees, branches, trunnions, shoes, and nozzles may need SIF/flexibility or local checks.'
+        ]
+      },
+      {
+        cls: 'b313',
+        title: 'B31.3 map',
+        route: 'route before report',
+        points: [
+          'Pressure containment → 304 family; sustained force/weight → 302.3.5; occasional event → 302.3.6.',
+          'Thermal/support/equipment displacement → 319 flexibility and displacement-stress-range logic.',
+          'Supports/materials/allowables/detail realism → 321, 323, Appendix A, and B31J or approved legacy Appendix D basis.'
+        ]
+      },
+      {
+        cls: 'sources',
+        title: 'Sources',
+        route: 'authority hierarchy',
+        points: [
+          'Final authority: relevant code edition, Client criteria, project specifications, and validated software basis.',
+          'Background: thin-wall cylinder, beam bending, torsion, stress-intensification, and pipe-support references.',
+          'Practical interpretation aids must be verified before project evaluation or reporting.'
+        ]
+      }
+    ]
   }
 };
 
@@ -235,6 +294,8 @@ function clearCrispAttrs(layer) {
   layer.removeAttribute('data-fatigue-owner');
   layer.removeAttribute('data-crisp-stress');
   layer.removeAttribute('data-stress-owner');
+  layer.removeAttribute('data-crisp-pipe');
+  layer.removeAttribute('data-pipe-owner');
 }
 
 function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
@@ -265,6 +326,7 @@ function renderKeyPointSet(label, layer, title, heading, subtitle, grid) {
   grid.removeAttribute('data-static-version');
   grid.removeAttribute('data-fatigue-version');
   grid.removeAttribute('data-stress-pt-version');
+  grid.removeAttribute('data-pipe-stress-version');
   grid.setAttribute(versionAttr, fingerprint);
   grid.innerHTML = keyPointSet.cards.map(card => {
     return `<section class="fallback-keycard ${escapeLearningText(card.cls)}">
@@ -315,6 +377,7 @@ function renderFallbackLearning() {
   grid.removeAttribute('data-static-version');
   grid.removeAttribute('data-fatigue-version');
   grid.removeAttribute('data-stress-pt-version');
+  grid.removeAttribute('data-pipe-stress-version');
   grid.setAttribute('data-fallback-version', fingerprint);
   grid.innerHTML = data.helpers.map((helper, index) => {
     const [hTitle, route, concept, piping, b313, sources] = helper.map(escapeLearningText);
