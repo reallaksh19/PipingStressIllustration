@@ -3,7 +3,7 @@
   var collapsedKey = 'failureStrengthLab.staticEngineeringCollapsed';
   var content = {
     title: 'Static boundary: material response ≠ pipe-code check',
-    intro: 'Use this tab to learn behavior, then route the pipe problem by load source and stress category.',
+    intro: 'Learn material behavior first; route the pipe problem later by load source and stress category.',
     concept: 'Elastic returns after unload. Yield means permanent strain. Ductile metals can plastically deform and neck; brittle failure may give little warning.',
     piping: 'F/A is direct axial stress only. Real pipe review also needs pressure containment, hoop/longitudinal stress, bending M/Z, supports, nozzles, branches, and local details.',
     b313: 'Route first: pressure → 304; sustained weight/force → 302.3.5; occasional event → 302.3.6; displacement/flexibility → 319; supports/materials → 321/323/App. A.',
@@ -139,7 +139,7 @@
     if (!titleRow) return;
 
     var paragraph = titleRow.querySelector('p');
-    var next = 'Material behavior first. Pipe-stress acceptance comes later through pressure, sustained, occasional, and displacement/flexibility routes.';
+    var next = 'Material behavior first; B31.3 acceptance later by pressure, sustained, occasional, and displacement/flexibility routes.';
     if (paragraph && paragraph.textContent !== next) paragraph.textContent = next;
 
     if (!existing) {
