@@ -114,8 +114,11 @@ function renderStaticKeyPoints(layer, title, heading, subtitle, grid) {
   const closeLabel = layer.querySelector('.close-label');
   if (closeLabel) closeLabel.textContent = '▲ Collapse panel';
 
-  const fingerprint = 'static-flat-v3|' + STATIC_KEY_POINTS.cards.length;
-  if (grid.getAttribute('data-static-version') === fingerprint && grid.querySelector('.fallback-keycard')) return;
+  const fingerprint = 'static-single-owner-v5|' + STATIC_KEY_POINTS.cards.length;
+  const alreadyStable = grid.getAttribute('data-static-version') === fingerprint &&
+    grid.querySelectorAll('.fallback-keycard').length === STATIC_KEY_POINTS.cards.length &&
+    !grid.querySelector('.fallback-helper');
+  if (alreadyStable) return;
 
   grid.className = 'fallback-helper-grid fallback-keypoint-grid';
   grid.removeAttribute('data-fallback-version');
