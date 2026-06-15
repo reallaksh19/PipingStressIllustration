@@ -43,7 +43,9 @@ body[data-fs-mode="loads"] .pipe-grid svg text {
    collisions. Route details are already in Panels 2-4 and Learning Center. */
 body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg text[y="64"],
 body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg g[transform="translate(68 322)"],
-body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg text[y="308"] {
+body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg text[y="308"],
+body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg text[data-loads-low-priority="true"],
+body[data-fs-mode="loads"] .pipe-grid .panel:nth-child(1) svg text[data-loads-long-label="true"] {
   display: none !important;
 }
 
