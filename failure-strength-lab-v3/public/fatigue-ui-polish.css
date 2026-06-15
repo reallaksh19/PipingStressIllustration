@@ -1,0 +1,138 @@
+/* Fatigue tab webpage/UI polish
+   Goal: remove label collisions, reduce bottom overlay footprint, and improve
+   readability at laptop viewport height without changing the engineering model. */
+
+/* Give the two upper visual panels enough vertical room so SVG labels do not
+   crowd panel borders. Specificity intentionally beats the inline React style
+   block used by the app presentation override. */
+body .app .analysis-grid .panel:nth-child(1),
+body .app .analysis-grid .panel:nth-child(2) {
+  min-height: 340px !important;
+}
+
+body .app .analysis-grid .panel:nth-child(1) .pb,
+body .app .analysis-grid .panel:nth-child(2) .pb {
+  min-height: 318px !important;
+  align-items: center !important;
+}
+
+body .app .analysis-grid .panel:nth-child(1) svg,
+body .app .analysis-grid .panel:nth-child(2) svg {
+  max-height: 325px !important;
+}
+
+/* Fatigue side view: the long bottom status sentence competes with the legend
+   and the panel border. The engineering readout already carries the message. */
+body .app .analysis-grid .panel:nth-child(1) svg text[y="342"] {
+  display: none !important;
+}
+
+/* The cycle-B label sits directly beside the legend/status zone on short
+   screens; hide only this low-priority label. */
+body .app .analysis-grid .panel:nth-child(1) svg text[y="330"] {
+  display: none !important;
+}
+
+/* Keep remaining side-view SVG text readable but not dominant. */
+body .app .analysis-grid .panel:nth-child(1) svg .muted {
+  font-size: 11px !important;
+}
+
+/* Fatigue local view: the four-item legend was wider than the viewBox and the
+   bottom crack-growth notes clipped at both edges. Tighten/hide duplicates. */
+body .app .analysis-grid .panel:nth-child(2) svg g[transform="translate(58 285)"] {
+  transform: translate(30px, 286px) !important;
+}
+
+body .app .analysis-grid .panel:nth-child(2) svg g[transform="translate(58 285)"] text {
+  font-size: 10px !important;
+}
+
+body .app .analysis-grid .panel:nth-child(2) svg text[y="305"],
+body .app .analysis-grid .panel:nth-child(2) svg text[y="320"] {
+  display: none !important;
+}
+
+/* Make the crack-front label less likely to collide with the right edge. */
+body .app .analysis-grid .panel:nth-child(2) svg text[x="306"] {
+  font-size: 10px !important;
+}
+
+/* S-N curve text density: improve label separation on laptop viewports. */
+body .app .analysis-grid .panel:nth-child(3) svg text {
+  paint-order: stroke fill;
+  stroke: rgba(6,16,29,.82);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+body .app .analysis-grid .panel:nth-child(3) svg text[y="276"] {
+  font-size: 10.5px !important;
+}
+
+/* Engineering readout: avoid nested scrollbars feeling cramped. */
+body .app .failure-readout {
+  scrollbar-gutter: stable;
+}
+
+body .app .failure-readout .result-title {
+  font-size: 18px !important;
+  line-height: 1.22 !important;
+}
+
+body .app .failure-readout .copy {
+  font-size: 13px !important;
+  line-height: 1.42 !important;
+}
+
+/* Learning Center collapsed state: keep it as a compact chip, not a wide bar
+   covering the S-N curve and readout. Open state remains a readable side panel. */
+body .fallback-learning-panel:not([open]) {
+  left: auto !important;
+  right: max(12px, calc((100vw - 1540px) / 2 + 12px)) !important;
+  width: min(410px, calc(100vw - 24px)) !important;
+  max-height: 48px !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+}
+
+body .fallback-learning-panel:not([open]) > summary {
+  min-height: 42px !important;
+  padding: 7px 11px !important;
+  gap: 10px !important;
+}
+
+body .fallback-learning-panel:not([open]) .fallback-learning-kicker {
+  font-size: 10px !important;
+  letter-spacing: .09em !important;
+}
+
+body .fallback-learning-panel:not([open]) .fallback-learning-title {
+  font-size: 12px !important;
+}
+
+body .fallback-learning-panel:not([open]) .fallback-learning-action {
+  padding: 6px 9px !important;
+  font-size: 10px !important;
+}
+
+body .fallback-learning-panel[open] {
+  left: auto !important;
+  right: max(14px, calc((100vw - 1540px) / 2 + 14px)) !important;
+  width: min(620px, calc(100vw - 28px)) !important;
+  max-height: calc(100vh - 84px) !important;
+}
+
+@media (max-width: 760px) {
+  body .app .analysis-grid .panel:nth-child(1),
+  body .app .analysis-grid .panel:nth-child(2) {
+    min-height: 320px !important;
+  }
+
+  body .fallback-learning-panel:not([open]),
+  body .fallback-learning-panel[open] {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
+}
