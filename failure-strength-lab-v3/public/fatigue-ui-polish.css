@@ -7,35 +7,63 @@
    block used by the app presentation override. */
 body .app .analysis-grid .panel:nth-child(1),
 body .app .analysis-grid .panel:nth-child(2) {
-  min-height: 340px !important;
+  min-height: 348px !important;
 }
 
 body .app .analysis-grid .panel:nth-child(1) .pb,
 body .app .analysis-grid .panel:nth-child(2) .pb {
-  min-height: 318px !important;
+  min-height: 326px !important;
   align-items: center !important;
 }
 
 body .app .analysis-grid .panel:nth-child(1) svg,
 body .app .analysis-grid .panel:nth-child(2) svg {
-  max-height: 325px !important;
+  max-height: 330px !important;
 }
 
-/* Fatigue side view: the long bottom status sentence competes with the legend
-   and the panel border. The engineering readout already carries the message. */
-body .app .analysis-grid .panel:nth-child(1) svg text[y="342"] {
-  display: none !important;
-}
-
-/* The cycle-B label sits directly beside the legend/status zone on short
-   screens; hide only this low-priority label. */
+/* Fatigue side view: remove low-priority internal prose labels. They were
+   colliding with the pipe/weld graphics and were barely readable on laptops.
+   The same content is available in the panel header, readout, and key points. */
+body .app .analysis-grid .panel:nth-child(1) svg text[y="50"],
+body .app .analysis-grid .panel:nth-child(1) svg text[y="82"],
+body .app .analysis-grid .panel:nth-child(1) svg text[y="156"],
+body .app .analysis-grid .panel:nth-child(1) svg text[x="438"],
+body .app .analysis-grid .panel:nth-child(1) svg text[y="342"],
 body .app .analysis-grid .panel:nth-child(1) svg text[y="330"] {
   display: none !important;
 }
 
-/* Keep remaining side-view SVG text readable but not dominant. */
-body .app .analysis-grid .panel:nth-child(1) svg .muted {
+/* Keep the few remaining side-view labels readable over pipe fills/gridlines. */
+body .app .analysis-grid .panel:nth-child(1) svg .muted,
+body .app .analysis-grid .panel:nth-child(1) svg .caseLabel {
+  font-size: 10.5px !important;
+  paint-order: stroke fill;
+  stroke: rgba(6,16,29,.92);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+body .app .analysis-grid .panel:nth-child(1) svg g[transform="translate(78 306)"] text {
+  font-size: 10px !important;
+  font-weight: 850 !important;
+}
+
+/* Fatigue local view: remove the top prose line and duplicate edge-prone crack
+   label. Keep surface/root labels but add stroke for contrast. */
+body .app .analysis-grid .panel:nth-child(2) svg text[y="38"],
+body .app .analysis-grid .panel:nth-child(2) svg text[x="306"] {
+  display: none !important;
+}
+
+body .app .analysis-grid .panel:nth-child(2) svg text[y="76"],
+body .app .analysis-grid .panel:nth-child(2) svg text[y="80"],
+body .app .analysis-grid .panel:nth-child(2) svg text[y="260"] {
   font-size: 11px !important;
+  font-weight: 850 !important;
+  paint-order: stroke fill;
+  stroke: rgba(6,16,29,.92);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 /* Fatigue local view: the four-item legend was wider than the viewBox and the
@@ -46,6 +74,11 @@ body .app .analysis-grid .panel:nth-child(2) svg g[transform="translate(58 285)"
 
 body .app .analysis-grid .panel:nth-child(2) svg g[transform="translate(58 285)"] text {
   font-size: 10px !important;
+  font-weight: 850 !important;
+  paint-order: stroke fill;
+  stroke: rgba(6,16,29,.92);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 body .app .analysis-grid .panel:nth-child(2) svg text[y="305"],
@@ -53,17 +86,18 @@ body .app .analysis-grid .panel:nth-child(2) svg text[y="320"] {
   display: none !important;
 }
 
-/* Make the crack-front label less likely to collide with the right edge. */
-body .app .analysis-grid .panel:nth-child(2) svg text[x="306"] {
-  font-size: 10px !important;
-}
-
 /* S-N curve text density: improve label separation on laptop viewports. */
 body .app .analysis-grid .panel:nth-child(3) svg text {
   paint-order: stroke fill;
-  stroke: rgba(6,16,29,.82);
+  stroke: rgba(6,16,29,.86);
   stroke-width: 3px;
   stroke-linejoin: round;
+}
+
+body .app .analysis-grid .panel:nth-child(3) svg .sn-boundary-note text,
+body .app .analysis-grid .panel:nth-child(3) svg .sn-current-callout text {
+  stroke: transparent !important;
+  paint-order: normal !important;
 }
 
 body .app .analysis-grid .panel:nth-child(3) svg text[y="276"] {
