@@ -57,11 +57,16 @@ function combinedMetrics(state: CombinedStressState): CombinedMetrics {
 }
 
 function vonMisesPoints(cx: number, cy: number, scale: number, factor = 1) {
-  return Array.from({ length: 121 }, (_, i) => {
-    const t = (i / 120) * 2 * Math.PI;
-    // σH² − σH·σL + σL² = 1, plotted on the same σH/σL axes as Tresca.
-    const px = (Math.cos(t) + 0.5 * Math.sin(t)) * factor;
-    const py = ((Math.sqrt(3) / 2) * Math.sin(t)) * factor;
+  return Array.from({ length: 145 }, (_, i) => {
+    const t = (i / 144) * 2 * Math.PI;
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    // Exact polar form for σH² − σH·σL + σL² = factor² on the same σH/σL axes.
+    // This keeps the VM ellipse axes aligned with the Tresca hexagon diagonal, avoiding visual tilt drift.
+    const denom = Math.sqrt(Math.max(1e-9, c * c - c * s + s * s));
+    const r = factor / denom;
+    const px = r * c;
+    const py = r * s;
     return `${(cx + px * scale).toFixed(1)},${(cy - py * scale).toFixed(1)}`;
   }).join(' ');
 }
