@@ -33,6 +33,84 @@ function pressureFlexibilityCue(state: BourdonState) {
   return clamp(pressure * bendGeometryFactor(state.bendAngle), 0, 1);
 }
 
+function reactionFactor(condition: BourdonState['endCondition']) {
+  if (condition === 'free') return 0;
+  if (condition === 'guided') return 0.45;
+  return 0.92;
+}
+
+function bourdonMovementCue(state: BourdonState) {
+  const pressure = clamp(state.pressure / 100);
+  const derivedOpening = pressureFlexibilityCue(state);
+  return Math.min(100, pressure * (55 + derivedOpening * 45));
+}
+
+function bourdonReactionCue(state: BourdonState) {
+  return bourdonMovementCue(state) * reactionFactor(state.endCondition);
+}
+
+function bourdonSeverity(state: BourdonState) {
+  const reaction = bourdonReactionCue(state);
+  if (reaction > 72) {
+    return {
+      color: COLORS.red,
+      badge: 'reaction review',
+      summary: 'Restrained pressure-straightening cue: review anchor, guide, stop, and nozzle reactions.'
+    };
+  }
+  if (reaction > 44) {
+    return {
+      color: COLORS.orange,
+      badge: 'restraint-sensitive',
+      summary: 'Movement is being converted into support or equipment reaction; report with the operating case.'
+    };
+  }
+  if (state.endCondition === 'free') {
+    return {
+      color: COLORS.green,
+      badge: 'movement cue',
+      summary: 'Free end mainly shows displacement; pressure containment and combined stress remain separate checks.'
+    };
+  }
+  return {
+    color: COLORS.yellow,
+    badge: 'low reaction cue',
+    summary: 'Pressure-driven opening exists, but current restraint cue is modest in this teaching scale.'
+  };
+}
+
+function bourdonRouteRows(state: BourdonState) {
+  const connected = state.endCondition !== 'free';
+  return [
+    {
+      label: 'Driver',
+      value: 'Internal pressure creates hoop/longitudinal stress and a bend-opening tendency in curved pipe.'
+    },
+    {
+      label: 'Not a load slider',
+      value: 'Opening is derived from pressure + bend curvature; do not add it again as an external force.'
+    },
+    {
+      label: 'If free',
+      value: 'Report as movement cue plus pressure stress route; reaction is near zero in this concept model.'
+    },
+    {
+      label: connected ? 'If restrained' : 'If connected',
+      value: connected
+        ? 'Guides, stops, anchors, and equipment nozzles can convert the cue into reaction load.'
+        : 'If later guided/anchored, the same movement tendency becomes a reaction/nozzle-load problem.'
+    },
+    {
+      label: 'B31.3 map',
+      value: 'Pressure containment → 304; stress categories/load cases → 302.3.5/302.3.6/319 as applicable; supports → 321.'
+    },
+    {
+      label: 'Reporting boundary',
+      value: 'Use relevant code edition and Client criteria before evaluating/reporting pressure-straightening movements or reactions.'
+    }
+  ];
+}
+
 function pointText(p: { x: number; y: number }) {
   return `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
 }
@@ -93,7 +171,7 @@ export function BourdonEffectSvg({ state }: { state: BourdonState }) {
   const geometry = buildBendGeometry(state);
   const move = Math.hypot(geometry.curEnd.x - geometry.oldEnd.x, geometry.curEnd.y - geometry.oldEnd.y);
   const movementPct = Math.min(100, move * 1.9);
-  const reactionPct = state.endCondition === 'free' ? 0 : state.endCondition === 'guided' ? movementPct * 0.45 : movementPct * 0.92;
+  const reactionPct = movementPct * reactionFactor(state.endCondition);
   const reactionColor = reactionPct > 72 ? COLORS.red : reactionPct > 44 ? COLORS.orange : COLORS.yellow;
   const pressureColor = state.pressure > 72 ? COLORS.red : state.pressure > 44 ? COLORS.orange : COLORS.blue;
   const pipeWidth = 40;
@@ -143,7 +221,7 @@ export function BourdonEffectSvg({ state }: { state: BourdonState }) {
 
     <g transform={`translate(${geometry.labelPos.x - 100} ${geometry.labelPos.y - 18})`}>
       <rect x="0" y="0" width="200" height="28" rx="14" fill="rgba(82,240,223,.10)" stroke="rgba(82,240,223,.28)" />
-      <text x="100" y="19" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">smooth thick pipe · not chain links</text>
+      <text x="100" y="19" textAnchor="middle" fill={COLORS.cyan} fontSize="11" fontWeight="900">smooth pipe · pressure-derived cue</text>
     </g>
   </svg>;
 }
@@ -154,16 +232,16 @@ export function BourdonMechanismPanel({ state }: { state: BourdonState }) {
   const straightening = Math.round(pressure * (42 + derivedOpening * 58));
   return <div className="interp stress-readout">
     <span className="badge" style={{ color: COLORS.cyan }}>mechanism</span>
-    <h3 className="result-title">Why a bend opens under pressure</h3>
-    <p className="copy">A Bourdon tube pressure gauge uses a curved flattened tube that tends to straighten or uncoil when pressurized. For piping, do not treat elbow flexibility as a user load slider: the visible opening response should be driven by pressure, while bend angle only scales how visible the movement is.</p>
+    <h3 className="result-title">Pressure-derived bend opening</h3>
+    <p className="copy">A Bourdon pressure gauge uses a curved tube that tends to straighten when pressurized. In piping, use the same idea only as a pressure-derived bend-opening cue: pressure is the load source, bend curvature controls visibility, and restraint decides whether movement becomes reaction.</p>
     <div className="table">
-      <div><span>Pressure input</span><b>{pct(state.pressure)}</b></div>
-      <div><span>Bend geometry</span><b>{bendLabel(state.bendAngle)}</b></div>
-      <div><span>Derived opening</span><b>{pct(derivedOpening * 100)} · pressure and bend curvature</b></div>
+      <div><span>Pressure input</span><b>{pct(state.pressure)} · single driver</b></div>
+      <div><span>Bend geometry</span><b>{bendLabel(state.bendAngle)} · curvature scale factor {bendGeometryFactor(state.bendAngle).toFixed(2)}</b></div>
+      <div><span>Derived opening</span><b>{pct(derivedOpening * 100)} · pressure × bend curvature</b></div>
       <div><span>Straightening cue</span><b>{straightening}% qualitative bend-opening tendency</b></div>
     </div>
     <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}>
-      <b>Important distinction</b><span className="copy">Pressure creates hoop/axial stress in the pipe wall. In a curved component it can also create a small displacement-like bend-opening cue that matters if the end is guided, stopped, anchored, or connected to equipment.</span>
+      <b>Engineering boundary</b><span className="copy">Do not report this as a separate force. Report pressure stress, operating movement, support/nozzle reactions, and combined stress using the relevant model, code edition, software setting, and Client criteria.</span>
     </div>
   </div>;
 }
@@ -173,30 +251,32 @@ export function BourdonPipingRelevance({ state }: { state: BourdonState }) {
   return <div className="interp stress-readout">
     <span className="badge" style={{ color: COLORS.orange }}>piping relevance</span>
     <h3 className="result-title">Where pipe stress engineers care</h3>
-    <div className="card correct"><strong>1 · Elbows and loops</strong><span className="copy">A pressurized elbow or return bend can try to open. The movement is normally small, but it can accumulate in flexible loops or high-pressure service.</span></div>
-    <div className="card correct"><strong>2 · Nozzle loads</strong><span className="copy">If the bend is connected to equipment, straightening displacement can become reaction load at a nozzle, anchor, guide, or stop.</span></div>
-    <div className="card correct"><strong>3 · Model discipline</strong><span className="copy">Separate pressure stress, bend-opening displacement tendency, thermal expansion, and external force loads. Do not use a free flexibility slider as a load.</span></div>
+    <div className="card correct"><strong>1 · High-pressure bends and loops</strong><span className="copy">A pressurized elbow, loop, or return bend can try to open. The movement is usually small, but it matters more in high-pressure service, large flexible loops, and long connected systems.</span></div>
+    <div className="card correct"><strong>2 · Nozzle/support reactions</strong><span className="copy">If the bend is guided, stopped, anchored, or connected to equipment, the pressure-straightening cue can appear as guide load, anchor load, or equipment nozzle load.</span></div>
+    <div className="card correct"><strong>3 · Model discipline</strong><span className="copy">Separate pressure containment, pressure axial effects, bend-opening movement, thermal expansion, and external forces. Do not double-count Bourdon movement as a manual external load.</span></div>
     <p className="fb">Current condition: {connected ? 'movement is restrained/connected, so reaction load is highlighted.' : 'free end moves, so displacement is visible but reaction is low.'}</p>
   </div>;
 }
 
 export function BourdonReadout({ state }: { state: BourdonState }) {
-  const pressure = clamp(state.pressure / 100);
   const derivedOpening = pressureFlexibilityCue(state);
-  const movement = Math.min(100, pressure * (55 + derivedOpening * 45));
-  const reaction = state.endCondition === 'free' ? 0 : state.endCondition === 'guided' ? movement * 0.45 : movement * 0.92;
-  const color = reaction > 72 ? COLORS.red : reaction > 44 ? COLORS.orange : COLORS.green;
+  const movement = bourdonMovementCue(state);
+  const reaction = bourdonReactionCue(state);
+  const status = bourdonSeverity(state);
   return <div className="interp stress-readout">
-    <span className="badge" style={{ color }}>readout</span>
-    <h3 className="result-title">Bourdon effect check route</h3>
-    <p className="copy">The only load slider here is pressure. The opening/flexibility cue is derived from pressure and bend angle, then end condition decides whether the result is seen as movement or reaction.</p>
+    <span className="badge" style={{ color: status.color }}>{status.badge}</span>
+    <h3 className="result-title">Bourdon effect route boundary</h3>
+    <p className="copy">{status.summary}</p>
     <div className="table">
       <div><span>Pressure</span><b>{pct(state.pressure)} · drives pressure stress and bend opening</b></div>
       <div><span>Derived opening</span><b>{pct(derivedOpening * 100)} · not a separate user input</b></div>
-      <div><span>Movement</span><b>{pct(movement)} · qualitative end displacement</b></div>
+      <div><span>Movement</span><b>{pct(movement)} · qualitative end displacement cue</b></div>
       <div><span>End condition</span><b>{conditionLabel(state.endCondition)}</b></div>
-      <div><span>Reaction risk</span><b style={{ color }}>{pct(reaction)} · {reaction > 70 ? 'review nozzle/support loads' : reaction > 35 ? 'check guide/anchor reactions' : 'mainly movement cue'}</b></div>
-      <div><span>Next link</span><b>Combined stress for pressure stress; expansion/flexibility model for displacement</b></div>
+      <div><span>Reaction risk</span><b style={{ color: status.color }}>{pct(reaction)} · {reaction > 70 ? 'review nozzle/support loads' : reaction > 35 ? 'check guide/anchor reactions' : 'mainly movement cue'}</b></div>
+      <div><span>Route link</span><b>Pressure stress → Combined tab; movement/reaction → flexibility/support/nozzle route.</b></div>
+    </div>
+    <div className="table route-table">
+      {bourdonRouteRows(state).map(row => <div key={row.label}><span>{row.label}</span><b>{row.value}</b></div>)}
     </div>
   </div>;
 }
