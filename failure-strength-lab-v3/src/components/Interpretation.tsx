@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { LabState, Status } from '../model/types';
-import { allowableStressRangePercent, cycleLabel, logCycles } from '../model/fatigueModel';
+import { cycleLabel, fatigueBoundaryPercent, fatigueDemandRatio, logCycles } from '../model/fatigueModel';
 import { LearningCenterPanel } from './LearningCenterPanel';
 
 type Item = { label: string; value: string };
@@ -137,25 +137,25 @@ function staticReadout(state: LabState): Readout {
 
 function fatigueReadout(state: LabState): Readout {
   const logN = logCycles(state.fatigueCyclesSlider);
-  const boundary = allowableStressRangePercent(logN);
-  const ratio = state.fatigueStressRange / Math.max(boundary, 1);
-  const verdict = ratio > 1 ? 'Above boundary' : ratio > 0.82 ? 'Near boundary' : 'Below boundary';
+  const boundary = fatigueBoundaryPercent(logN, state.notchEnabled);
+  const ratio = fatigueDemandRatio(state);
+  const verdict = ratio > 1 ? 'Above detail boundary' : ratio > 0.82 ? 'Near detail boundary' : 'Below detail boundary';
 
   return {
-    headline: ratio > 1 ? 'Metal fatigue crack-growth risk is high' : ratio > 0.82 ? 'Metal fatigue hotspot is becoming important' : 'Metal fatigue demand is currently low in this teaching view',
-    principle: 'For ductile metallic piping, fatigue is controlled by repeated stress range Δσ, cycles N, and local stress raisers such as weld toes or notches. Brittle material is text-only here.',
+    headline: ratio > 1 ? 'Fatigue demand exceeds the detail-adjusted teaching boundary' : ratio > 0.82 ? 'Fatigue hotspot is close to the teaching boundary' : 'Fatigue demand is below the teaching boundary',
+    principle: 'Metal fatigue is driven by repeated stress range Δσ, cycle count N, and local detail quality. A weld toe, branch, support attachment, or notch can govern even when global pipe stress looks modest.',
     items: [
       { label: 'Demand', value: `Repeated Δσ = ${state.fatigueStressRange}%` },
       { label: 'Cycles', value: `${cycleLabel(state.fatigueCyclesSlider)} cycles` },
-      { label: 'S-N position', value: `${verdict} · limit ≈ ${boundary.toFixed(0)}%` },
-      { label: 'Hotspot', value: state.notchEnabled ? 'Weld/notch active' : 'Smooth detail selected' },
+      { label: 'Boundary', value: `${verdict} · ${boundary.toFixed(0)}%` },
+      { label: 'Detail', value: state.notchEnabled ? 'Weld/notch factor active' : 'Smooth detail teaching view' },
     ],
     steps: [
-      { title: 'Cyclic range', text: 'The pipe sees repeated stress range, not a single static load.' },
-      { title: 'Local initiation', text: 'The weld toe or notch concentrates stress and can initiate a microcrack.' },
-      { title: 'Crack propagation', text: 'The cross-section shows cycle-by-cycle growth, beach marks, and final fracture cue.' },
+      { title: 'Classify the cycle source', text: 'Thermal startup/shutdown, pressure pulsation, vibration, slugging, relief loads, and support movement are different fatigue stories.' },
+      { title: 'Find the hotspot', text: 'Weld toes, small-bore branches, socket welds, shoes, clamps, trunnions, and corrosion pits amplify local stress range.' },
+      { title: 'Escalate if cracked or vibrating', text: 'Once a real crack exists, move from S-N teaching logic to inspection, ΔK/fracture mechanics, or owner/vendor fatigue procedure.' },
     ],
-    watch: 'Use side view to locate the cyclic hotspot; use cross-section to understand crack initiation and growth through wall thickness.',
-    caution: 'The S-N curve is conceptual. Once a real crack exists, assessment normally moves toward fracture mechanics, inspection data, ΔK, and critical crack size.',
+    watch: 'Side view locates the cyclic hotspot; local view shows initiation, stable crack growth, beach marks, and final fracture cue.',
+    caution: 'This S-N plot is a screening visual. B31.3 routing still requires licensed-edition checks, owner severe-cyclic criteria, vibration acceptance, and project fatigue rules.',
   };
 }
