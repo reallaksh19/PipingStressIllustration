@@ -1,6 +1,25 @@
 /* Pipe Stress tab UI polish
    Mandatory check: no overlapping SVG labels and no barely visible text. */
 
+/* Pipe component view has four short buttons: Pressure / Bending / Torsion / Combined.
+   Keep them on one row in the narrow left control rail without crowding. */
+body[data-fs-mode="pipe"] aside .seg {
+  gap: 6px !important;
+}
+
+body[data-fs-mode="pipe"] aside .seg button {
+  min-width: 0 !important;
+  padding: 8px 5px !important;
+  font-size: 10.6px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.01em !important;
+  white-space: nowrap !important;
+}
+
+body[data-fs-mode="pipe"] aside .seg button.active {
+  box-shadow: 0 0 0 2px rgba(82,240,223,.07), inset 0 0 18px rgba(82,240,223,.06) !important;
+}
+
 body[data-fs-mode="pipe"] .pipe-grid {
   grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr) !important;
   grid-auto-rows: minmax(330px, auto) !important;
