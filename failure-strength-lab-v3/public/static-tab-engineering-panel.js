@@ -1,13 +1,13 @@
 (function () {
   var layerKey = 'failureStrengthLab.staticTeachingLayer';
   var content = {
-    title: 'Static tab boundary: material behavior to piping stress route to B31.3 map',
-    intro: 'This tab teaches material response. It is not a complete pipe-code acceptance check.',
-    concept: 'Static loading is slow or steady enough that inertia and cyclic damage are not the controlling teaching effect. Elastic response returns after unloading; yield introduces permanent strain; ductile material may neck before rupture; brittle material may fracture with little warning.',
-    piping: 'Real piping stress is not only F/A. Static sources include weight, contents, pressure, support reactions, steady nozzle loads, and held displacements. Critical locations are often bends, tees, branches, reducers, welded attachments, restraints, supports, and nozzles.',
-    b313: 'B31.3 routes load effects by category: pressure design, sustained stress, occasional stress, and displacement stress range or flexibility. Do not wait for visible yielding or rupture. Verify paragraph wording, equations, allowables, and load combinations against the licensed project edition.',
-    sources: 'Licensed ASME B31.3 project edition; strength-of-materials stress-strain references; practical pipe-stress guidance such as Little P.Eng, WhatIsPiping, and software/vendor notes for interpretation only.',
-    formula: 'F/A is direct axial stress only. Pipe bending needs M/Z logic, pressure containment needs pressure-design wall-thickness logic, and thermal movement needs displacement/flexibility routing.'
+    title: 'Static boundary: material response ≠ pipe-code check',
+    intro: 'Use this tab to learn behavior, then route the pipe problem by load source and stress category.',
+    concept: 'Elastic returns after unload. Yield means permanent strain. Ductile metals can plastically deform and neck; brittle failure may give little warning.',
+    piping: 'F/A is direct axial stress only. Real pipe review also needs pressure containment, hoop/longitudinal stress, bending M/Z, supports, nozzles, branches, and local details.',
+    b313: 'Route first: pressure → 304; sustained weight/force → 302.3.5; occasional event → 302.3.6; displacement/flexibility → 319; supports/materials → 321/323/App. A.',
+    sources: 'Licensed ASME B31.3 and project specs govern. Strength-of-materials and practical pipe-stress notes are teaching references only.',
+    formula: 'Direct axial only. Do not read the static picture as B31.3 acceptance or as a complete stress report.'
   };
 
   function activeLabel() {
@@ -54,7 +54,7 @@
     var head = document.createElement('div');
     head.className = 'static-engineering-head';
     var headText = document.createElement('div');
-    addText(headText, 'div', 'static-engineering-kicker', 'Engineering hierarchy');
+    addText(headText, 'div', 'static-engineering-kicker', 'Engineering boundary');
     addText(headText, 'div', 'static-engineering-title', content.title);
     addText(headText, 'div', 'static-engineering-copy', content.intro);
     head.appendChild(headText);
@@ -76,7 +76,7 @@
 
     var formula = document.createElement('div');
     formula.className = 'static-formula-boundary';
-    addText(formula, 'code', '', 'sigma = F/A');
+    addText(formula, 'code', '', 'σ = F/A');
     addText(formula, 'span', '', content.formula);
     panel.appendChild(formula);
 
@@ -105,7 +105,7 @@
     if (!titleRow) return;
 
     var paragraph = titleRow.querySelector('p');
-    var next = 'Material response is shown first; pipe-wall interpretation and B31.3 category routing are made explicit below so F/A is not mistaken for a full pipe-stress check.';
+    var next = 'Material behavior first. Pipe-stress acceptance comes later through pressure, sustained, occasional, and displacement/flexibility routes.';
     if (paragraph && paragraph.textContent !== next) paragraph.textContent = next;
 
     if (!existing) titleRow.insertAdjacentElement('afterend', buildPanel());
