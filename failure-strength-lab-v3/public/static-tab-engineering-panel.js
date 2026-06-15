@@ -21,11 +21,12 @@
 
   function applyLayer(layer) {
     try { localStorage.setItem(layerKey, layer); } catch (e) {}
-    document.body.setAttribute('data-static-layer', layer);
+    if (document.body.getAttribute('data-static-layer') !== layer) document.body.setAttribute('data-static-layer', layer);
     Array.prototype.forEach.call(document.querySelectorAll('.static-mode-switch button'), function (button) {
       var selected = button.getAttribute('data-layer') === layer;
       button.classList.toggle('active', selected);
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      var pressed = selected ? 'true' : 'false';
+      if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
     });
   }
 
@@ -91,7 +92,8 @@
 
   function renderStaticPanel() {
     var label = activeLabel();
-    document.body.setAttribute('data-fs-mode', label === 'Static' ? 'static' : label.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+    var mode = label === 'Static' ? 'static' : label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (document.body.getAttribute('data-fs-mode') !== mode) document.body.setAttribute('data-fs-mode', mode);
 
     var existing = document.querySelector('.static-engineering-panel');
     if (label !== 'Static') {
@@ -119,8 +121,12 @@
       renderStaticPanel();
       if (document.querySelector('main .title-row') || attempts > 40) clearInterval(timer);
     }, 100);
+    setInterval(renderStaticPanel, 1200);
     document.addEventListener('click', function (event) {
       if (event.target.closest('.lesson-tabs .tab')) renderLater();
+    });
+    document.addEventListener('input', function (event) {
+      if (event.target.closest('aside')) renderLater();
     });
   });
 })();
