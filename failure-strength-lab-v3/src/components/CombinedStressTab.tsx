@@ -2,11 +2,11 @@ import { COLORS } from '../model/types';
 import { SvgDefs } from './SvgDefs';
 
 export type CombinedStressState = {
-  sH: number;   // 0-100 hoop stress % of SMYS
-  sL: number;   // 0-100 longitudinal stress % of SMYS, sign handled separately
+  sH: number;   // 0-100 hoop stress % of reference stress S
+  sL: number;   // 0-100 longitudinal stress % of reference stress S, sign handled separately
   sLSign: 'tension' | 'compression';
   theory: 'vonmises' | 'tresca';
-  allowableFactor: number; // 0.72 | 0.90 style teaching limit
+  allowableFactor: number; // teaching utilization limit, not a project allowable
 };
 
 type CombinedMetrics = {
@@ -19,6 +19,11 @@ type CombinedMetrics = {
   activePass: boolean;
   vmPass: boolean;
   trPass: boolean;
+};
+
+type CombinedRouteRow = {
+  label: string;
+  value: string;
 };
 
 function clamp(n: number, lo = 0, hi = 1) {
@@ -74,6 +79,48 @@ function ratioColor(value: number, allowable: number) {
   return value > allowable ? COLORS.red : value > allowable * 0.85 ? COLORS.orange : COLORS.green;
 }
 
+function signInteraction(state: CombinedStressState, m: CombinedMetrics) {
+  if (state.sLSign === 'compression' && state.sL > 0) {
+    return 'Hoop tension with longitudinal compression increases the stress difference; both VM and Tresca can rise quickly.';
+  }
+  if (state.sL > state.sH * 1.25) {
+    return 'Longitudinal stress dominates this teaching point; identify whether it comes from sustained bending, occasional load, thermal displacement, or terminal movement.';
+  }
+  if (state.sH > state.sL * 1.35) {
+    return 'Hoop stress dominates this teaching point; keep pressure containment and pressure-related longitudinal effects routed separately.';
+  }
+  return `Balanced hoop/longitudinal input. VM=${pct(m.vonMisesVal)}%S and Tresca=${pct(m.trescaVal)}%S are theory-screen values on the same point.`;
+}
+
+function combinedRouteRows(state: CombinedStressState, m: CombinedMetrics): CombinedRouteRow[] {
+  return [
+    {
+      label: 'Theory screen',
+      value: `${m.activeName} is a yield-theory comparison on σH/σL. It is not a universal B31.3 pass/fail check.`
+    },
+    {
+      label: 'Stress source',
+      value: 'σH normally routes to pressure containment; σL may include pressure axial, weight bending, occasional bending, thermal displacement, or terminal movement.'
+    },
+    {
+      label: 'Sign effect',
+      value: signInteraction(state, m)
+    },
+    {
+      label: 'B31.3 map',
+      value: 'Pressure containment → 304; sustained force/weight → 302.3.5; occasional event → 302.3.6; displacement/flexibility → 319.'
+    },
+    {
+      label: 'Detail basis',
+      value: 'Bends, tees, branches, SIFs, flexibility factors, local stresses, and support/nozzle loads must come from the approved model basis.'
+    },
+    {
+      label: 'Reporting boundary',
+      value: 'Use relevant code edition and Client criteria before evaluating/reporting combined or equivalent stress utilization.'
+    }
+  ];
+}
+
 // ── Yield surface SVG ────────────────────────────────────────────────────────
 
 export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }) {
@@ -89,13 +136,13 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
   const dotColor = ratioColor(m.activeVal, AF);
 
   return (
-    <svg viewBox="0 0 460 340" role="img" aria-label="Yield surface comparison — Von Mises ellipse and Tresca hexagon on common scale">
+    <svg viewBox="0 0 460 340" role="img" aria-label="Yield theory comparison — Von Mises ellipse and Tresca hexagon on common scale">
       <SvgDefs />
       <rect x="14" y="18" width="432" height="296" rx="28" fill="rgba(255,255,255,.023)" stroke="rgba(190,220,255,.10)" />
       <path d="M55 68H405 M55 164H405 M55 260H405 M134 48V282 M230 48V282 M326 48V282" stroke="rgba(216,237,255,.07)" />
 
       <text x="230" y="36" textAnchor="middle" className="label" fill={COLORS.cyan}>
-        Common-scale yield check in σH–σL space
+        Yield-theory screen in σH–σL space
       </text>
 
       {/* axes: both checks use these same S-based axes */}
@@ -124,7 +171,7 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
         strokeWidth={state.theory === 'vonmises' ? 3 : 1.25}
         strokeDasharray={state.theory === 'vonmises' ? '' : '7 6'} opacity=".82" />
 
-      {/* Allowable envelopes: same AF factor, same axes, different geometry. */}
+      {/* Teaching envelopes: same factor, same axes, different geometry. */}
       <polygon points={trescaPoints(cx, cy, scale, AF)}
         fill="none" stroke={state.theory === 'tresca' ? COLORS.yellow : inactiveColor}
         strokeWidth={state.theory === 'tresca' ? 2.2 : 1.1}
@@ -134,7 +181,7 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
         strokeWidth={state.theory === 'vonmises' ? 2.2 : 1.1}
         strokeDasharray="5 5" opacity={state.theory === 'vonmises' ? .72 : .32} />
       <text x={300} y={80} fill={activeColor} fontSize="10" fontWeight="900" opacity=".88">
-        active allowable = {(AF * 100).toFixed(0)}%S, no graph rescale
+        teaching limit = {(AF * 100).toFixed(0)}%S, no graph rescale
       </text>
 
       {/* crosshairs and operating point */}
@@ -143,7 +190,7 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
       <circle cx={dotX} cy={dotY} r="9" fill={dotColor} stroke="#06101d" strokeWidth="2.5" />
       <circle cx={dotX} cy={dotY} r="18" fill="none" stroke={dotColor} strokeOpacity=".42" strokeWidth="3" />
       <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY - 14, 38)} fill={dotColor} fontSize="12" fontWeight="900">
-        operating point
+        input point
       </text>
       <text x={Math.min(dotX + 14, 390)} y={Math.max(dotY + 4, 54)} className="muted">
         VM {pct(m.vonMisesVal)}%S · Tresca {pct(m.trescaVal)}%S
@@ -159,7 +206,7 @@ export function CombinedStressYieldSvg({ state }: { state: CombinedStressState }
         Tresca = {pct(m.trescaVal)}%S {m.trPass ? '✓' : '✗'}
       </text>
       <text x="230" y="320" textAnchor="middle" className="caseLabel" fill={m.activePass ? COLORS.green : COLORS.red}>
-        {m.activeName} active check: {m.activePass ? 'PASS' : 'FAIL'} — SC = {pct(m.activeVal)}%S {m.activePass ? '≤' : '>'} {(AF * 100).toFixed(0)}%S
+        {m.activeName} theory screen: {m.activePass ? 'inside' : 'over'} — SC = {pct(m.activeVal)}%S {m.activePass ? '≤' : '>'} {(AF * 100).toFixed(0)}%S
       </text>
     </svg>
   );
@@ -236,8 +283,8 @@ export function CombinedStressPipeSection({ state }: { state: CombinedStressStat
       </text>
       <text x="230" y="318" textAnchor="middle" className="caseLabel" fill={scColor}>
         {m.activePass
-          ? `${m.activeName} check PASS: ${pct(m.activeVal)}%S ≤ ${(state.allowableFactor * 100).toFixed(0)}%S`
-          : `${m.activeName} check FAIL: ${pct(m.activeVal)}%S > ${(state.allowableFactor * 100).toFixed(0)}%S`}
+          ? `${m.activeName} screen inside teaching limit: ${pct(m.activeVal)}%S ≤ ${(state.allowableFactor * 100).toFixed(0)}%S`
+          : `${m.activeName} screen exceeds teaching limit: ${pct(m.activeVal)}%S > ${(state.allowableFactor * 100).toFixed(0)}%S`}
       </text>
     </svg>
   );
@@ -253,36 +300,35 @@ export function CombinedStressReadout({ state }: { state: CombinedStressState })
   return (
     <div className="interp stress-readout">
       <span className="badge" style={{ color }}>
-        {m.activeName} criterion · fixed σH/σL scale
+        {m.activeName} theory · fixed σH/σL scale
       </span>
       <h3 className="result-title">
-        {m.activePass ? 'Combined stress check: PASS' : 'Combined stress check: FAIL'}
+        {m.activePass ? 'Equivalent-stress screen: inside teaching limit' : 'Equivalent-stress screen: over teaching limit'}
       </h3>
       <p className="copy">
-        Von Mises and Tresca are now compared from the same hoop/longitudinal input point and the same S-based graph scale. The toggle changes the active acceptance geometry, not the axis scale or the stress inputs. Use this as a theory comparison; route-specific B31.3 acceptance still needs the proper paragraph family and project data.
+        Von Mises and Tresca compare the same hoop/longitudinal input point on one S-based graph. This tab is a yield-theory screen for combined stress interaction; it is not a universal B31.3 acceptance calculation. First classify the source of each stress component, then report by the applicable code/project route.
       </p>
       <div className="table">
-        <div><span>σH input</span><b>{state.sH}%S ({state.sH > 67 ? 'high — rupture zone' : 'moderate'})</b></div>
+        <div><span>σH input</span><b>{state.sH}%S ({state.sH > 67 ? 'high pressure-driven cue' : 'moderate pressure cue'})</b></div>
         <div><span>σL input</span><b>{state.sL}%S {state.sLSign}</b></div>
         <div><span>Von Mises SC</span>
           <b style={{ color: m.vmPass ? COLORS.green : COLORS.red }}>
-            {pct(m.vonMisesVal)}%S {m.vmPass ? '✓' : '✗'} vs {(AF * 100).toFixed(0)}%S
+            {pct(m.vonMisesVal)}%S {m.vmPass ? 'inside' : 'over'} {(AF * 100).toFixed(0)}%S
           </b>
         </div>
         <div><span>Tresca SC</span>
           <b style={{ color: m.trPass ? COLORS.green : COLORS.red }}>
-            {pct(m.trescaVal)}%S {m.trPass ? '✓' : '✗'} vs {(AF * 100).toFixed(0)}%S
+            {pct(m.trescaVal)}%S {m.trPass ? 'inside' : 'over'} {(AF * 100).toFixed(0)}%S
           </b>
         </div>
-        <div><span>Active theory</span><b>{state.theory === 'vonmises' ? 'Von Mises (energy, ellipse)' : 'Tresca (maximum shear, hexagon)'}</b></div>
+        <div><span>Active theory</span><b>{state.theory === 'vonmises' ? 'Von Mises (distortion energy, ellipse)' : 'Tresca (maximum shear, hexagon)'}</b></div>
       </div>
       <div className="bucket" style={{ borderColor: 'rgba(82,240,223,.28)' }}>
         <b>Scale correction</b>
-        <span className="copy">Both surfaces use σH/S and σL/S axes. The dashed allowable envelope is scaled by the allowable factor; the graph itself does not resize when switching between Von Mises and Tresca.</span>
+        <span className="copy">Both surfaces use σH/S and σL/S axes. The dashed teaching envelope is scaled by the selected limit; the graph itself does not resize when switching between Von Mises and Tresca.</span>
       </div>
-      <div className="bucket" style={{ borderColor: 'rgba(255,215,91,.28)' }}>
-        <b>Engineering boundary</b>
-        <span className="copy">Von Mises and Tresca are useful combined-stress theory screens. They do not replace B31.3 route selection for pressure design, sustained, occasional, or displacement stress checks.</span>
+      <div className="table route-table">
+        {combinedRouteRows(state, m).map(row => <div key={row.label}><span>{row.label}</span><b>{row.value}</b></div>)}
       </div>
     </div>
   );
