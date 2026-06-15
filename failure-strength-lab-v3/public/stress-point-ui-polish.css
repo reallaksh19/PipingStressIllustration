@@ -1,0 +1,162 @@
+/* Stress Pt / Tab 3 UI polish
+   Phase 2 target: no overlapping SVG labels, no barely visible text, and no duplicate
+   in-panel Learning Center competing with the bottom key-points panel. */
+
+/* Give Tab 3 a predictable 2 x 2 engineering layout. This overrides the generic
+   rule where the first panel spans two rows. */
+.stress-grid {
+  grid-template-columns: minmax(380px, 1.06fr) minmax(320px, .94fr) !important;
+  grid-template-areas:
+    "stress-element component-meaning"
+    "tensor-card engineering-note" !important;
+  grid-auto-rows: minmax(326px, auto) !important;
+  gap: 14px !important;
+}
+
+.stress-grid .panel:nth-child(1) {
+  grid-area: stress-element !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  min-height: 372px !important;
+}
+
+.stress-grid .panel:nth-child(2) {
+  grid-area: component-meaning !important;
+  min-height: 326px !important;
+}
+
+.stress-grid .panel:nth-child(3) {
+  grid-area: tensor-card !important;
+  min-height: 326px !important;
+}
+
+.stress-grid .panel:nth-child(4) {
+  grid-area: engineering-note !important;
+  grid-column: auto !important;
+  min-height: 326px !important;
+}
+
+.stress-grid .panel:nth-child(1) .pb {
+  min-height: 316px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+}
+
+.stress-grid .panel:nth-child(1) svg {
+  min-height: 0 !important;
+  max-height: 338px !important;
+}
+
+/* SVG label contrast. Inline SVG text is useful for teaching, but it must pass a
+   visual legibility check on dark grid backgrounds. */
+.stress-grid svg text {
+  paint-order: stroke fill !important;
+  stroke: rgba(6,16,29,.94) !important;
+  stroke-width: 3px !important;
+  stroke-linejoin: round !important;
+  filter: none !important;
+}
+
+/* Remove low-priority labels that compete with the graphic and the readout. */
+.stress-grid .panel:nth-child(1) svg text[y="323"],
+.stress-grid .panel:nth-child(1) svg text[y="72"] {
+  display: none !important;
+}
+
+/* Keep the top derived line and bottom legend compact rather than dominant. */
+.stress-grid .panel:nth-child(1) svg text[y="54"],
+.stress-grid .panel:nth-child(1) svg text[y="100"],
+.stress-grid .panel:nth-child(1) svg text[y="286"] {
+  font-size: 10px !important;
+  font-weight: 850 !important;
+}
+
+/* The face-name labels are secondary. Preserve them, but reduce weight so they
+   do not fight the component symbols. */
+.stress-grid .panel:nth-child(1) svg text[y="10"],
+.stress-grid .panel:nth-child(1) svg text[y="44"],
+.stress-grid .panel:nth-child(1) svg text[y="229"] {
+  font-size: 10px !important;
+  opacity: .88 !important;
+}
+
+/* Readout card density: keep values readable without forcing excessive scroll. */
+.stress-grid .interp.stress-readout {
+  gap: 10px !important;
+}
+
+.stress-grid .result-title {
+  font-size: 18px !important;
+  line-height: 1.15 !important;
+}
+
+.stress-grid .copy {
+  font-size: 13px !important;
+  line-height: 1.42 !important;
+}
+
+.stress-grid .badge {
+  padding: 7px 10px !important;
+  font-size: 11px !important;
+}
+
+.stress-grid .table {
+  font-size: 12px !important;
+}
+
+.stress-grid .table div {
+  grid-template-columns: minmax(118px, .42fr) 1fr !important;
+}
+
+.stress-grid .table span,
+.stress-grid .table b {
+  padding: 7px 9px !important;
+}
+
+.stress-grid .card,
+.stress-grid .bucket {
+  padding: 10px !important;
+  gap: 4px !important;
+}
+
+/* Panel 4 already has the global Learning Center at the page edge. Do not repeat
+   another multi-card Learning Center inside the Engineering Note panel. */
+.stress-grid [aria-label="Tab 3 engineering key points"] {
+  display: none !important;
+}
+
+/* Keep long Engineering Note content scrollable inside the card instead of
+   increasing page height and colliding with the bottom Learning Center chip. */
+.stress-grid .panel:nth-child(4) .pb {
+  max-height: 430px !important;
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+/* Compact the bottom Learning Center for the Stress Pt tab. */
+.fallback-learning-panel[data-crisp-stress="true"]:not([open]) {
+  width: min(430px, calc(100vw - 32px)) !important;
+}
+
+.fallback-learning-panel[data-crisp-stress="true"] .fallback-keycard ul {
+  font-size: 12px !important;
+  line-height: 1.34 !important;
+}
+
+@media (max-width: 980px) {
+  .stress-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "stress-element"
+      "component-meaning"
+      "tensor-card"
+      "engineering-note" !important;
+  }
+
+  .stress-grid .panel:nth-child(4) .pb {
+    max-height: none !important;
+  }
+}
