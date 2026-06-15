@@ -1,0 +1,220 @@
+/* Static tab engineering/teaching patch
+   Purpose: keep the Static lesson from looking like a complete pipe-code check,
+   reduce the bottom Learning Center overlap, and add an inline B31.3 route boundary. */
+
+body {
+  padding-bottom: 0 !important;
+}
+
+/* Move the fallback Learning Center from full-width bottom drawer to a compact desktop side panel. */
+.fallback-learning-panel {
+  left: auto !important;
+  right: max(14px, calc((100vw - 1540px) / 2 + 14px)) !important;
+  bottom: 16px !important;
+  width: min(520px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 84px) !important;
+  border-radius: 22px !important;
+  box-shadow: -18px 18px 48px rgba(0,0,0,.46), inset 0 0 28px rgba(82,240,223,.05) !important;
+}
+
+.fallback-learning-panel > summary {
+  min-height: 46px !important;
+}
+
+.fallback-learning-panel .fallback-route {
+  color: #ffd75b;
+}
+
+.fallback-learning-body {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+/* Static tab added engineering boundary panel. */
+.static-engineering-panel {
+  border: 1px solid rgba(82,240,223,.28);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(82,240,223,.08), rgba(255,255,255,.025)),
+    rgba(6,16,29,.78);
+  box-shadow: inset 0 0 30px rgba(82,240,223,.035);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.static-engineering-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.static-engineering-kicker {
+  color: #52f0df;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.static-engineering-title {
+  margin-top: 5px;
+  color: #eef7ff;
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -.02em;
+}
+
+.static-engineering-copy {
+  margin-top: 4px;
+  color: #a9bdd5;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.static-mode-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(216,237,255,.16);
+  border-radius: 16px;
+  background: rgba(255,255,255,.045);
+}
+
+.static-mode-switch button {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 8px 9px;
+  color: #d8edff;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 950;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.static-mode-switch button.active {
+  border-color: rgba(82,240,223,.74);
+  color: #06101d;
+  background: #52f0df;
+  box-shadow: 0 0 18px rgba(82,240,223,.22);
+}
+
+.static-formula-boundary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(255,215,91,.24);
+  border-radius: 16px;
+  background: rgba(255,215,91,.055);
+  padding: 10px 12px;
+}
+
+.static-formula-boundary code {
+  color: #06101d;
+  background: #ffd75b;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.static-formula-boundary span {
+  color: #dcefff;
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.static-engineering-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.static-engineering-card {
+  border: 1px solid rgba(190,220,255,.14);
+  border-radius: 17px;
+  background: rgba(255,255,255,.038);
+  padding: 11px;
+  display: grid;
+  gap: 6px;
+}
+
+.static-engineering-card b {
+  font-size: 10px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.static-engineering-card span {
+  color: #a9bdd5;
+  font-size: 12px;
+  line-height: 1.38;
+}
+
+.static-engineering-card.concept b { color: #52f0df; }
+.static-engineering-card.piping b { color: #55b8ff; }
+.static-engineering-card.b313 b { color: #ffd75b; }
+.static-engineering-card.sources b { color: #b884ff; }
+
+body[data-fs-mode="static"][data-static-layer="beginner"] .analysis-grid .panel:nth-child(2),
+body[data-fs-mode="static"][data-static-layer="beginner"] .analysis-grid .panel:nth-child(3),
+body[data-fs-mode="static"][data-static-layer="beginner"] .analysis-grid .panel:nth-child(4) {
+  display: none !important;
+}
+
+body[data-fs-mode="static"][data-static-layer="beginner"] .analysis-grid {
+  grid-template-columns: 1fr !important;
+}
+
+body[data-fs-mode="static"][data-static-layer="beginner"] .analysis-grid .panel:first-child {
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+body[data-fs-mode="static"][data-static-layer="code"] .analysis-grid .panel:nth-child(1),
+body[data-fs-mode="static"][data-static-layer="code"] .analysis-grid .panel:nth-child(2) {
+  opacity: .46;
+}
+
+body[data-fs-mode="static"][data-static-layer="code"] .static-engineering-panel {
+  border-color: rgba(255,215,91,.46);
+}
+
+@media (max-width: 1180px) {
+  .static-engineering-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .fallback-learning-panel {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    width: auto !important;
+    max-height: min(72vh, 720px) !important;
+  }
+
+  .static-engineering-head {
+    grid-template-columns: 1fr;
+  }
+
+  .static-mode-switch {
+    width: 100%;
+  }
+
+  .static-engineering-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .static-formula-boundary {
+    grid-template-columns: 1fr;
+  }
+}
