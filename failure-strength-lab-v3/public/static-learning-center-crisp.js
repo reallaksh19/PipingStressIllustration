@@ -1,52 +1,21 @@
 (function () {
+  /* Compatibility shim for older cached pages that still load this file.
+     It is the final guard for the Static Learning Center: one flat set of
+     engineering key-point cards, no nested helper blocks and no repeated
+     Concept/Piping/B31.3 sections. */
   window.STATIC_CRISP_LEARNING_ENABLED = true;
 
-  var VERSION = 'static-crisp-2026-06-15-stable-v2';
-  var title = 'Tab 1 · Static Engineering Key Points';
-  var subtitle = 'Behavior only: classify the piping load source and B31.3 route before any acceptance judgment.';
+  var VERSION = 'static-single-owner-v5';
+  var TITLE = 'Tab 1 · Static Engineering Key Points';
+  var SUBTITLE = 'Behavior only: identify load source and B31.3 route before acceptance judgment.';
 
-  var conciseHelpers = [
-    [
-      'Formula boundary',
-      'direct axial only',
-      'σ = F/A explains direct axial stress. It does not cover pipe pressure design, bending, SIFs, supports, nozzles, or thermal displacement.',
-      'Use F/A only as a teaching bridge. Pipe review normally separates pressure containment, sustained bending/axial stress, occasional events, displacement range, and local detail checks.',
-      'Do not treat visual yield/necking as B31.3 acceptance. Route the problem to pressure, sustained, occasional, displacement/flexibility, support, and material paragraphs.',
-      'Licensed ASME B31.3 and project specifications control final wording and equations.'
-    ],
-    [
-      'Concept',
-      'elastic → yield → failure',
-      'Elastic strain recovers after unloading. Yield means permanent strain. Ductile metal may plastically deform and neck; brittle fracture may give little visible warning.',
-      'This explains why allowable stress, shakedown, fatigue range, and brittle-fracture screening are different engineering ideas.',
-      'Connect to material suitability, design temperature, allowable stress basis, and impact-test/low-temperature review where applicable.',
-      'Strength-of-materials references for stress–strain behavior; licensed B31.3 for material rules.'
-    ],
-    [
-      'Piping',
-      'load path first',
-      'Static piping loads include pipe/contents/insulation weight, pressure, support reactions, steady nozzle loads, and held boundary displacement.',
-      'Critical locations are usually bends, tees, branches, reducers, welded attachments, restraints, supports, and nozzles—not a plain tensile coupon.',
-      'Separate pressure containment from longitudinal force/bending, support/nozzle reaction, and displacement-controlled stress range.',
-      'Practical pipe-stress references such as Little P.Eng, WhatIsPiping, and software/vendor notes are interpretation aids only.'
-    ],
-    [
-      'B31.3 map',
-      'route before equation',
-      'Pressure containment → 304 family. Sustained weight/force → 302.3.5 family. Occasional event → 302.3.6 family.',
-      'Restrained thermal/settlement/equipment movement → displacement/flexibility route, mainly 319 and expansion-stress-range context.',
-      'Supports/restraints → 321 family. Materials and allowables → 323 and Appendix A. Detail realism may need B31J or legacy Appendix D context.',
-      'Paragraph-family navigation only; verify exact clause wording, equations, edition, and owner criteria.'
-    ]
-  ];
-
-  var keyCards = [
+  var CARDS = [
     {
       cls: 'formula',
       title: 'Formula boundary',
       route: 'direct axial only',
       points: [
-        'σ = F/A is useful for direct axial stress only.',
+        'σ = F/A explains direct axial stress only.',
         'Pipe checks also need pressure design, bending M/Z, SIFs, supports, nozzles, and displacement range.',
         'Do not read visible yield or necking as B31.3 acceptance.'
       ]
@@ -57,7 +26,7 @@
       route: 'material behavior',
       points: [
         'Elastic strain recovers; yield creates permanent strain.',
-        'Ductile metal can plastically deform and neck before rupture.',
+        'Ductile metal may plastically deform and neck before rupture.',
         'Brittle fracture may occur with little visible deformation.'
       ]
     },
@@ -66,8 +35,8 @@
       title: 'Piping',
       route: 'load path first',
       points: [
-        'Static sources: weight, contents, pressure, support reactions, steady nozzle loads, held displacements.',
-        'Hotspots: bends, tees, branches, reducers, welded attachments, supports, restraints, and nozzles.',
+        'Static sources include weight, contents, pressure, support reactions, steady nozzle loads, and held displacements.',
+        'Hotspots are bends, tees, branches, reducers, welded attachments, supports, restraints, and nozzles.',
         'Separate pressure containment from sustained bending, occasional events, and displacement stress range.'
       ]
     },
@@ -77,7 +46,7 @@
       route: 'route before equation',
       points: [
         'Pressure → 304; sustained force/weight → 302.3.5; occasional event → 302.3.6.',
-        'Thermal/settlement/equipment movement → 319 flexibility and displacement-stress-range logic.',
+        'Thermal, settlement, and equipment movement → 319 flexibility / displacement-stress-range logic.',
         'Supports/materials/allowables → 321, 323, Appendix A; verify licensed edition and owner criteria.'
       ]
     },
@@ -87,47 +56,76 @@
       route: 'authority hierarchy',
       points: [
         'Final authority: licensed ASME B31.3 project edition and project specifications.',
-        'Background: strength-of-materials stress–strain references.',
-        'Interpretation aids: Little P.Eng, WhatIsPiping, and vendor/software notes; verify before project use.'
+        'Background only: strength-of-materials and practical pipe-stress references.',
+        'Interpretation aids such as Little P.Eng, WhatIsPiping, and vendor notes must be verified before project use.'
       ]
     }
   ];
 
-  function escapeText(value) {
+  function esc(value) {
     return String(value || '').replace(/[&<>'"]/g, function (ch) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch];
     });
   }
 
-  function activeTabLabel() {
+  function isStaticActive() {
     var label = document.querySelector('.lesson-tabs .tab.active .tabLabel');
-    return label && label.textContent ? label.textContent.trim() : 'Static';
+    if (label && /static/i.test(label.textContent || '')) return true;
+    if (document.body && document.body.getAttribute('data-fs-mode') === 'static') return true;
+    var h2 = document.querySelector('h2');
+    return Boolean(h2 && /Static Loading/i.test(h2.textContent || ''));
   }
 
-  function overrideStaticData() {
-    var data = { label: title, subtitle: subtitle, helpers: conciseHelpers };
-    try { if (typeof FALLBACK_LEARNING !== 'undefined') FALLBACK_LEARNING.Static = data; } catch (e) {}
-    try { if (typeof ENRICHED_LEARNING !== 'undefined') ENRICHED_LEARNING.Static = data; } catch (e) {}
+  function patchDataSources() {
+    var compact = {
+      label: TITLE,
+      subtitle: SUBTITLE,
+      route: 'compact key points',
+      helpers: [[
+        'Formula boundary',
+        'direct axial only',
+        'σ = F/A explains direct axial stress only. Pipe checks also need pressure design, bending M/Z, SIFs, supports, nozzles, and displacement range.',
+        'Static sources include weight, contents, pressure, support reactions, steady nozzle loads, and held displacements. Separate pressure containment from sustained bending, occasional events, and displacement stress range.',
+        'Pressure → 304; sustained force/weight → 302.3.5; occasional event → 302.3.6; displacement/flexibility → 319; supports/materials/allowables → 321/323/Appendix A.',
+        'Licensed ASME B31.3 project edition and project specifications control final wording and equations.'
+      ]]
+    };
+    try { if (typeof FALLBACK_LEARNING !== 'undefined') FALLBACK_LEARNING.Static = compact; } catch (e) {}
+    try { if (typeof ENRICHED_LEARNING !== 'undefined') ENRICHED_LEARNING.Static = compact; } catch (e) {}
   }
 
-  function renderKeyCards() {
-    overrideStaticData();
-    if (activeTabLabel() !== 'Static') return;
+  function html() {
+    return CARDS.map(function (card) {
+      return '<section class="fallback-keycard ' + esc(card.cls) + '">' +
+        '<div class="fallback-keycard-title"><b>' + esc(card.title) + '</b><span>' + esc(card.route) + '</span></div>' +
+        '<ul>' + card.points.map(function (point) { return '<li>' + esc(point) + '</li>'; }).join('') + '</ul>' +
+      '</section>';
+    }).join('');
+  }
+
+  var rendering = false;
+  function renderStaticKeyPoints() {
+    patchDataSources();
+    if (!isStaticActive()) return;
 
     var panel = document.getElementById('fallback-learning-panel');
     var panelTitle = document.getElementById('fallback-learning-title');
     var heading = document.getElementById('fallback-learning-heading');
-    var panelSubtitle = document.getElementById('fallback-learning-subtitle');
+    var subtitle = document.getElementById('fallback-learning-subtitle');
     var grid = document.getElementById('fallback-learning-grid');
-    if (!panel || !panelTitle || !heading || !panelSubtitle || !grid) return;
+    if (!panel || !panelTitle || !heading || !subtitle || !grid) return;
 
-    var alreadyStable = grid.getAttribute('data-crisp-version') === VERSION && grid.querySelector('.fallback-keycard');
+    var hasOldHelperBlocks = Boolean(grid.querySelector('.fallback-helper'));
+    var alreadyStable = grid.getAttribute('data-static-version') === VERSION &&
+      grid.querySelectorAll('.fallback-keycard').length === CARDS.length &&
+      !hasOldHelperBlocks;
 
     panel.hidden = false;
     panel.setAttribute('data-crisp-static', 'true');
-    panelTitle.textContent = title;
-    heading.textContent = title;
-    panelSubtitle.textContent = subtitle;
+    panel.setAttribute('data-static-owner', 'single-owner-compat');
+    panelTitle.textContent = TITLE;
+    heading.textContent = TITLE;
+    subtitle.textContent = SUBTITLE;
 
     var route = panel.querySelector('.fallback-route');
     if (route) route.textContent = 'compact key points';
@@ -138,15 +136,13 @@
 
     if (alreadyStable) return;
 
+    rendering = true;
     grid.className = 'fallback-helper-grid fallback-keypoint-grid';
-    grid.setAttribute('data-crisp-version', VERSION);
     grid.removeAttribute('data-fallback-version');
-    grid.innerHTML = keyCards.map(function (card) {
-      return '<section class="fallback-keycard ' + escapeText(card.cls) + '">' +
-        '<div class="fallback-keycard-title"><b>' + escapeText(card.title) + '</b><span>' + escapeText(card.route) + '</span></div>' +
-        '<ul>' + card.points.map(function (point) { return '<li>' + escapeText(point) + '</li>'; }).join('') + '</ul>' +
-      '</section>';
-    }).join('');
+    grid.removeAttribute('data-crisp-version');
+    grid.setAttribute('data-static-version', VERSION);
+    grid.innerHTML = html();
+    rendering = false;
   }
 
   var scheduled = false;
@@ -159,24 +155,31 @@
     scheduled = true;
     requestAnimationFrame(function () {
       scheduled = false;
-      renderKeyCards();
+      renderStaticKeyPoints();
     });
   }
 
   function install() {
-    overrideStaticData();
-    scheduleRender();
-    scheduleRender(140);
+    patchDataSources();
+    renderStaticKeyPoints();
+    scheduleRender(60);
+    scheduleRender(200);
+    scheduleRender(800);
 
     document.addEventListener('click', function (event) {
       if (event.target.closest('.lesson-tabs .tab')) {
         scheduleRender();
-        scheduleRender(160);
+        scheduleRender(100);
+        scheduleRender(300);
       }
     });
 
-    // Static key points do not depend on slider/input changes. Avoid observing the
-    // React root or polling; both caused the panel to fight the generic fallback renderer.
+    var panel = document.getElementById('fallback-learning-panel');
+    if (panel) {
+      new MutationObserver(function () {
+        if (!rendering) scheduleRender();
+      }).observe(panel, { childList: true, subtree: true, characterData: true });
+    }
   }
 
   if (document.readyState === 'loading') {
