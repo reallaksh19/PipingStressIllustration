@@ -1,0 +1,138 @@
+/* Header and subheader optimization
+   Goal: keep teaching context visible without consuming excessive vertical space. */
+
+.appHeader {
+  padding: 12px 18px !important;
+  gap: 14px !important;
+  min-height: 96px;
+  align-items: center !important;
+}
+
+.appHeader .brandRow {
+  gap: 11px !important;
+}
+
+.appHeader .appIcon {
+  flex-basis: 44px !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 15px !important;
+  font-size: 22px !important;
+  box-shadow: inset 0 0 22px rgba(82,240,223,.10), 0 8px 20px rgba(0,0,0,.24) !important;
+}
+
+.appHeader .eyebrow {
+  margin-bottom: 2px !important;
+  font-size: 11px !important;
+  letter-spacing: .12em !important;
+}
+
+.appHeader h1 {
+  font-size: clamp(28px, 2.15vw, 36px) !important;
+  line-height: .98 !important;
+}
+
+.appHeader .subtitle {
+  margin-top: 6px !important;
+  max-width: 920px !important;
+  font-size: 13px !important;
+  line-height: 1.32 !important;
+}
+
+.statusStack {
+  gap: 5px !important;
+}
+
+.appHeader .pill {
+  padding: 9px 13px !important;
+  font-size: 11px !important;
+  letter-spacing: .09em !important;
+}
+
+.modeMini {
+  font-size: 11px !important;
+  opacity: .92;
+}
+
+main {
+  gap: 12px !important;
+}
+
+.title-row {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 3px 0 2px;
+}
+
+.title-row > div:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.title-row h2 {
+  margin: 0 !important;
+  font-size: 22px !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.035em !important;
+  white-space: nowrap;
+}
+
+.title-row p {
+  margin: 0 !important;
+  padding-left: 12px;
+  border-left: 1px solid rgba(190,220,255,.18);
+  max-width: 980px;
+  color: #b9cbe0 !important;
+  font-size: 13px !important;
+  line-height: 1.34 !important;
+}
+
+.title-row .chip {
+  padding: 8px 12px !important;
+  border-radius: 15px !important;
+  font-size: 12px !important;
+  background: rgba(255,255,255,.04) !important;
+}
+
+@media (max-width: 920px) {
+  .appHeader {
+    grid-template-columns: 1fr !important;
+    min-height: 0;
+  }
+
+  .statusStack {
+    justify-items: start !important;
+  }
+
+  .title-row,
+  .title-row > div:first-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  .title-row p {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .appHeader {
+    padding: 11px 13px !important;
+  }
+
+  .appHeader h1 {
+    font-size: 27px !important;
+  }
+
+  .appHeader .subtitle {
+    font-size: 12px !important;
+  }
+
+  .title-row .chip {
+    white-space: normal !important;
+  }
+}
